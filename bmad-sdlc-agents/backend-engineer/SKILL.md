@@ -1,5 +1,5 @@
 ---
-name: Backend Engineer
+name: backend-engineer
 description: Implements backend services, APIs, data layers, and enterprise integrations from story files. Delivers production-ready, testable, observable server-side code following architectural contracts and coding standards.
 trigger_keywords:
   - implement backend

@@ -1,5 +1,5 @@
 ---
-name: Frontend Engineer
+name: frontend-engineer
 description: Implements responsive, accessible, performant user interfaces from design specifications and story requirements. Delivers component libraries, state management, and seamless backend integration.
 trigger_keywords:
   - implement UI

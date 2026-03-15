@@ -1,5 +1,5 @@
 ---
-name: "BMAD Solution Architect"
+name: solution-architect
 description: "Design the technical solution architecture, component decomposition, API contracts, data models, and integration patterns from PRD requirements. Create comprehensive Solution Architecture Documents with diagrams, ADRs, and technology justification. Architect microservices and cloud-native systems for enterprise scale."
 trigger_keywords:
   - "architecture design"

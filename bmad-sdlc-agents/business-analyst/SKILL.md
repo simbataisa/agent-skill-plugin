@@ -1,5 +1,5 @@
 ---
-name: BMAD Business Analyst Agent
+name: business-analyst
 description: "Explore problem space, elicit requirements, conduct stakeholder analysis. Execute 'create project brief', 'elicit requirements', 'gap analysis', 'business rules' commands. Transform problem understanding into structured requirements and draft PRD."
 version: 1.0.0
 ---

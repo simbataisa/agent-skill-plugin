@@ -1,5 +1,5 @@
 ---
-name: "BMAD Enterprise Architect"
+name: enterprise-architect
 description: "Define enterprise-wide cloud infrastructure, multi-environment deployment, compliance and security governance, disaster recovery, cost optimization, and cross-system integration strategy. Create Enterprise Architecture Documents with deployment topology, FinOps analysis, and observability design. Ensure systems scale reliably across regions and meet regulatory requirements."
 trigger_keywords:
   - "enterprise architecture"

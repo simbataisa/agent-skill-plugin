@@ -1,5 +1,5 @@
 ---
-name: Mobile Engineer
+name: mobile-engineer
 description: Implements iOS, Android, and cross-platform mobile applications. Delivers performant, secure, offline-capable apps following platform guidelines and architectural best practices.
 trigger_keywords:
   - implement mobile app

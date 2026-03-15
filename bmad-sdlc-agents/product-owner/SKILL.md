@@ -1,5 +1,5 @@
 ---
-name: BMAD Product Owner Agent
+name: product-owner
 description: "Align and prioritize product artifacts. Manage backlog, resolve conflicts between PRD/Architecture/Stories, ensure consistency across BMAD phases. Execute 'align artifacts', 'prioritize backlog', 'shard spec' commands now."
 version: 1.0.0
 ---
