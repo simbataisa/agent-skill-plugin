@@ -1,0 +1,14 @@
+{
+  "_comment": "Confluence MCP. Set CONFLUENCE_HOST, CONFLUENCE_EMAIL, CONFLUENCE_API_TOKEN env vars. Alternative to Notion for documentation and knowledge base.",
+  "mcpServers": {
+    "confluence": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-confluence"],
+      "env": {
+        "CONFLUENCE_HOST": "${CONFLUENCE_HOST}",
+        "CONFLUENCE_EMAIL": "${CONFLUENCE_EMAIL}",
+        "CONFLUENCE_API_TOKEN": "${CONFLUENCE_API_TOKEN}"
+      }
+    }
+  }
+}

@@ -1,0 +1,74 @@
+---
+description: "Project tech stack and coding standards"
+globs: "**/*.ts,**/*.tsx,**/*.js,**/*.jsx,**/*.go,**/*.py,**/*.java,**/*.kt,**/*.sql"
+alwaysApply: false
+---
+
+# Tech Stack & Coding Standards
+
+When generating code for this project, always adhere to these confirmed technology decisions.
+
+## Backend
+
+**Language/Framework**: [FILL IN - e.g., "Go 1.21 + Gin"]
+
+**Database**: [FILL IN - e.g., "PostgreSQL 15"]
+- Use migrations: `migrations/` directory with timestamp-prefixed `.sql` files
+- Never write raw SQL directly in code
+- Use an ORM/migration tool: [FILL IN - e.g., "Flyway", "Alembic", "golang-migrate"]
+
+**API Style**: [FILL IN - "REST" / "gRPC" / "GraphQL"]
+- REST: Use `handlers/` for route handlers, follow standard HTTP semantics
+- gRPC: Use `.proto` files in `protos/`, generate stubs with protocol buffers
+- GraphQL: Use schema-first design with `.graphql` files in `graphql/`
+
+**Authentication**: [FILL IN - e.g., "OAuth 2.0 with JWT tokens"]
+
+**Key Dependencies**: [FILL IN - List any mandatory libraries/frameworks]
+
+## Frontend
+
+**Framework**: [FILL IN - e.g., "React 18 + Next.js 14"]
+
+**Styling**: shadcn/ui + Tailwind CSS (mandatory)
+- Use shadcn/ui components from `components/ui/`
+- Style with Tailwind utility classes, no inline CSS
+- Color scheme defined in `tailwind.config.js`
+
+**State Management**: [FILL IN - e.g., "Zustand", "Jotai", "Redux", "Context API"]
+
+**Key Dependencies**: [FILL IN]
+
+## Mobile (if applicable)
+
+**Framework**: [FILL IN - e.g., "React Native", "Flutter", "Swift/Kotlin" or "N/A"]
+
+**Target Platforms**: [FILL IN - e.g., "iOS 14+, Android 10+"]
+
+## API Contracts
+
+**API Version**: [FILL IN - e.g., "v1"]
+
+**Documentation**: [FILL IN - e.g., "OpenAPI/Swagger at /api-docs"]
+
+**Request/Response Format**: [FILL IN - e.g., "JSON with camelCase"]
+
+## Quality & Testing
+
+**Testing Framework**: [FILL IN - e.g., "Jest for JS", "Pytest for Python"]
+
+**Coverage Target**: [FILL IN - e.g., "80% overall, 100% for critical paths"]
+
+**Linting/Formatting**: [FILL IN - e.g., "ESLint + Prettier"]
+
+## Important Rules
+
+- **Never suggest alternatives** to the tech stack decisions listed above
+- **Always check `.bmad/team-conventions.md`** for naming conventions and code style
+- **Use migrations for all schema changes** — never apply DDL directly to production
+- **API documentation is mandatory** for all new endpoints
+- **Test coverage required** for new features — see Testing Framework above
+
+## Rationale & Context
+
+For the full rationale behind these decisions, see the Architecture Decision Records (ADRs) in `docs/architecture/`.

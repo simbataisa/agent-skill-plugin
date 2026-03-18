@@ -1,0 +1,70 @@
+{
+  "_instructions": "MCP Server Configuration Template. Copy to your tool's MCP config file and uncomment the servers your project needs. See mcp-configs/README.md for details. Replace ${VAR_NAME} with actual environment variable names. NEVER commit secrets — use env vars instead.",
+  "mcpServers": {
+    "_linear_example": {
+      "_disabled": true,
+      "_description": "Linear issue tracker. Set LINEAR_API_KEY env var. See mcp-configs/project/linear.json",
+      "command": "npx",
+      "args": ["-y", "@linear/mcp-server"],
+      "env": {
+        "LINEAR_API_KEY": "${LINEAR_API_KEY}"
+      }
+    },
+    "_jira_example": {
+      "_disabled": true,
+      "_description": "Jira issue tracker (alternative to Linear). Set JIRA_HOST, JIRA_EMAIL, JIRA_API_TOKEN. See mcp-configs/project/jira.json",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-jira"],
+      "env": {
+        "JIRA_HOST": "${JIRA_HOST}",
+        "JIRA_EMAIL": "${JIRA_EMAIL}",
+        "JIRA_API_TOKEN": "${JIRA_API_TOKEN}"
+      }
+    },
+    "_notion_example": {
+      "_disabled": true,
+      "_description": "Notion documentation. Set NOTION_TOKEN. See mcp-configs/project/notion.json",
+      "command": "npx",
+      "args": ["-y", "@notionhq/notion-mcp-server"],
+      "env": {
+        "NOTION_TOKEN": "${NOTION_TOKEN}"
+      }
+    },
+    "_confluence_example": {
+      "_disabled": true,
+      "_description": "Confluence docs (alternative to Notion). Set CONFLUENCE_HOST, CONFLUENCE_EMAIL, CONFLUENCE_API_TOKEN. See mcp-configs/project/confluence.json",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-confluence"],
+      "env": {
+        "CONFLUENCE_HOST": "${CONFLUENCE_HOST}",
+        "CONFLUENCE_EMAIL": "${CONFLUENCE_EMAIL}",
+        "CONFLUENCE_API_TOKEN": "${CONFLUENCE_API_TOKEN}"
+      }
+    },
+    "_postgres_example": {
+      "_disabled": true,
+      "_description": "PostgreSQL database. Set DATABASE_URL to PostgreSQL connection string. RECOMMEND read-only credentials. See mcp-configs/project/postgres.json",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-postgres", "${DATABASE_URL}"]
+    },
+    "_mongodb_example": {
+      "_disabled": true,
+      "_description": "MongoDB database. Set MONGODB_URI. See mcp-configs/project/mongodb.json",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-mongodb"],
+      "env": {
+        "MONGODB_URI": "${MONGODB_URI}"
+      }
+    },
+    "_slack_example": {
+      "_disabled": true,
+      "_description": "Slack integration. Set SLACK_BOT_TOKEN and SLACK_TEAM_ID. See mcp-configs/project/slack.json",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-slack"],
+      "env": {
+        "SLACK_BOT_TOKEN": "${SLACK_BOT_TOKEN}",
+        "SLACK_TEAM_ID": "${SLACK_TEAM_ID}"
+      }
+    }
+  }
+}

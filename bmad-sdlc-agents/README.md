@@ -1,1145 +1,733 @@
-# BMAD SDLC Agent Skills
+# BMAD SDLC Agents: Two-Layer Agent Architecture
 
-A complete set of 10 specialized AI agent skills implementing the **BMAD Method** (Breakthrough Method of Agile AI-Driven Development) for enterprise software development. Each agent is a self-contained markdown skill that can be plugged into any AI coding tool.
+**BMAD** (Breakthrough Method of Agile AI-Driven Development) is an enterprise methodology for delivering software through a cross-functional squad of 10 specialized AI agents. This repository implements the **two-layer architecture**: a global layer with reusable agent skills and shared resources, plus a project layer with context files checked into each project repo.
 
-## Agent Team
-
-| Agent                    | Skill Directory              | BMAD Phase     | Role                                                         |
-| ------------------------ | ---------------------------- | -------------- | ------------------------------------------------------------ |
-| **Business Analyst**     | `business-analyst/`     | Analysis       | Problem exploration, stakeholder analysis, project brief     |
-| **Product Owner**        | `product-owner/`        | Planning       | PRD, backlog prioritization, artifact alignment              |
-| **Solution Architect**   | `solution-architect/`   | Solutioning    | Service decomposition, API contracts, data models, ADRs      |
-| **Enterprise Architect** | `enterprise-architect/` | Solutioning    | Cloud infra, compliance, observability, CI/CD, FinOps        |
-| **UX/UI Designer**       | `ux-designer/`       | Solutioning    | Personas, journeys, wireframes, design system, accessibility |
-| **Tech Lead**            | `tech-lead/`            | All Phases     | Orchestration, code review, risk, release readiness          |
-| **Tester & QE**          | `tester-qe/`            | All Phases     | Test strategy, quality gates, security testing               |
-| **Backend Engineer**     | `backend-engineer/`     | Implementation | APIs, data layers, event-driven services                     |
-| **Frontend Engineer**    | `frontend-engineer/`    | Implementation | React/TypeScript, state management, a11y                     |
-| **Mobile Engineer**      | `mobile-engineer/`      | Implementation | iOS, Android, React Native, Flutter                          |
-
-## BMAD Four-Phase Workflow
-
-```
-Analysis → Planning → Solutioning ──────→ Implementation
-  BA          PO       SA / EA / UX          BE / FE / ME
-                       Tech Lead ←──────────→ QE (all phases)
-```
-
-1. **Analysis** — Business Analyst explores problem space, produces Project Brief
-2. **Planning** — Product Owner creates PRD, prioritizes backlog, aligns artifacts
-3. **Solutioning** — Architects + UX/UI Designer design the system; Tech Lead refines stories
-4. **Implementation** — Engineers build; QE validates; Tech Lead coordinates
-
-## Shared Resources
-
-| Resource                              | Purpose                                                                          |
-| ------------------------------------- | -------------------------------------------------------------------------------- |
-| `BMAD-SHARED-CONTEXT.md`              | Shared context all agents reference (phases, handoff model, directory structure) |
-| `templates/project-brief-template.md` | Analysis phase output template                                                   |
-| `templates/prd-template.md`           | Product Requirements Document template                                           |
-| `templates/adr-template.md`           | Architecture Decision Record template                                            |
-| `templates/story-template.md`         | Implementation story with full context                                           |
-| `templates/test-strategy-template.md` | QE test strategy template                                                        |
-| `templates/handoff-log-template.md`   | Agent-to-agent handoff tracking                                                  |
+Install the global layer once across all tools, then scaffold `.bmad/` context files into each project. Agents dynamically load project-specific knowledge from `.bmad/` combined with shared resources, creating a cohesive, context-aware squad.
 
 ---
 
-## Setup Guide — How to Enable These Skills
+## Agent Team
 
-Each AI coding tool has its own mechanism for loading custom instructions and agent personas. Below are setup instructions for the most popular tools. The core idea is always the same: place the SKILL.md files where your tool can read them, and reference them in the tool's configuration.
+| Agent | Skill File | BMAD Phase | Role |
+|-------|-----------|-----------|------|
+| **Business Analyst** | `agents/business-analyst/SKILL.md` | Analysis | Problem exploration, stakeholder analysis, project brief |
+| **Product Owner** | `agents/product-owner/SKILL.md` | Planning | PRD, backlog prioritization, artifact alignment |
+| **Solution Architect** | `agents/solution-architect/SKILL.md` | Solutioning | Service decomposition, API contracts, data models, ADRs |
+| **Enterprise Architect** | `agents/enterprise-architect/SKILL.md` | Solutioning | Cloud infra, compliance, observability, CI/CD, FinOps |
+| **UX/UI Designer** | `agents/ux-designer/SKILL.md` | Solutioning | Personas, journeys, wireframes, design system, a11y |
+| **Tech Lead** | `agents/tech-lead/SKILL.md` | All Phases | Orchestration, code review, risk, release readiness |
+| **Tester & QE** | `agents/tester-qe/SKILL.md` | All Phases | Test strategy, quality gates, security testing |
+| **Backend Engineer** | `agents/backend-engineer/SKILL.md` | Implementation | APIs, data layers, event-driven services |
+| **Frontend Engineer** | `agents/frontend-engineer/SKILL.md` | Implementation | React/TypeScript, state management, a11y |
+| **Mobile Engineer** | `agents/mobile-engineer/SKILL.md` | Implementation | iOS/Android, native APIs, mobile architecture |
 
-### Claude Code (CLI)
+---
 
-Claude Code reads project instructions from a `CLAUDE.md` file at the project root. It also supports `.claude/` directory for additional configuration. There is no separate "skills folder" to install into — you simply reference the agent files from `CLAUDE.md` and Claude Code reads them on demand.
+## Two-Layer Architecture
 
-**Step 1: Copy agents into your project**
+### Global Layer
+**Install once.** Available in all projects.
 
+- **`agents/`** – 10 specialized agent skills (as markdown files)
+- **`shared/`** – Company-wide context, references, and templates
+  - `BMAD-SHARED-CONTEXT.md` – Organization context, principles, standards
+  - `references/technology-radar.md` – Technology choices, maturity tiers
+  - `templates/` – PRD, ADR, story, test strategy, project brief, handoff log templates
+
+### Project Layer
+**Copy per project.** Checked into each project's git repo.
+
+- **`.bmad/`** – Project-specific context files
+  - `PROJECT-CONTEXT.md` – Project vision, goals, stakeholders, timeline
+  - `tech-stack.md` – Technologies, versions, dependencies, build setup
+  - `team-conventions.md` – Code style, naming, patterns, architecture rules
+  - `domain-glossary.md` – Business domain terms, concepts, entities
+  - `handoff-log.md` – Record of handoffs between agents/humans
+
+- **`docs/`** – Project documentation
+  - `architecture/` – System design, decision records, diagrams
+  - `stories/` – User stories, epics, acceptance criteria
+  - `testing/` – Test plans, test cases, coverage goals
+  - `ux/` – Personas, journeys, wireframes, design specs
+
+### Agent Context Loading Order
+When an agent runs, it loads context in this order (later overrides earlier):
+
+1. `shared/BMAD-SHARED-CONTEXT.md` (baseline)
+2. `.bmad/PROJECT-CONTEXT.md` (project goals, stakeholders)
+3. `.bmad/tech-stack.md` (technology choices)
+4. `.bmad/team-conventions.md` (project rules and standards)
+5. User prompt (immediate task)
+
+This creates project-aware agents that respect global conventions while adapting to project specifics.
+
+---
+
+## Quick Start (3 Steps)
+
+### Step 1: Install Global Layer
 ```bash
-# From your project root
-cp -r bmad-sdlc-agents/ .bmad-agents/
+bash scripts/install-global.sh
+```
+Copies all agent skills, commands, hooks, and shared resources to tool-specific global directories. Runs once per machine.
+
+### Step 2: Scaffold New Project
+```bash
+bash /path/to/bmad-sdlc-agents/scripts/scaffold-project.sh "My Project Name"
+```
+Creates `.bmad/` context files, installs project-level agents, and generates a tool-specific instruction file (e.g. `CLAUDE.md`) that tells your AI tool to auto-load `.bmad/` at the start of every session.
+
+### Step 3: Fill Project Context
+Edit `.bmad/PROJECT-CONTEXT.md` and `.bmad/tech-stack.md` with your project details. The instruction file and all agents will pick these up automatically on the next session.
+
+---
+
+## Wiring Up Auto-Loading (.bmad/ → Your AI Tool)
+
+Every AI coding tool reads a special instruction file at session start. Add the BMAD context block below to whichever file your tool uses. **`scaffold-project.sh` generates this automatically** — these snippets are here if you need to add it manually or update an existing file.
+
+### Claude Code — `CLAUDE.md`
+
+```markdown
+## BMAD Project Context
+
+At the start of every conversation, read these files to understand this project:
+
+- `.bmad/PROJECT-CONTEXT.md` — vision, goals, stakeholders, constraints
+- `.bmad/tech-stack.md` — technology stack, versions, dependencies
+- `.bmad/team-conventions.md` — code style, naming conventions, patterns
+- `.bmad/domain-glossary.md` — business domain terminology
+- `.bmad/handoff-log.md` — recent agent decisions and handoffs
+
+## Available BMAD Agents (slash commands)
+
+| Command | Role |
+|---------|------|
+| `/business-analyst` | Discovery, stakeholder analysis, project brief |
+| `/product-owner` | PRD, backlog, user stories |
+| `/solution-architect` | System design, APIs, ADRs |
+| `/enterprise-architect` | Cloud infra, compliance, CI/CD |
+| `/ux-designer` | Wireframes, design system, accessibility |
+| `/tech-lead` | Orchestration, code review, risk |
+| `/tester-qe` | Test strategy, quality gates |
+| `/backend-engineer` | APIs, services, data layers |
+| `/frontend-engineer` | React/TypeScript, components, a11y |
+| `/mobile-engineer` | iOS/Android, native architecture |
 ```
 
-**Step 2: Reference agents from CLAUDE.md**
+### Cursor — `.cursor/rules/001-project-context.mdc`
 
-Create or append to `CLAUDE.md` at your project root:
+```markdown
+---
+description: BMAD project context — load at the start of every conversation
+alwaysApply: true
+---
 
-```bash
-cat >> CLAUDE.md << 'EOF'
+## BMAD Project Context
 
-## BMAD Agent Skills
+Read these files before responding to any request in this project:
 
-This project uses BMAD method agents for structured SDLC. Agent skill definitions
-are in `.bmad-agents/`. When working on:
+- `.bmad/PROJECT-CONTEXT.md` — vision, goals, stakeholders, constraints
+- `.bmad/tech-stack.md` — technology stack, versions, dependencies
+- `.bmad/team-conventions.md` — code style, naming conventions, patterns
+- `.bmad/domain-glossary.md` — business domain terminology
+- `.bmad/handoff-log.md` — recent agent decisions and handoffs
 
-- Requirements or analysis: read `.bmad-agents/business-analyst/SKILL.md`
-- Product planning or PRD: read `.bmad-agents/product-owner/SKILL.md`
-- System architecture: read `.bmad-agents/solution-architect/SKILL.md`
-- Enterprise/cloud architecture: read `.bmad-agents/enterprise-architect/SKILL.md`
-- UX/UI design: read `.bmad-agents/ux-designer/SKILL.md`
-- Technical leadership or code review: read `.bmad-agents/tech-lead/SKILL.md`
-- Testing or QA: read `.bmad-agents/tester-qe/SKILL.md`
-- Backend development: read `.bmad-agents/backend-engineer/SKILL.md`
-- Frontend development: read `.bmad-agents/frontend-engineer/SKILL.md`
-- Mobile development: read `.bmad-agents/mobile-engineer/SKILL.md`
-
-Always read `.bmad-agents/BMAD-SHARED-CONTEXT.md` first for the overall workflow
-and artifact structure. All artifacts go in `docs/` per the BMAD directory convention.
-EOF
+Apply all conventions from `team-conventions.md` when writing or reviewing code.
 ```
 
-Claude Code will read the relevant SKILL.md file when you prompt it with a matching task (e.g., "Act as the Solution Architect and design the system architecture").
+### Windsurf — `.windsurfrules`
 
-### Cowork (Claude Desktop App)
+```markdown
+## BMAD Project Context
 
-Cowork has a built-in skill system that auto-triggers skills based on the `description` field in each SKILL.md frontmatter. Skills live inside a managed `.skills/skills/` directory within your workspace.
+At the start of every conversation, read these files:
 
-To install, copy each agent folder into your workspace's skill directory:
+- `.bmad/PROJECT-CONTEXT.md` — vision, goals, stakeholders, constraints
+- `.bmad/tech-stack.md` — technology stack, versions, dependencies
+- `.bmad/team-conventions.md` — code style, naming conventions, patterns
+- `.bmad/domain-glossary.md` — business domain terminology
+- `.bmad/handoff-log.md` — recent agent decisions and handoffs
 
-```bash
-# Cowork manages the .skills/skills/ path within your selected folder
-cp -r bmad-sdlc-agents/business-analyst/ .skills/skills/business-analyst/
-cp -r bmad-sdlc-agents/product-owner/ .skills/skills/product-owner/
-cp -r bmad-sdlc-agents/solution-architect/ .skills/skills/solution-architect/
-cp -r bmad-sdlc-agents/enterprise-architect/ .skills/skills/enterprise-architect/
-cp -r bmad-sdlc-agents/ux-designer/ .skills/skills/ux-designer/
-cp -r bmad-sdlc-agents/tech-lead/ .skills/skills/tech-lead/
-cp -r bmad-sdlc-agents/tester-qe/ .skills/skills/tester-qe/
-cp -r bmad-sdlc-agents/backend-engineer/ .skills/skills/backend-engineer/
-cp -r bmad-sdlc-agents/frontend-engineer/ .skills/skills/frontend-engineer/
-cp -r bmad-sdlc-agents/mobile-engineer/ .skills/skills/mobile-engineer/
+Apply all conventions from `team-conventions.md` when writing or reviewing code.
 ```
 
-Once installed, skills auto-trigger when your prompts match their description keywords.
+### GitHub Copilot — `.github/copilot-instructions.md`
+
+```markdown
+## BMAD Project Context
+
+This project uses the BMAD SDLC framework. At the start of each session, read:
+
+- `.bmad/PROJECT-CONTEXT.md` — vision, goals, stakeholders, constraints
+- `.bmad/tech-stack.md` — technology stack, versions, dependencies
+- `.bmad/team-conventions.md` — code style, naming conventions, patterns
+- `.bmad/domain-glossary.md` — business domain terminology
+- `.bmad/handoff-log.md` — recent agent decisions and handoffs
+
+Always apply the conventions in `team-conventions.md` when generating code.
+```
+
+### Gemini CLI — `GEMINI.md`
+
+```markdown
+## BMAD Project Context
+
+At the start of every conversation, read these files:
+
+- `.bmad/PROJECT-CONTEXT.md` — vision, goals, stakeholders, constraints
+- `.bmad/tech-stack.md` — technology stack, versions, dependencies
+- `.bmad/team-conventions.md` — code style, naming conventions, patterns
+- `.bmad/domain-glossary.md` — business domain terminology
+- `.bmad/handoff-log.md` — recent agent decisions and handoffs
+
+Apply all conventions from `team-conventions.md` when writing or reviewing code.
+```
+
+### OpenCode — `AGENTS.md`
+
+```markdown
+## BMAD Project Context
+
+At the start of every conversation, read these files:
+
+- `.bmad/PROJECT-CONTEXT.md` — vision, goals, stakeholders, constraints
+- `.bmad/tech-stack.md` — technology stack, versions, dependencies
+- `.bmad/team-conventions.md` — code style, naming conventions, patterns
+- `.bmad/domain-glossary.md` — business domain terminology
+- `.bmad/handoff-log.md` — recent agent decisions and handoffs
+
+Apply all conventions from `team-conventions.md` when writing or reviewing code.
+```
+
+### Aider — `.aider.conventions.md`
+
+```markdown
+## BMAD Project Context
+
+At the start of every conversation, read these files:
+
+- `.bmad/PROJECT-CONTEXT.md` — vision, goals, stakeholders, constraints
+- `.bmad/tech-stack.md` — technology stack, versions, dependencies
+- `.bmad/team-conventions.md` — code style, naming conventions, patterns
+- `.bmad/domain-glossary.md` — business domain terminology
+- `.bmad/handoff-log.md` — recent agent decisions and handoffs
+
+Apply all conventions from `team-conventions.md` when writing or reviewing code.
+```
+
+Then reference it in `.aider.conf.yml`:
+```yaml
+conventions-file: .aider.conventions.md
+```
+
+---
+
+## Setup Guide by Tool
+
+### Claude Code (Local CLI)
+
+**Global Install (once)**
+```bash
+bash scripts/install-global.sh
+# → Copies agents/ and shared/ to ~/.claude/skills/
+# → Enables /business-analyst, /product-owner, /solution-architect, etc.
+```
+
+**Project Install (per project)**
+```bash
+bash scripts/scaffold-project.sh "My Project"
+# → Creates .bmad/ with templates
+# → Creates .claude/skills/ with symlinks to global agents
+```
+Add to project root `CLAUDE.md`:
+```markdown
+# BMAD Project Skills
+
+Load project context from `.bmad/` before using agents.
+
+- `/business-analyst` – Use for discovery and analysis
+- `/product-owner` – Use for planning and PRD
+- `/solution-architect` – Use for system design
+- ... (list all 10 agents)
+```
+
+Then: `claude skills add .claude/skills/<agent-name>`
+
+---
+
+### Cowork (Claude Desktop)
+
+**Global Install (once)**
+```bash
+bash scripts/install-global.sh
+# → Copies agents/ and shared/ to ~/.skills/skills/
+# → Agents auto-discoverable via description matching
+```
+
+**Project Install (per project)**
+```bash
+bash scripts/scaffold-project.sh "My Project"
+# → Creates .bmad/ directory
+# → Agents auto-load .bmad/ files when running
+```
+
+Agents dynamically detect and use `.bmad/` files in the project. No additional config needed.
 
 ---
 
 ### Cursor
 
-Cursor uses `.cursor/rules/` for project-level rules and supports `.cursorrules` at the project root.
-
-**Option A: As Cursor Rules (per-agent files)**
-
+**Global Install (once)**
 ```bash
-mkdir -p .cursor/rules/
-
-# Copy each agent as a separate rule file
-for agent in business-analyst product-owner solution-architect \
-  enterprise-architect ux-designer tech-lead tester-qe \
-  backend-engineer frontend-engineer mobile-engineer; do
-  cp "bmad-sdlc-agents/$agent/SKILL.md" ".cursor/rules/$agent.md"
-done
-
-# Copy shared context
-cp bmad-sdlc-agents/BMAD-SHARED-CONTEXT.md .cursor/rules/000-bmad-shared-context.md
+bash scripts/install-global.sh
+# → Copies agents/ and shared/ to ~/.cursor/rules/
 ```
 
-**Option B: As .cursorrules (single file)**
-
-Concatenate all agents into a single `.cursorrules` file at project root. Prefix each section with a clear header so Cursor knows which persona to invoke:
-
+**Project Install (per project)**
 ```bash
-echo "# BMAD SDLC Agent Framework" > .cursorrules
-echo "" >> .cursorrules
-cat bmad-sdlc-agents/BMAD-SHARED-CONTEXT.md >> .cursorrules
-for agent in bmad-sdlc-agents/bmad-*/; do
-  echo -e "\n---\n" >> .cursorrules
-  cat "$agent/SKILL.md" >> .cursorrules
-done
+bash scripts/scaffold-project.sh "My Project"
+# → Creates .cursor/rules/ for project-specific overrides
+# → Creates .bmad/ for shared context
 ```
 
-**Option C: Using Cursor Notepads**
-
-Create a Notepad for each agent in Cursor's sidebar. Copy the SKILL.md content into each notepad. Reference the relevant notepad with `@notepad-name` when prompting.
+In Cursor settings: `Rules` tab → add `.cursor/rules/` to rule paths.
 
 ---
 
-### Windsurf (Codeium)
+### Windsurf
 
-Windsurf uses `.windsurfrules` at the project root or `.windsurf/rules/` directory.
-
+**Global Install (once)**
 ```bash
-# Single file approach
-echo "# BMAD SDLC Agent Framework" > .windsurfrules
-cat bmad-sdlc-agents/BMAD-SHARED-CONTEXT.md >> .windsurfrules
-for agent in bmad-sdlc-agents/bmad-*/; do
-  echo -e "\n---\n" >> .windsurfrules
-  cat "$agent/SKILL.md" >> .windsurfrules
-done
-
-# Or as individual rule files
-mkdir -p .windsurf/rules/
-for agent in bmad-sdlc-agents/bmad-*/; do
-  name=$(basename "$agent")
-  cp "$agent/SKILL.md" ".windsurf/rules/$name.md"
-done
+bash scripts/install-global.sh
+# → Copies agents/ and shared/ to ~/.windsurf/rules/
 ```
+
+**Project Install (per project)**
+```bash
+bash scripts/scaffold-project.sh "My Project"
+# → Creates .windsurf/rules/ or .windsurfrules for project rules
+```
+
+Windsurf auto-discovers rules from `~/.windsurf/rules/` and project `.windsurfrules`.
 
 ---
 
 ### GitHub Copilot
 
-Copilot supports custom instructions via `.github/copilot-instructions.md` and individual prompt files in `.github/prompts/`.
-
-**Option A: Prompt files (recommended — one per agent)**
-
+**Global Install (once)**
 ```bash
-mkdir -p .github/prompts/
-
-for agent in bmad-sdlc-agents/bmad-*/; do
-  name=$(basename "$agent")
-  cp "$agent/SKILL.md" ".github/prompts/$name.prompt.md"
-done
-
-# Shared context as a separate prompt
-cp bmad-sdlc-agents/BMAD-SHARED-CONTEXT.md .github/prompts/bmad-shared-context.prompt.md
+bash scripts/install-global.sh
+# → Copies agents/ to ~/.github/copilot-instructions.md
 ```
 
-Reference agents in Copilot Chat with `#backend-engineer` or by mentioning the prompt file.
-
-**Option B: Single instructions file**
-
+**Project Install (per project)**
 ```bash
-cat bmad-sdlc-agents/BMAD-SHARED-CONTEXT.md > .github/copilot-instructions.md
-for agent in bmad-sdlc-agents/bmad-*/; do
-  echo -e "\n---\n" >> .github/copilot-instructions.md
-  cat "$agent/SKILL.md" >> .github/copilot-instructions.md
-done
+bash scripts/scaffold-project.sh "My Project"
+# → Creates .github/copilot-instructions.md with project agents
 ```
+
+Edit `.github/copilot-instructions.md` and reference `.bmad/` context files.
 
 ---
 
-### OpenAI Codex CLI
+### Gemini CLI
 
-Codex reads project instructions from `AGENTS.md` or `codex.md` at the project root, and supports per-directory `AGENTS.md` files.
-
+**Global Install (once)**
 ```bash
-# Copy shared context as the root instructions
-cp bmad-sdlc-agents/BMAD-SHARED-CONTEXT.md AGENTS.md
-
-# Append agent reference index
-cat >> AGENTS.md << 'EOF'
-
-## Agent Skills
-
-Each BMAD agent skill is in `.bmad-agents/<agent-name>/SKILL.md`.
-Read the relevant SKILL.md before performing that agent's role.
-EOF
-
-# Copy agents for reference
-cp -r bmad-sdlc-agents/ .bmad-agents/
+bash scripts/install-global.sh
+# → Copies agents/ to ~/.gemini/GEMINI.md
 ```
 
-Alternatively, create an `agents/` directory with one file per agent:
-
+**Project Install (per project)**
 ```bash
-mkdir -p agents/
-for agent in bmad-sdlc-agents/bmad-*/; do
-  name=$(basename "$agent")
-  cp "$agent/SKILL.md" "agents/$name.md"
-done
-```
-
----
-
-### Google Gemini CLI
-
-Gemini CLI reads instructions from `GEMINI.md` at the project root and supports `.gemini/` configuration.
-
-```bash
-# Create GEMINI.md with BMAD context
-cp bmad-sdlc-agents/BMAD-SHARED-CONTEXT.md GEMINI.md
-
-cat >> GEMINI.md << 'EOF'
-
-## BMAD Agent Skills
-
-Agent skill definitions are in `.bmad-agents/`. Read the relevant SKILL.md
-before performing that role. Available agents:
-
-- Business Analyst: `.bmad-agents/business-analyst/SKILL.md`
-- Product Owner: `.bmad-agents/product-owner/SKILL.md`
-- Solution Architect: `.bmad-agents/solution-architect/SKILL.md`
-- Enterprise Architect: `.bmad-agents/enterprise-architect/SKILL.md`
-- UX/UI Designer: `.bmad-agents/ux-designer/SKILL.md`
-- Tech Lead: `.bmad-agents/tech-lead/SKILL.md`
-- Tester & QE: `.bmad-agents/tester-qe/SKILL.md`
-- Backend Engineer: `.bmad-agents/backend-engineer/SKILL.md`
-- Frontend Engineer: `.bmad-agents/frontend-engineer/SKILL.md`
-- Mobile Engineer: `.bmad-agents/mobile-engineer/SKILL.md`
-EOF
-
-cp -r bmad-sdlc-agents/ .bmad-agents/
+bash scripts/scaffold-project.sh "My Project"
+# → Creates GEMINI.md at project root linking to .bmad/
 ```
 
 ---
 
 ### OpenCode
 
-OpenCode reads instructions from `OPENCODE.md` at the project root.
-
+**Global Install (once)**
 ```bash
-cp bmad-sdlc-agents/BMAD-SHARED-CONTEXT.md OPENCODE.md
+bash scripts/install-global.sh
+# → Copies agents/ to ~/.opencode/instructions.md
+```
 
-cat >> OPENCODE.md << 'EOF'
-
-## BMAD Agent Skills
-
-Agent definitions are in `.bmad-agents/`. Read the relevant SKILL.md for each role.
-See the agent roster table above for the full list.
-EOF
-
-cp -r bmad-sdlc-agents/ .bmad-agents/
+**Project Install (per project)**
+```bash
+bash scripts/scaffold-project.sh "My Project"
+# → Creates AGENTS.md at project root with agent descriptions
 ```
 
 ---
 
 ### Aider
 
-Aider uses `--read` flags or `.aider.conf.yml` to load reference files.
-
+**Global Install (once)**
 ```bash
-# In .aider.conf.yml
-cat > .aider.conf.yml << 'EOF'
-read:
-  - .bmad-agents/BMAD-SHARED-CONTEXT.md
-  # Add specific agents as needed:
-  # - .bmad-agents/backend-engineer/SKILL.md
-  # - .bmad-agents/tech-lead/SKILL.md
-EOF
-
-cp -r bmad-sdlc-agents/ .bmad-agents/
+bash scripts/install-global.sh
+# → Copies agents/ to ~/.aider.conventions.md
 ```
 
-Or load agents dynamically per session:
-
+**Project Install (per project)**
 ```bash
-aider --read .bmad-agents/backend-engineer/SKILL.md src/
+bash scripts/scaffold-project.sh "My Project"
+# → Creates .aider.conf.yml with agent configurations
+# → Creates docs/conventions/ with style guides
 ```
 
 ---
 
-### Cline (VS Code Extension)
+## Tool Install Paths Reference
 
-Cline reads `.clinerules` at the project root or custom instructions in its settings.
-
-```bash
-# As .clinerules
-echo "# BMAD SDLC Agent Framework" > .clinerules
-cat bmad-sdlc-agents/BMAD-SHARED-CONTEXT.md >> .clinerules
-for agent in bmad-sdlc-agents/bmad-*/; do
-  echo -e "\n---\n" >> .clinerules
-  cat "$agent/SKILL.md" >> .clinerules
-done
-
-# Or copy agents and reference from .clinerules
-cp -r bmad-sdlc-agents/ .bmad-agents/
-```
+| Tool | Global Path | Project Path |
+|------|-------------|--------------|
+| Claude Code | `~/.claude/skills/` | `.claude/skills/` |
+| Cowork | `~/.skills/skills/` | `.bmad/` (auto-detected) |
+| Cursor | `~/.cursor/rules/` | `.cursor/rules/` |
+| Windsurf | `~/.windsurf/rules/` | `.windsurfrules` |
+| GitHub Copilot | `~/.github/copilot-instructions.md` | `.github/copilot-instructions.md` |
+| Gemini CLI | `~/.gemini/GEMINI.md` | `GEMINI.md` |
+| OpenCode | `~/.opencode/instructions.md` | `AGENTS.md` |
+| Aider | `~/.aider.conventions.md` | `.aider.conf.yml` |
 
 ---
 
-### Any Other AI Coding Tool
+## Project Scaffold Files
 
-The pattern works universally. Every AI coder has some way to inject custom instructions:
+After running `scaffold-project.sh`, the `.bmad/` directory contains:
 
-1. **Copy** the `bmad-sdlc-agents/` directory into your project (as `.bmad-agents/` or similar)
-2. **Reference** the SKILL.md files from your tool's instructions/rules file
-3. **Instruct** the AI to read the relevant SKILL.md before performing a role
+| File | When to Fill In | Purpose |
+|------|-----------------|---------|
+| `PROJECT-CONTEXT.md` | Before first sprint | Project vision, goals, stakeholders, constraints, timeline |
+| `tech-stack.md` | Before architecture decisions | Languages, frameworks, databases, cloud platform, CI/CD |
+| `team-conventions.md` | Before first code review | Code style, naming conventions, architecture patterns, PR process |
+| `domain-glossary.md` | During analysis phase | Business domain terminology, entities, relationships |
+| `handoff-log.md` | Ongoing | Record of work handed off between agents or to humans |
 
-The key instruction to include in whatever config file your tool uses:
-
-```
-This project uses BMAD method for structured SDLC. Agent skill definitions
-are in `.bmad-agents/`. Before performing any SDLC role, read the matching
-SKILL.md file and follow its persona, workflow, and artifact conventions.
-Always read BMAD-SHARED-CONTEXT.md first for the overall framework.
-```
+**Tip:** Fill `PROJECT-CONTEXT.md` and `tech-stack.md` first. Other files populate based on these.
 
 ---
 
-## How to Use the Agents in Practice
+## Sample Prompts
 
-### Agent Handoff Flow
+### Using a Single Agent
 
-Each agent reads artifacts from the previous phase and produces artifacts for the next:
-
+**Get a project brief from Business Analyst:**
 ```
-BA creates:     docs/project-brief.md
-                    ↓
-PO creates:     docs/prd.md
-                    ↓
-SA creates:     docs/architecture/solution-architecture.md
-EA creates:     docs/architecture/enterprise-architecture.md
-UX creates:     docs/ux/design-system.md, wireframes, ui-spec
-                    ↓
-Tech Lead:      docs/stories/epic-N/story-N.N.md (refined)
-                    ↓
-Engineers:      src/ (implementation)
-QE:             docs/test-plans/ + tests/
+Load the skill from agents/business-analyst/SKILL.md. Using .bmad/PROJECT-CONTEXT.md
+and shared/BMAD-SHARED-CONTEXT.md, generate a concise project brief that includes
+stakeholders, success criteria, and constraints.
 ```
 
-### Collaborative Iteration
+**Ask Solution Architect for system design:**
+```
+Load the skill from agents/solution-architect/SKILL.md. Given the PRD in docs/stories/
+and tech-stack.md, propose a system architecture with service boundaries, API contracts,
+and data models.
+```
 
-Agents can loop back at any point. For example:
+**Request UX/UI wireframes:**
+```
+Load the skill from agents/ux-designer/SKILL.md. Based on user personas in docs/ux/
+and the PRD in docs/stories/, create wireframes and a design spec for the checkout flow.
+```
 
-- Solution Architect realizes a PRD requirement is ambiguous → asks Product Owner to clarify
-- Tech Lead spots hidden complexity in a story → sends back to Solution Architect
-- QE finds a gap in test coverage → requests UX/UI Designer to clarify interaction spec
-- Backend Engineer discovers an API contract issue → loops back to Solution Architect
+**Backend Engineer implementation plan:**
+```
+Load the skill from agents/backend-engineer/SKILL.md. Given the architecture decisions
+in docs/architecture/ and tech-stack.md, create a sprint-level implementation plan for
+the payment service.
+```
 
-All handoffs are logged in `docs/.bmad/handoff-log.md`.
+**QE test strategy:**
+```
+Load the skill from agents/tester-qe/SKILL.md. Using the stories in docs/stories/
+and tech-stack.md, propose a comprehensive test strategy with test types, coverage
+goals, and security testing approach.
+```
+
+### Squad Mode: All Agents Together
+
+See the **Squad Prompt** section below to run all 10 agents in parallel.
 
 ---
 
-## Sample Prompts — Full SDLC Walkthrough
+## Squad Prompt
 
-Below is a complete sequence of prompts that walks a project through all four BMAD phases, invokes every agent, and includes iterative review loops. Copy these into your AI coding tool one at a time. Each prompt builds on the artifacts produced by the previous one.
-
-The example project is an **Enterprise Order Management System** — a microservices-based platform handling order creation, payment processing, inventory management, and fulfillment tracking.
-
-### Phase 1: Analysis
-
-#### Prompt 1 — Business Analyst: Create the Project Brief
+Use this mega-prompt to coordinate all agents in a single session:
 
 ```
-Read `.bmad-agents/BMAD-SHARED-CONTEXT.md` and `.bmad-agents/business-analyst/SKILL.md`.
-
-Act as the BMAD Business Analyst.
-
-We need to build an Enterprise Order Management System (OMS) for a mid-size
-e-commerce company processing ~50,000 orders/day. The current monolithic system
-is hitting scaling limits, has no real-time inventory visibility, and the
-checkout failure rate is 12%.
-
-Key stakeholders: VP of Engineering, Head of Product, Operations Manager,
-Customer Support Lead.
-
-Create a comprehensive project brief at `docs/project-brief.md` using the
-template from `templates/project-brief-template.md`. Include:
-- Problem statement with quantified pain points
-- Stakeholder analysis with interest/influence mapping
-- In-scope: order lifecycle, payment processing, inventory sync, fulfillment tracking
-- Out-of-scope: warehouse robotics, supplier portal (phase 2)
-- High-level functional and non-functional requirements
-- Risk assessment
-- Success criteria with measurable KPIs
-
-Also initialize `docs/.bmad/handoff-log.md` with the first entry.
-```
-
-### Phase 2: Planning
-
-#### Prompt 2 — Product Owner: Create the PRD
-
-```
-Read `.bmad-agents/product-owner/SKILL.md`.
-
-Act as the BMAD Product Owner. Read `docs/project-brief.md` produced by the BA.
-
-Create `docs/prd.md` using `templates/prd-template.md`. Organize requirements into
-epics and user stories:
-
-Epic 1 — Order Lifecycle Management (Must Have)
-Epic 2 — Payment Processing & Reconciliation (Must Have)
-Epic 3 — Real-Time Inventory Sync (Must Have)
-Epic 4 — Fulfillment Tracking & Notifications (Should Have)
-Epic 5 — Analytics Dashboard (Could Have)
-
-For each epic, write 3-5 user stories with Gherkin acceptance criteria.
-Prioritize using RICE framework. Define NFRs for:
-- Performance: <200ms p95 API response, >1000 RPS
-- Availability: 99.95% uptime SLA
-- Security: PCI-DSS for payments, GDPR for customer data
-- Scalability: handle 5x traffic spikes during flash sales
-
-Include a traceability matrix mapping every requirement back to the project brief.
-Log the handoff in `docs/.bmad/handoff-log.md`.
-```
-
-#### Prompt 2a — Product Owner: Alignment Check (iterative loop)
-
-```
-Act as the BMAD Product Owner.
-
-Review `docs/project-brief.md` and `docs/prd.md` side by side.
-Run the alignment checklist:
-- Does every project brief requirement appear in the PRD?
-- Are there PRD items that aren't traceable to the brief?
-- Are priorities consistent between documents?
-- Are NFR targets realistic given the brief's constraints?
-
-If you find misalignment, fix it in the PRD and note what changed in the
-changelog section. Update the handoff log.
-```
-
-### Phase 3: Solutioning
-
-#### Prompt 3 — Solution Architect: Design the System
-
-```
-Read `.bmad-agents/solution-architect/SKILL.md`.
-
-Act as the BMAD Solution Architect. Read `docs/prd.md`.
-
-Design the solution architecture for the Order Management System. Create
-`docs/architecture/solution-architecture.md` including:
-
-1. Service decomposition — identify microservices (Order Service, Payment Service,
-   Inventory Service, Fulfillment Service, Notification Service, API Gateway)
-2. API contracts — define key endpoints for each service (REST for sync,
-   AsyncAPI for events)
-3. Data model — entity diagrams for each service's bounded context
-4. Integration patterns — event-driven with Kafka for inter-service communication,
-   saga pattern for distributed transactions (order→payment→inventory)
-5. Technology stack selection with justification
-6. Mermaid diagrams: component diagram, sequence diagram for order placement flow,
-   data flow diagram
-
-Create ADRs for at least 3 key decisions:
-- `docs/architecture/adr/ADR-001-event-driven-architecture.md`
-- `docs/architecture/adr/ADR-002-database-per-service.md`
-- `docs/architecture/adr/ADR-003-saga-pattern-for-distributed-transactions.md`
-
-Use the ADR template from `templates/adr-template.md`.
-Log the handoff in `docs/.bmad/handoff-log.md`.
-```
-
-#### Prompt 4 — Enterprise Architect: Cloud & Infrastructure
-
-```
-Read `.bmad-agents/enterprise-architect/SKILL.md`.
-
-Act as the BMAD Enterprise Architect. Read `docs/prd.md` and
-`docs/architecture/solution-architecture.md`.
-
-Create `docs/architecture/enterprise-architecture.md` covering:
-
-1. Cloud infrastructure on AWS — EKS for container orchestration, RDS/Aurora
-   for databases, MSK for Kafka, ElastiCache for Redis
-2. Multi-environment strategy: dev, staging, prod with IaC (Terraform)
-3. CI/CD pipeline: GitHub Actions → build → test → staging → canary deploy → prod
-4. Observability stack: Prometheus + Grafana for metrics, ELK for logs,
-   Jaeger for distributed tracing, PagerDuty for alerting
-5. Security architecture: VPC layout, IAM roles, secrets management (AWS Secrets
-   Manager), WAF, network policies
-6. Compliance: PCI-DSS scope isolation for payment service, GDPR data handling
-7. Disaster recovery: multi-AZ deployment, RTO < 15min, RPO < 1min
-8. Cost estimation and FinOps tagging strategy
-
-Create `docs/architecture/adr/ADR-004-aws-eks-container-orchestration.md`.
-Log the handoff.
-```
-
-#### Prompt 5 — UX/UI Designer: Design the Experience
-
-```
-Read `.bmad-agents/ux-designer/SKILL.md`.
-
-Act as the BMAD UX/UI Designer. Read `docs/prd.md` and
-`docs/architecture/solution-architecture.md`.
-
-Create the following UX artifacts:
-
-1. `docs/ux/personas.md` — at least 3 personas: Operations Manager (power user),
-   Customer Support Agent (daily user), System Administrator (config user)
-2. `docs/ux/user-journeys.md` — map the critical flows:
-   - Order placement (happy path + payment failure + inventory conflict)
-   - Order tracking and status updates
-   - Bulk order management for operations
-   Include Mermaid task flow diagrams for each journey.
-3. `docs/ux/information-architecture.md` — navigation structure for the admin dashboard
-4. `docs/ux/design-system.md` — design tokens (colors, typography, spacing, elevation)
-   and component library (buttons, forms, tables, feedback components)
-5. `docs/ux/ui-spec.md` — detailed spec for the Order Dashboard screen including:
-   - All screen states (loading, empty, populated, error, partial)
-   - Interaction specs with animations and feedback
-   - Responsive breakpoints
-   - Keyboard shortcuts
-   - Error state mapping for all HTTP status codes
-6. `docs/ux/accessibility-audit.md` — WCAG 2.2 AA checklist for the dashboard
-
-Log the handoff.
-```
-
-#### Prompt 5a — Solution Architect ↔ UX/UI Designer: Cross-Review (iterative loop)
-
-```
-Act as the BMAD Solution Architect.
-
-Review `docs/ux/ui-spec.md` and `docs/ux/design-system.md` against the API
-contracts in `docs/architecture/solution-architecture.md`.
-
-Check for:
-- Does the UI spec reference API endpoints that actually exist?
-- Are the data fields in the UI spec consistent with the data model?
-- Are real-time features (order status updates) supported by the event architecture?
-- Are there UI interactions that require APIs not yet designed?
-
-If you find gaps, update the solution architecture to add missing endpoints or
-event streams, and note what the UX/UI Designer should update. Log the feedback
-loop in the handoff log.
-```
-
-#### Prompt 6 — Tech Lead: Refine Stories
-
-```
-Read `.bmad-agents/tech-lead/SKILL.md`.
-
-Act as the BMAD Tech Lead. Read all artifacts:
-- `docs/prd.md`
-- `docs/architecture/solution-architecture.md`
-- `docs/architecture/enterprise-architecture.md`
-- `docs/ux/ui-spec.md`
-
-Create refined implementation stories for Epic 1 (Order Lifecycle Management).
-For each story, use `templates/story-template.md` and save to
-`docs/stories/epic-1/`:
-
-- `story-1.1.md` — Order Service: Create Order API (Backend)
-- `story-1.2.md` — Order Service: Order State Machine (Backend)
-- `story-1.3.md` — Order Dashboard: Order List View (Frontend)
-- `story-1.4.md` — Order Dashboard: Order Detail View (Frontend)
-- `story-1.5.md` — Order Events: Publish order lifecycle events to Kafka (Backend)
-- `story-1.6.md` — Order Notifications: Mobile push for order status (Mobile)
-
-Each story must include:
-- Gherkin acceptance criteria
-- Technical implementation notes referencing the architecture
-- API changes and data changes
-- Security considerations
-- Dependencies on other stories
-- Definition of Done checklist
-- Test case stubs
-
-Also create `docs/reviews/code-review-checklist.md` with standards for this project.
-Log the handoff.
-```
-
-#### Prompt 6a — Tech Lead: Risk & Complexity Review (iterative loop)
-
-```
-Act as the BMAD Tech Lead.
-
-Review all stories in `docs/stories/epic-1/`. For each story:
-1. Assess technical complexity (S/M/L/XL) — adjust if your estimate differs
-   from the original
-2. Identify hidden dependencies not captured in the dependency table
-3. Flag stories that need a technical spike before implementation
-4. Check that acceptance criteria are testable and unambiguous
-5. Verify that the Definition of Done is achievable
-
-If you find issues, update the story files directly and add a note in the
-changelog section explaining what changed and why. Create spike stories if needed.
-Update the handoff log.
-```
-
-### Phase 4: Implementation
-
-#### Prompt 7 — Backend Engineer: Implement Order Service
-
-```
-Read `.bmad-agents/backend-engineer/SKILL.md`.
-
-Act as the BMAD Backend Engineer. Read:
-- `docs/stories/epic-1/story-1.1.md` (Create Order API)
-- `docs/stories/epic-1/story-1.2.md` (Order State Machine)
-- `docs/architecture/solution-architecture.md`
-
-Implement the Order Service:
-1. Project scaffolding with the tech stack from the architecture doc
-2. Create Order API — POST /api/v1/orders with request validation,
-   idempotency key support, and proper error responses
-3. Order state machine — states: CREATED → PAYMENT_PENDING → PAID →
-   FULFILLMENT_PENDING → SHIPPED → DELIVERED / CANCELLED
-4. Database schema and migrations
-5. Unit tests for the state machine and API validation
-6. Integration tests for the API endpoints
-7. Structured logging and health check endpoint
-
-Follow the coding standards from `docs/reviews/code-review-checklist.md`.
-When done, mark the Definition of Done items as complete in the story files.
-```
-
-#### Prompt 8 — Frontend Engineer: Implement Order Dashboard
-
-```
-Read `.bmad-agents/frontend-engineer/SKILL.md`.
-
-Act as the BMAD Frontend Engineer. Read:
-- `docs/stories/epic-1/story-1.3.md` (Order List View)
-- `docs/ux/ui-spec.md`
-- `docs/ux/design-system.md`
-
-Implement the Order Dashboard:
-1. Project setup with React + TypeScript following the architecture doc
-2. Design system tokens as CSS custom properties / Tailwind config
-3. Order List View component:
-   - Sortable, filterable, paginated table
-   - All 5 screen states: loading (skeleton), empty, populated, error, partial
-   - Real-time status badge updates
-   - Bulk selection and actions
-4. Responsive layout for desktop, tablet, mobile breakpoints per UI spec
-5. Keyboard shortcuts from the UI spec (/ for search, Esc to close)
-6. Unit tests for components and state management
-7. Accessibility: ARIA labels, focus management, screen reader testing notes
-
-Apply the design tokens and component specs from `docs/ux/design-system.md`.
-Follow coding standards from `docs/reviews/code-review-checklist.md`.
-Update Definition of Done in the story file.
-```
-
-#### Prompt 9 — Mobile Engineer: Implement Order Notifications
-
-```
-Read `.bmad-agents/mobile-engineer/SKILL.md`.
-
-Act as the BMAD Mobile Engineer. Read:
-- `docs/stories/epic-1/story-1.6.md` (Mobile push for order status)
-- `docs/ux/ui-spec.md`
-- `docs/architecture/solution-architecture.md`
-
-Implement mobile order status notifications:
-1. Push notification service integration (FCM for Android, APNs for iOS)
-2. Notification payload handling with deep links to order detail
-3. In-app notification center with read/unread state
-4. Offline queue — store notifications locally when offline, sync on reconnect
-5. Platform-specific UI following the design system tokens
-6. Unit tests for notification parsing and offline queue
-7. Integration test for push notification receipt
-
-Handle edge cases: notification permissions denied, background/foreground state,
-notification grouping for multiple order updates.
-Update Definition of Done in the story file.
-```
-
-#### Prompt 10 — Tester & QE: Test Strategy and Execution
-
-```
-Read `.bmad-agents/tester-qe/SKILL.md`.
-
-Act as the BMAD Tester & QE. Read all artifacts:
-- `docs/prd.md`
-- `docs/architecture/solution-architecture.md`
-- `docs/ux/ui-spec.md`
-- `docs/stories/epic-1/` (all stories)
-
-Create the test strategy and execute validation:
-
-1. Create `docs/test-plans/test-strategy.md` using `templates/test-strategy-template.md`
-2. Create test cases in `docs/test-plans/test-cases/`:
-   - `tc-order-api.md` — API contract tests for Order Service
-   - `tc-order-state-machine.md` — State transition validation (all valid/invalid transitions)
-   - `tc-order-dashboard.md` — UI test cases matching every UI spec screen state
-   - `tc-order-notifications.md` — Push notification delivery and deep link tests
-   - `tc-integration.md` — End-to-end order flow (create → pay → fulfill → notify)
-   - `tc-performance.md` — Load test scenarios (1000 RPS, flash sale 5x spike)
-   - `tc-security.md` — OWASP Top 10 checks, PCI-DSS scope validation
-3. Create the traceability matrix: PRD requirement → Story → Test Case
-4. Run available unit and integration tests, report results
-5. Flag any gaps: stories without test coverage, UI states without test cases,
-   API endpoints without contract tests
-
-Update the handoff log.
-```
-
-### Review Loops — Iterate Until Green
-
-#### Prompt 11 — Tech Lead: Code Review
-
-```
-Act as the BMAD Tech Lead.
-
-Review all implemented code against:
-- `docs/reviews/code-review-checklist.md`
-- `docs/architecture/solution-architecture.md` (architecture alignment)
-- `docs/stories/epic-1/` (acceptance criteria met?)
-
-For each component (Order Service, Order Dashboard, Mobile Notifications):
-1. Check architecture alignment — does the implementation match the ADRs?
-2. Check coding standards — naming, error handling, logging, test coverage
-3. Check security — input validation, auth, no secrets in code
-4. Check the Definition of Done in each story file — are all items checked?
-5. Note any technical debt introduced
-
-If you find issues:
-- Create specific, actionable feedback with file paths and line references
-- Categorize as: MUST FIX (blocks merge), SHOULD FIX (improves quality),
-  CONSIDER (nice to have)
-- Send feedback back to the relevant engineer agent
-
-Log the review in `docs/.bmad/handoff-log.md`.
-```
-
-#### Prompt 12 — Fix Issues and Re-Test (iterative loop)
-
-```
-Read the Tech Lead's review feedback from the handoff log.
-
-Act as the relevant engineer (Backend/Frontend/Mobile — based on the feedback).
-
-Fix all MUST FIX and SHOULD FIX issues identified in the code review.
-For each fix:
-1. Implement the change
-2. Add or update tests to cover the fix
-3. Run tests and confirm they pass
-4. Update the story's Definition of Done
-
-When all fixes are done, hand back to the Tech Lead for re-review.
-```
-
-#### Prompt 13 — QE: Final Validation Pass
-
-```
-Act as the BMAD Tester & QE.
-
-Run the complete test suite and validate:
-1. All unit tests pass
-2. All integration tests pass
-3. API contract tests match the spec in `docs/architecture/solution-architecture.md`
-4. UI tests cover every screen state from `docs/ux/ui-spec.md`
-5. Performance targets from the PRD are met (run load test if possible)
-6. Security checklist from `docs/test-plans/test-strategy.md` is green
-7. Accessibility audit from `docs/ux/accessibility-audit.md` is addressed
-
-If ANY tests fail:
-- Create a defect report with: severity, steps to reproduce, expected vs actual,
-  which story/requirement is affected
-- Route back to the relevant engineer with specific fix instructions
-- This prompt should be RE-RUN after fixes until all tests pass
-
-If ALL tests pass:
-- Update test results in the test plan
-- Mark the epic as QE-approved in the handoff log
-- Summarize coverage: X tests, Y% pass rate, Z requirements fully covered
-```
-
-#### Prompt 14 — Tech Lead: Release Readiness
-
-```
-Act as the BMAD Tech Lead.
-
-Perform the final release readiness check:
-1. All stories in Epic 1 have Definition of Done fully checked
-2. All code reviews are approved (no outstanding MUST FIX items)
-3. All QE tests pass
-4. Architecture alignment confirmed
-5. No critical or high-severity defects open
-6. Documentation is complete:
-   - API docs match implementation
-   - Architecture docs reflect actual decisions
-   - Deployment runbook exists
-
-Produce a release summary in `docs/reviews/release-readiness-epic-1.md`:
-- Features included
-- Test results summary
-- Known issues and workarounds
-- Deployment steps
-- Rollback plan
-- Monitoring checklist for post-deploy
-
-If NOT ready: list specific blockers and which agent needs to act.
-If READY: approve the release and log it in the handoff log.
-```
-
-### Iteration Pattern Summary
-
-The prompts above are designed to loop. The general pattern is:
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                                                         │
-│   Phase 1-3: Create artifacts                           │
-│       ↓                                                 │
-│   Cross-review: Agents check each other's work          │
-│       ↓                                                 │
-│   Phase 4: Implement from stories                       │
-│       ↓                                                 │
-│   Tech Lead: Code review                                │
-│       ↓                                                 │
-│   ┌─ Issues found? ──→ Engineer fixes ──→ Re-review ─┐  │
-│   │                                                   │  │
-│   └─ No issues ──→ QE: Run all tests                  │  │
-│                        ↓                              │  │
-│                   ┌─ Tests fail? ──→ Engineer fixes ──┘  │
-│                   │                                      │
-│                   └─ All pass ──→ Tech Lead: Release ✓   │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
-```
-
-Re-run Prompt 12 (fix issues) and Prompt 13 (QE validation) as many times as
-needed until all tests pass and the Tech Lead approves the release.
-
----
-
-## Squad Prompt — Full Agent Team on One Epic
-
-The prompt below orchestrates **all 10 agents** to execute a complete epic from
-analysis through passing tests in a single conversation. It is designed to loop
-autonomously: agents hand off artifacts, cross-review, implement, test, fix, and
-re-test until the Tech Lead signs off on release readiness.
-
-Copy this prompt into your AI coding tool. Replace the `[PLACEHOLDERS]` with your
-project details.
-
-### The Squad Prompt
-
-````
-You are an AI team executing the BMAD (Breakthrough Method of Agile AI-Driven
-Development) framework. You will assume the role of 10 specialized agents in
-sequence, producing real artifacts and working code. Each agent reads the
-previous agent's output before starting.
-
-Read `.bmad-agents/BMAD-SHARED-CONTEXT.md` first for the shared framework.
-Before assuming each role, read that agent's SKILL.md from `.bmad-agents/`.
+# BMAD Squad: Full Project Analysis & Design
+
+You are a squad of 10 specialized AI agents collaborating on a software development project.
+Load each agent's skill from the agents/ directory, then coordinate their work on the
+following phases:
+
+## Agent Skills
+Load these in order:
+
+1. agents/business-analyst/SKILL.md
+2. agents/product-owner/SKILL.md
+3. agents/solution-architect/SKILL.md
+4. agents/enterprise-architect/SKILL.md
+5. agents/ux-designer/SKILL.md
+6. agents/tech-lead/SKILL.md
+7. agents/tester-qe/SKILL.md
+8. agents/backend-engineer/SKILL.md
+9. agents/frontend-engineer/SKILL.md
+10. agents/mobile-engineer/SKILL.md
 
 ## Project Context
+Load project context in this order:
+1. shared/BMAD-SHARED-CONTEXT.md (company baseline)
+2. .bmad/PROJECT-CONTEXT.md (project vision)
+3. .bmad/tech-stack.md (technology choices)
+4. .bmad/team-conventions.md (project rules)
 
-- **Project:** [PROJECT NAME — e.g., Enterprise Order Management System]
-- **Description:** [1-2 sentences — e.g., Microservices platform handling order
-  creation, payment processing, inventory management, and fulfillment tracking
-  for an e-commerce company processing ~50,000 orders/day]
-- **Epic to implement:** [EPIC NAME — e.g., Epic 1: Order Lifecycle Management]
-- **Tech stack preferences (optional):** [e.g., "Team knows Java/Kotlin and React"
-  or "Must run on AWS" or "Self-hosted auth required" or "Let architects decide
-  using references/technology-radar.md"]
-- **Key constraints:** [e.g., PCI-DSS for payments, GDPR data sovereignty,
-  99.95% uptime SLA, <200ms p95 API latency, must handle 5x traffic spikes,
-  multi-cloud portability required]
+## Analysis Phase (Business Analyst → Product Owner)
+**Business Analyst:**
+- Review .bmad/PROJECT-CONTEXT.md
+- Identify stakeholders, constraints, risks
+- Generate project brief
 
-## Execution Plan — Follow These Phases In Order
+**Product Owner:**
+- Take Business Analyst brief
+- Create PRD with user stories
+- Prioritize backlog
+- Link to docs/stories/ template
 
-### PHASE 1: ANALYSIS (Business Analyst)
-Read `.bmad-agents/business-analyst/SKILL.md`. Act as the Business Analyst.
-- Create `docs/project-brief.md` using `templates/project-brief-template.md`
-- Include: problem statement, stakeholder analysis, scope, requirements, risks, success KPIs
-- Initialize `docs/.bmad/handoff-log.md`
-- When done, state: "BA COMPLETE — handing off to Product Owner"
+## Solutioning Phase (Solution Architect → UX Designer → Enterprise Architect)
+**Solution Architect:**
+- Take PRD and tech-stack.md
+- Propose system architecture
+- Define API contracts, data models
+- Create ADRs (Architecture Decision Records)
+- Output to docs/architecture/
 
-### PHASE 2: PLANNING (Product Owner)
-Read `.bmad-agents/product-owner/SKILL.md`. Act as the Product Owner.
-- Read `docs/project-brief.md`
-- Create `docs/prd.md` using `templates/prd-template.md`
-- Write user stories with Gherkin acceptance criteria for the target epic
-- Prioritize with RICE framework, define NFRs
-- Include traceability matrix back to the project brief
-- Run alignment check: verify every brief requirement appears in PRD, no orphaned items
-- If misalignment found, fix the PRD and note changes in its changelog
-- Log handoff
-- When done, state: "PO COMPLETE — handing off to Solutioning phase"
+**UX Designer:**
+- Work from PRD and user personas
+- Create wireframes, user journeys
+- Define design system
+- Output to docs/ux/
 
-### PHASE 3: SOLUTIONING (Solution Architect → Enterprise Architect → UX/UI Designer)
+**Enterprise Architect:**
+- Review Solution Architect proposal
+- Propose cloud infrastructure, CI/CD, monitoring
+- Address compliance, cost optimization
+- Output to docs/architecture/
 
-**Step 3a: Solution Architect**
-Read `.bmad-agents/solution-architect/SKILL.md` AND `references/technology-radar.md`.
-Act as the Solution Architect.
-- Read `docs/prd.md`
-- Create `docs/architecture/solution-architecture.md`
-- Include: service decomposition, API contracts, data models, integration patterns,
-  Mermaid diagrams (component, sequence, data flow)
-- **Select technology stack using the Technology Radar decision frameworks** —
-  evaluate backend languages, databases, messaging, API gateway, auth, design
-  patterns, and workflow engines against project constraints. Use the weighted
-  decision matrix template. Document what you chose AND what you rejected.
-- Create at least 2 ADRs in `docs/architecture/adr/` using `templates/adr-template.md`
-  (include one for the primary technology selection decisions)
-- Log handoff
+## Implementation Phase (Tech Lead → Backend → Frontend → Mobile)
+**Tech Lead:**
+- Coordinate backend, frontend, mobile teams
+- Identify integration points
+- Flag risks, dependencies
+- Review for architectural consistency
 
-**Step 3b: Enterprise Architect**
-Read `.bmad-agents/enterprise-architect/SKILL.md` AND `references/technology-radar.md`.
-Act as the Enterprise Architect.
-- Read `docs/prd.md` and `docs/architecture/solution-architecture.md`
-- **Validate the Solution Architect's technology choices** against enterprise
-  context (compliance, ops maturity, cost, multi-cloud strategy)
-- Create `docs/architecture/enterprise-architecture.md`
-- Include: cloud infrastructure, CI/CD pipeline, observability stack, security
-  architecture, compliance mapping, DR/BCP, cost estimation
-- **Select infrastructure-level technologies** using the Technology Radar:
-  API gateway, auth provider, data lake/BI, monitoring stack. Document rationale.
-- Log handoff
+**Backend Engineer:**
+- Take architecture ADRs and tech-stack.md
+- Design API endpoints, data access layer
+- Event-driven service design
+- Create implementation plan
+- Output to docs/architecture/
 
-**Step 3c: UX/UI Designer**
-Read `.bmad-agents/ux-designer/SKILL.md`. Act as the UX/UI Designer.
-- Read `docs/prd.md` and `docs/architecture/solution-architecture.md`
-- Create: `docs/ux/personas.md`, `docs/ux/user-journeys.md`,
-  `docs/ux/information-architecture.md`, `docs/ux/design-system.md`,
-  `docs/ux/ui-spec.md`, `docs/ux/accessibility-audit.md`
-- Include all screen states, interaction specs, responsive breakpoints, error mapping
-- Log handoff
+**Frontend Engineer:**
+- Take UX wireframes and tech-stack.md
+- Design component architecture
+- State management approach
+- Accessibility strategy
+- Output to docs/ux/
 
-**Step 3d: Cross-Review (Solution Architect ↔ UX/UI Designer)**
-Act as the Solution Architect again. Review UX artifacts against the API contracts:
-- Verify UI spec references existing endpoints and data fields
-- Verify real-time features are supported by the event architecture
-- If gaps found: update solution architecture AND note required UX updates
-- Log the feedback loop in the handoff log
+**Mobile Engineer:**
+- Take UX wireframes and tech-stack.md
+- Native vs. cross-platform decision
+- Mobile architecture
+- Device/network constraints
+- Output to docs/ux/
 
-**Step 3e: Tech Lead — Story Refinement**
-Read `.bmad-agents/tech-lead/SKILL.md`. Act as the Tech Lead.
-- Read all Phase 2-3 artifacts
-- Create implementation stories in `docs/stories/` using `templates/story-template.md`
-- Each story must include: Gherkin acceptance criteria, technical implementation notes,
-  API/data changes, security considerations, dependencies, Definition of Done, test stubs
-- Create `docs/reviews/code-review-checklist.md`
-- Run risk & complexity review on all stories:
-  - Assess complexity (S/M/L/XL), flag hidden dependencies, identify spike needs,
-    verify acceptance criteria are testable
-  - Update stories if issues found
-- Log handoff
-- When done, state: "SOLUTIONING COMPLETE — handing off to Implementation"
+## Quality & Testing (QE)
+**Tester & QE:**
+- Take all artifacts (stories, architecture, designs, code plans)
+- Propose test strategy (unit, integration, e2e, security, performance)
+- Create test plan
+- Define quality gates
+- Output to docs/testing/
 
-### PHASE 4: IMPLEMENTATION (Engineers + QE in parallel, then review loops)
+## Handoff & Documentation
+All agents:
+- Write decisions to .bmad/handoff-log.md
+- Link to shared templates in shared/templates/
+- Update domain-glossary.md with new business terms
 
-**Step 4a: Backend Engineer**
-Read `.bmad-agents/backend-engineer/SKILL.md`. Act as the Backend Engineer.
-- Read relevant backend stories from `docs/stories/`
-- Implement: project scaffolding, API endpoints, business logic, database schema/migrations,
-  event publishing, structured logging, health checks
-- Write unit tests and integration tests
-- Follow `docs/reviews/code-review-checklist.md`
-- Mark Definition of Done items complete in story files
+## Output Format
+- **Analysis Artifacts:** project-brief, backlog, user stories (docs/stories/)
+- **Architecture Artifacts:** ADRs, API specs, data models (docs/architecture/)
+- **Design Artifacts:** Wireframes, personas, journeys (docs/ux/)
+- **Implementation Plans:** Service breakdown, sprint-level tasks, integration checklist
+- **Testing Artifacts:** Test strategy, test plan, automation roadmap (docs/testing/)
+- **Glossary:** Business terms and domain concepts (.bmad/domain-glossary.md)
 
-**Step 4b: Frontend Engineer**
-Read `.bmad-agents/frontend-engineer/SKILL.md`. Act as the Frontend Engineer.
-- Read relevant frontend stories + `docs/ux/ui-spec.md` + `docs/ux/design-system.md`
-- Implement: design system tokens, UI components, all screen states (loading, empty,
-  populated, error, partial), responsive layouts, keyboard shortcuts, accessibility
-- Write unit tests for components
-- Follow coding standards. Mark Definition of Done items complete.
+---
 
-**Step 4c: Mobile Engineer**
-Read `.bmad-agents/mobile-engineer/SKILL.md`. Act as the Mobile Engineer.
-- Read relevant mobile stories + UX specs
-- Implement: platform-specific code, push notifications, offline support, deep linking
-- Write unit tests. Mark Definition of Done items complete.
+## Your Task
 
-**Step 4d: Tester & QE — Test Strategy + Test Cases**
-Read `.bmad-agents/tester-qe/SKILL.md`. Act as the Tester & QE.
-- Read all artifacts: PRD, architecture, UX specs, stories
-- Create `docs/test-plans/test-strategy.md` using `templates/test-strategy-template.md`
-- Create test cases in `docs/test-plans/test-cases/`:
-  API contract tests, state machine tests, UI tests, integration/E2E tests,
-  performance scenarios, security checks (OWASP Top 10)
-- Create traceability matrix: PRD requirement → Story → Test Case
-- Flag any coverage gaps
-- Log handoff
-
-### PHASE 5: REVIEW LOOP — ITERATE UNTIL GREEN
-
-This phase MUST loop until all quality gates pass. Do not skip iterations.
-
-**Step 5a: Tech Lead — Code Review**
-Act as the Tech Lead. Review ALL implemented code against:
-- `docs/reviews/code-review-checklist.md`
-- Architecture alignment (ADRs)
-- Story acceptance criteria
-- Security (no secrets, input validation, auth)
-
-For each issue found, categorize as:
-- 🔴 MUST FIX — blocks release
-- 🟡 SHOULD FIX — improves quality
-- 🟢 CONSIDER — nice to have
-
-If 🔴 or 🟡 issues exist → proceed to Step 5b.
-If no issues → proceed to Step 5c.
-
-**Step 5b: Engineers — Fix Issues**
-Act as the relevant engineer (Backend/Frontend/Mobile based on the feedback).
-- Fix all 🔴 MUST FIX and 🟡 SHOULD FIX issues
-- Add or update tests to cover each fix
-- Run tests and confirm they pass
-- Update the story Definition of Done
-- When done → go back to Step 5a for re-review
-
-**Step 5c: QE — Run Full Test Suite**
-Act as the Tester & QE. Execute validation:
-1. Run all unit tests — report pass/fail count
-2. Run all integration tests — report results
-3. Verify API contract tests match the solution architecture spec
-4. Verify UI tests cover every screen state from the UI spec
-5. Verify security checklist is addressed
-6. Verify accessibility audit items are resolved
-7. Check traceability: every PRD requirement has a passing test
-
-If ANY test fails:
-- Create defect report: severity, repro steps, expected vs actual, affected story
-- Route to the relevant engineer with fix instructions
-- → Go back to Step 5b, then re-run Step 5c after fixes
-
-If ALL tests pass:
-- Report: total tests, pass rate, requirements coverage percentage
-- State: "QE APPROVED — all tests passing"
-- → Proceed to Step 5d
-
-**Step 5d: Tech Lead — Release Readiness**
-Act as the Tech Lead. Final release check:
-1. ✅ All stories: Definition of Done fully checked
-2. ✅ Code review: no outstanding 🔴 or 🟡 items
-3. ✅ QE: all tests passing
-4. ✅ Architecture: implementation matches ADRs
-5. ✅ No open critical/high defects
-6. ✅ Documentation complete (API docs, architecture docs, deployment runbook)
-
-Create `docs/reviews/release-readiness.md` with:
-- Features delivered
-- Test results summary
-- Known issues and workarounds
-- Deployment steps and rollback plan
-- Post-deploy monitoring checklist
-
-If NOT ready → list blockers and which agent must act → loop back to Step 5b
-If READY → state: "✅ RELEASE APPROVED — Epic complete"
-
-## Rules for the Entire Execution
-
-1. **Read before you write.** Every agent reads its SKILL.md and all input artifacts
-   before producing output.
-2. **Artifacts are the contract.** Never rely on conversation memory. Always read
-   and write to `docs/` files.
-3. **Log every handoff** in `docs/.bmad/handoff-log.md` with: date, from agent,
-   to agent, artifact, action, summary, decisions made, open items.
-4. **Loop until green.** The review loop (Steps 5a-5d) MUST repeat until the Tech
-   Lead approves release. Do NOT shortcut the loop or skip re-testing after fixes.
-5. **Be specific.** When reporting issues, include file paths, line numbers, and
-   concrete fix instructions. When reporting test results, include counts and
-   specific failure details.
-6. **State transitions clearly.** After completing each step, explicitly state which
-   step you are moving to next so the execution flow is traceable.
-````
-
-### Customizing the Squad Prompt
-
-Replace the placeholders to use this for any project:
-
-| Placeholder | Example |
-|-------------|---------|
-| `[PROJECT NAME]` | Enterprise Order Management System |
-| `[Description]` | Microservices platform for e-commerce order processing |
-| `[EPIC NAME]` | Epic 1: Order Lifecycle Management |
-| `[Tech stack preferences]` | "Team knows Kotlin and React, must run on AWS" or "Let architects decide" |
-| `[Key constraints]` | PCI-DSS, GDPR data sovereignty, 99.95% SLA, self-hosted auth, multi-cloud |
-
-### Running Multiple Epics
-
-After the first epic is approved, run the squad prompt again with the next epic.
-The agents will read the existing artifacts (architecture, design system, test
-strategy) and build on them rather than recreating from scratch:
-
-```
-[Same squad prompt as above, but change:]
-- Epic to implement: Epic 2: Payment Processing & Reconciliation
-- Add to instructions: "Read all existing docs/ artifacts from Epic 1.
-  Extend the architecture, design system, and test strategy rather than
-  replacing them. Add new stories, components, and tests alongside existing ones."
+[Insert your project task here. Examples:]
+- Analyze this new market opportunity and produce PRD + architecture design
+- Design a microservices migration strategy for our monolith
+- Build a complete design-to-code workflow for a new feature
+- Plan Q2 development with risk assessment and sprint breakdown
 ```
 
 ---
 
-## Enterprise Focus
+## File Organization
 
-All agents are tailored for enterprise systems: microservices, cloud infrastructure (AWS/Azure/GCP), complex integrations, compliance (SOC2/GDPR/HIPAA), observability, and multi-environment deployment.
+```
+bmad-sdlc-agents/
+├── agents/                                 # Global: 10 agent skills
+│   ├── business-analyst/SKILL.md
+│   ├── product-owner/SKILL.md
+│   ├── solution-architect/SKILL.md
+│   ├── enterprise-architect/SKILL.md
+│   ├── ux-designer/SKILL.md
+│   ├── tech-lead/SKILL.md
+│   ├── tester-qe/SKILL.md
+│   ├── backend-engineer/SKILL.md
+│   ├── frontend-engineer/SKILL.md
+│   └── mobile-engineer/SKILL.md
+│
+├── shared/                                 # Global: resources for all projects
+│   ├── BMAD-SHARED-CONTEXT.md
+│   ├── references/
+│   │   └── technology-radar.md
+│   └── templates/
+│       ├── prd-template.md
+│       ├── adr-template.md
+│       ├── story-template.md
+│       ├── test-strategy-template.md
+│       ├── project-brief-template.md
+│       └── handoff-log-template.md
+│
+├── project-scaffold/                       # Template for new projects
+│   ├── .bmad/
+│   │   ├── PROJECT-CONTEXT.md
+│   │   ├── tech-stack.md
+│   │   ├── team-conventions.md
+│   │   ├── domain-glossary.md
+│   │   └── handoff-log.md
+│   └── docs/
+│       ├── architecture/
+│       ├── stories/
+│       ├── testing/
+│       └── ux/
+│
+└── scripts/
+    ├── install-global.sh                   # Copy agents/ + shared/ to tool directories
+    ├── scaffold-project.sh                 # Create .bmad/ + project symlinks
+    └── update.sh                           # Update global + all projects
+```
 
 ---
 
-## License
+## Integration Guide
 
-These skills are provided for reuse in your projects. Customize the agent personas, templates, and workflows to fit your team's specific needs.
+### How Agents Use Context
+When you invoke an agent in any tool, it automatically:
+
+1. **Detects** `.bmad/PROJECT-CONTEXT.md` in the current project
+2. **Loads** its skill from `agents/<agent-name>/SKILL.md`
+3. **Reads** `.bmad/tech-stack.md` and `.bmad/team-conventions.md` for project specifics
+4. **Falls back** to `shared/BMAD-SHARED-CONTEXT.md` for company standards
+5. **Applies** context to your prompt and generates project-aware responses
+
+### Continuous Integration
+The `scripts/update.sh` pulls the latest agent skills and shared resources, then:
+- Rebuilds global tool directories
+- Refreshes all project `.bmad/` symlinks
+- Preserves project-specific overrides
+
+### Version Control
+- **Commit to git:** `.bmad/` directory (context files are project-specific)
+- **Commit to git:** `docs/` directory (all artifacts)
+- **Do not commit:** Global `~/.claude/`, `~/.skills/`, `~/.cursor/`, etc. (manage with `install-global.sh`)
+- **Do not commit:** Tool-specific config files unless project-managed
+
+---
+
+## Common Workflows
+
+### Onboarding a New Team Member
+```bash
+# Clone project repo (includes .bmad/)
+git clone <project-repo>
+
+# Install global agents (once per machine)
+bash /path/to/bmad-sdlc-agents/scripts/install-global.sh
+
+# New team member can now:
+# - Load agents in their favorite tool
+# - Access project context from .bmad/
+# - Collaborate with squad prompts
+```
+
+### Starting a New Project
+```bash
+# Scaffold the project
+bash /path/to/bmad-sdlc-agents/scripts/scaffold-project.sh "New Platform"
+
+# Add to your project repo
+git add .bmad/ docs/ .claude/ .cursor/ # (as needed per tool)
+git commit -m "Add BMAD project scaffold"
+
+# Fill in context files
+# Edit: .bmad/PROJECT-CONTEXT.md, .bmad/tech-stack.md
+```
+
+### Running Full Squad Analysis
+Copy the **Squad Prompt** above into your tool, update the task section, and run. All 10 agents coordinate on analysis, design, and planning.
+
+### Updating Agents Across All Projects
+```bash
+# Pull latest agents and shared resources
+bash /path/to/bmad-sdlc-agents/scripts/update.sh
+
+# All projects instantly have access to updated agents
+# Project context files are preserved
+```
+
+---
+
+## FAQ
+
+**Q: Where do agents live?**
+A: In `agents/` (global, install once). Copy paths like `agents/solution-architect/SKILL.md` into your tool prompts.
+
+**Q: Where does project context live?**
+A: In `.bmad/` (per project, checked into git). Each project has its own `.bmad/PROJECT-CONTEXT.md`, `tech-stack.md`, etc.
+
+**Q: Do I need to install globally?**
+A: Yes, once per machine. Then scaffold each project. Agents find `.bmad/` files automatically.
+
+**Q: Can I customize agents per project?**
+A: Yes. Copy an agent skill to `.claude/skills/` or `.cursor/rules/` and edit it for project-specific tweaks.
+
+**Q: How do I version agents?**
+A: Keep `agents/` in the BMAD repository. Use `scripts/update.sh` to refresh. Project context (`.bmad/`) versions with your project.
+
+**Q: Can multiple teams use different tech stacks?**
+A: Absolutely. Each project has its own `tech-stack.md`, so agents adapt to TypeScript, Python, Kotlin, etc.
+
+---
+
+## Support & Contributing
+
+For issues, enhancements, or new agents, open an issue in the BMAD repository.
+
+To contribute an agent or template, see the contribution guidelines in `CONTRIBUTING.md`.
+
+---
+
+**Last updated:** 2026-03-18
+**BMAD Version:** 2.0 (Two-Layer Architecture)

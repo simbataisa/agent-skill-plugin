@@ -1,0 +1,10 @@
+{
+  "_comment": "Playwright browser MCP for web automation and testing. Used by QE Agent for E2E test recording, screenshot capture, and browser automation.",
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@latest"],
+      "env": {}
+    }
+  }
+}

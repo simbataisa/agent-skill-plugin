@@ -1,0 +1,45 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \".claude/hooks/enforce-conventions.sh\" \"$CLAUDE_TOOL_INPUT_PATH\" \"$CLAUDE_TOOL_INPUT_CONTENT\""
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \".claude/hooks/check-bmad-context.sh\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \".claude/hooks/auto-handoff-log.sh\" \"$CLAUDE_TOOL_INPUT_PATH\""
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \".claude/hooks/session-summary.sh\""
+          }
+        ]
+      }
+    ]
+  }
+}

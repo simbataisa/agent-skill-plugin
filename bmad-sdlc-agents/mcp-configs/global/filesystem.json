@@ -1,0 +1,14 @@
+{
+  "_comment": "Extended filesystem MCP. Customize ALLOWED_DIRS with paths you want Claude to access. Recommend: ${HOME}/projects ${HOME}/documents. Used by all agents.",
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "${HOME}/projects",
+        "${HOME}/documents"
+      ]
+    }
+  }
+}

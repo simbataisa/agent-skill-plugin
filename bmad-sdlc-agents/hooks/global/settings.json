@@ -1,0 +1,35 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_HOOKS_DIR:-$HOME/.claude/hooks}/validate-bmad-paths.sh\" \"$CLAUDE_TOOL_INPUT_PATH\""
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_HOOKS_DIR:-$HOME/.claude/hooks}/check-direct-db.sh\" \"$CLAUDE_TOOL_INPUT_COMMAND\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_HOOKS_DIR:-$HOME/.claude/hooks}/notify-doc-written.sh\" \"$CLAUDE_TOOL_INPUT_PATH\""
+          }
+        ]
+      }
+    ]
+  }
+}

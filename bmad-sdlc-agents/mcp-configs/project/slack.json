@@ -1,0 +1,13 @@
+{
+  "_comment": "Slack MCP. Set SLACK_BOT_TOKEN and SLACK_TEAM_ID env vars. Used by Tech Lead for team notifications, deployment alerts, and handoff coordination.",
+  "mcpServers": {
+    "slack": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-slack"],
+      "env": {
+        "SLACK_BOT_TOKEN": "${SLACK_BOT_TOKEN}",
+        "SLACK_TEAM_ID": "${SLACK_TEAM_ID}"
+      }
+    }
+  }
+}

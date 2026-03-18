@@ -1,0 +1,12 @@
+{
+  "_comment": "GitHub MCP server. Set GITHUB_TOKEN env var with personal access token. Provides: repo access, issues, PRs, code search. Used by Tech Lead, Code Reviewer, Backend/Frontend Engineers.",
+  "mcpServers": {
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+      }
+    }
+  }
+}

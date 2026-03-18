@@ -1,0 +1,14 @@
+{
+  "_comment": "Jira MCP server. Set JIRA_HOST, JIRA_EMAIL, JIRA_API_TOKEN env vars. Alternative to Linear for issue tracking. Used by Tech Lead and Product Owner.",
+  "mcpServers": {
+    "jira": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-jira"],
+      "env": {
+        "JIRA_HOST": "${JIRA_HOST}",
+        "JIRA_EMAIL": "${JIRA_EMAIL}",
+        "JIRA_API_TOKEN": "${JIRA_API_TOKEN}"
+      }
+    }
+  }
+}

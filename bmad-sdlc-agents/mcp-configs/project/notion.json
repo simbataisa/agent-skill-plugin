@@ -1,0 +1,12 @@
+{
+  "_comment": "Notion MCP. Set NOTION_TOKEN env var. Used by Business Analyst and Product Owner for documentation, requirements, and knowledge base management.",
+  "mcpServers": {
+    "notion": {
+      "command": "npx",
+      "args": ["-y", "@notionhq/notion-mcp-server"],
+      "env": {
+        "NOTION_TOKEN": "${NOTION_TOKEN}"
+      }
+    }
+  }
+}

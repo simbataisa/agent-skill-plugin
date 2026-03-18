@@ -1,0 +1,12 @@
+{
+  "_comment": "MongoDB MCP. Set MONGODB_URI env var with MongoDB connection string. Used by Backend Engineer for schema inspection and query assistance.",
+  "mcpServers": {
+    "mongodb": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-mongodb"],
+      "env": {
+        "MONGODB_URI": "${MONGODB_URI}"
+      }
+    }
+  }
+}

@@ -1,0 +1,65 @@
+---
+description: "Project-specific BMAD context - Customize per project"
+globs: ""
+alwaysApply: true
+---
+
+# Project Context Template
+
+**IMPORTANT**: Load this file at the start of every session. This file defines the current project state and which BMAD phase we're in.
+
+## Project Information
+
+**Project Name**: [FILL IN - e.g., "Customer Portal V2"]
+
+**Project Description**: [FILL IN - 2-3 sentences about what this project does]
+
+## Current BMAD Phase
+
+We are currently in the **[FILL IN: Business / Machine / Assembly / Delivery]** phase.
+
+**What this means**:
+- [FILL IN: Describe constraints and focus for this phase]
+- [FILL IN: List which agents are active]
+- [FILL IN: What decisions have been locked in]
+
+## Tech Stack Summary
+
+For the complete tech stack and rationale, see `.bmad/tech-stack.md`.
+
+**Quick Reference**:
+- **Backend**: [FILL IN - e.g., "Node.js + Express"]
+- **Frontend**: [FILL IN - e.g., "React + Next.js"]
+- **Mobile**: [FILL IN - or "N/A"]
+- **Database**: [FILL IN - e.g., "PostgreSQL"]
+- **API Style**: [FILL IN - e.g., "REST"]
+- **Auth**: [FILL IN - e.g., "OAuth 2.0 + JWT"]
+
+## Key Constraints
+
+[FILL IN - List any hard constraints]
+- Example: "Must be backwards compatible with API v2"
+- Example: "Performance SLA: < 200ms p99 for all endpoints"
+- Example: "No external dependencies without security review"
+
+## Domain Terminology
+
+[FILL IN - Define key domain terms for this project]
+- **Term 1**: Definition
+- **Term 2**: Definition
+
+## Team & Handoff
+
+**Tech Lead**: [FILL IN - Name/Role]
+**Product Lead**: [FILL IN - Name/Role]
+**Communication Channel**: [FILL IN - Slack channel, email, etc.]
+
+## Session Reminder
+
+Every time you start a session on this project:
+1. Read this file first
+2. Check `.bmad/tech-stack.md` if tech questions arise
+3. Consult `.bmad/team-conventions.md` for coding standards
+4. Use the agent roster from the global BMAD framework
+
+If you're unsure what phase we're in or which agents to involve, refer to the "Current BMAD Phase" section above.

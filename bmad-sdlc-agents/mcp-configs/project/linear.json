@@ -1,0 +1,12 @@
+{
+  "_comment": "Linear issue tracker MCP. Set LINEAR_API_KEY env var. Used by Tech Lead and Product Owner for story/issue management, status tracking, and release planning.",
+  "mcpServers": {
+    "linear": {
+      "command": "npx",
+      "args": ["-y", "@linear/mcp-server"],
+      "env": {
+        "LINEAR_API_KEY": "${LINEAR_API_KEY}"
+      }
+    }
+  }
+}

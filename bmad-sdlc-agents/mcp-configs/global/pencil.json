@@ -1,0 +1,10 @@
+{
+  "_comment": "Pencil.dev design canvas MCP. Requires Pencil.app installed at /Applications/Pencil.app. Used by Frontend Engineer and System Designer for UI/UX prototyping.",
+  "mcpServers": {
+    "pencil": {
+      "command": "/Applications/Pencil.app/Contents/Resources/app.asar.unpacked/out/mcp-server-darwin-arm64",
+      "args": ["--app", "desktop"],
+      "env": {}
+    }
+  }
+}

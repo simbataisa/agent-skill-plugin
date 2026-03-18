@@ -1,0 +1,9 @@
+{
+  "_comment": "PostgreSQL MCP. Set DATABASE_URL env var with PostgreSQL connection string. Used by Backend Engineer and Solution Architect for schema inspection and query help. STRONGLY RECOMMENDED: use READ-ONLY database credentials for safety.",
+  "mcpServers": {
+    "postgres": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-postgres", "${DATABASE_URL}"]
+    }
+  }
+}
