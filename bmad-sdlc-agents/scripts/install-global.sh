@@ -96,6 +96,71 @@ append_file() {
     fi
 }
 
+# Merge BMAD hooks into an existing settings.json, backing up first.
+# Usage: merge_settings_json <bmad_source.json> <target_settings.json>
+merge_settings_json() {
+    local src="$1"
+    local dst="$2"
+
+    if [[ "$DRY_RUN" == true ]]; then
+        echo "  [DRY] merge $src -> $dst"
+        return
+    fi
+
+    if [[ ! -f "$dst" ]]; then
+        mkdir -p "$(dirname "$dst")"
+        cp "$src" "$dst"
+        echo "  ✓ Created $(basename "$dst")"
+        return
+    fi
+
+    # Back up the existing file
+    local backup="${dst}.bak"
+    cp "$dst" "$backup"
+    echo "  ✓ Backed up existing $(basename "$dst") → $(basename "$backup")"
+
+    # Merge hook arrays using Python
+    python3 - "$src" "$dst" << 'PYEOF'
+import json, sys
+
+src_path, dst_path = sys.argv[1], sys.argv[2]
+
+with open(src_path) as f:
+    src = json.load(f)
+with open(dst_path) as f:
+    dst = json.load(f)
+
+src_hooks = src.get("hooks", {})
+dst_hooks = dst.setdefault("hooks", {})
+
+for event, entries in src_hooks.items():
+    if event not in dst_hooks:
+        dst_hooks[event] = entries
+    else:
+        # Append only entries whose commands aren't already present
+        existing_cmds = {
+            h.get("command", "")
+            for block in dst_hooks[event]
+            for h in block.get("hooks", [])
+        }
+        for entry in entries:
+            new_cmds = {h.get("command", "") for h in entry.get("hooks", [])}
+            if not new_cmds.issubset(existing_cmds):
+                dst_hooks[event].append(entry)
+
+with open(dst_path, "w") as f:
+    json.dump(dst, f, indent=2)
+    f.write("\n")
+PYEOF
+
+    if [[ $? -eq 0 ]]; then
+        echo "  ✓ Merged hooks into $(basename "$dst")"
+    else
+        cp "$backup" "$dst"
+        echo -e "  ${RED}✗ Merge failed — restored from backup. Manually merge: $src${NC}"
+    fi
+}
+
 # Function to prepend shared context
 prepend_shared_context() {
     local agent_file="$1"
@@ -150,19 +215,11 @@ if [[ -d "$HOME/.claude" ]] || command -v claude &> /dev/null; then
         done
     fi
 
-    # Merge global hooks settings into ~/.claude/settings.json
+    # Merge global hooks into ~/.claude/settings.json (backs up first)
     if [[ -f "$HOOKS_DIR/settings.json" ]]; then
-        local_settings="$CLAUDE_HOOKS_DIR/settings.json"
-        if [[ "$DRY_RUN" == true ]]; then
-            echo "  [DRY] merge $HOOKS_DIR/settings.json -> $local_settings"
-        else
-            if [[ ! -f "$local_settings" ]]; then
-                cp "$HOOKS_DIR/settings.json" "$local_settings"
-            else
-                echo -e "  ${YELLOW}⚠ $local_settings already exists — skipping hook merge.${NC}"
-                echo "    Manually merge: $HOOKS_DIR/settings.json"
-            fi
-        fi
+        merge_settings_json "$HOOKS_DIR/settings.json" "$CLAUDE_HOOKS_DIR/settings.json"
+        # Remove any duplicates introduced by previous merges
+        python3 "$SCRIPT_DIR/clean-duplicate-hooks.py" "$CLAUDE_HOOKS_DIR/settings.json" 2>/dev/null || true
     fi
 
     # Copy hook scripts to ~/.claude/hooks/

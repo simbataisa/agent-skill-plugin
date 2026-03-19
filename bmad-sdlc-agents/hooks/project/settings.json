@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \".claude/hooks/enforce-conventions.sh\" \"$CLAUDE_TOOL_INPUT_PATH\" \"$CLAUDE_TOOL_INPUT_CONTENT\""
+            "command": "bash -c '[ -f \".claude/hooks/enforce-conventions.sh\" ] && bash \".claude/hooks/enforce-conventions.sh\" \"$CLAUDE_TOOL_INPUT_PATH\" \"$CLAUDE_TOOL_INPUT_CONTENT\" || exit 0'"
           }
         ]
       },
@@ -15,7 +15,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \".claude/hooks/check-bmad-context.sh\""
+            "command": "bash -c '[ -f \".claude/hooks/check-bmad-context.sh\" ] && bash \".claude/hooks/check-bmad-context.sh\" || exit 0'"
           }
         ]
       }
@@ -26,7 +26,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \".claude/hooks/auto-handoff-log.sh\" \"$CLAUDE_TOOL_INPUT_PATH\""
+            "command": "bash -c '[ -f \".claude/hooks/auto-handoff-log.sh\" ] && bash \".claude/hooks/auto-handoff-log.sh\" \"$CLAUDE_TOOL_INPUT_PATH\" || exit 0'"
           }
         ]
       }
@@ -36,7 +36,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \".claude/hooks/session-summary.sh\""
+            "command": "bash -c '[ -f \".claude/hooks/session-summary.sh\" ] && bash \".claude/hooks/session-summary.sh\" || exit 0'"
           }
         ]
       }

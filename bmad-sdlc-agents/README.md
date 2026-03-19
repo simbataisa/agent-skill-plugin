@@ -230,29 +230,29 @@ conventions-file: .aider.conventions.md
 **Global Install (once)**
 ```bash
 bash scripts/install-global.sh
-# → Copies agents/ and shared/ to ~/.claude/skills/
-# → Enables /business-analyst, /product-owner, /solution-architect, etc.
+# → Agents → ~/.claude/skills/          (slash commands: /business-analyst, etc.)
+# → Commands → ~/.claude/commands/       (slash commands: /bmad-status, /new-story, etc.)
+# → Hooks → ~/.claude/hooks/             (PreToolUse / PostToolUse / Stop guards)
 ```
 
-**Project Install (per project)**
+**Project Install (per project, run from project root)**
 ```bash
-bash scripts/scaffold-project.sh "My Project"
-# → Creates .bmad/ with templates
-# → Creates .claude/skills/ with symlinks to global agents
-```
-Add to project root `CLAUDE.md`:
-```markdown
-# BMAD Project Skills
-
-Load project context from `.bmad/` before using agents.
-
-- `/business-analyst` – Use for discovery and analysis
-- `/product-owner` – Use for planning and PRD
-- `/solution-architect` – Use for system design
-- ... (list all 10 agents)
+bash /path/to/bmad-sdlc-agents/scripts/scaffold-project.sh "My Project"
+# → .bmad/                 project context files (commit to git)
+# → CLAUDE.md              auto-loads .bmad/ at session start
+# → .claude/skills/        project-local copies of all agents
+# → .claude/commands/      project-local slash commands
+# → .claude/hooks/         project-level hook scripts
 ```
 
-Then: `claude skills add .claude/skills/<agent-name>`
+After scaffolding, open your project in Claude Code and use slash commands directly — all context is pre-loaded:
+```
+/business-analyst   /product-owner      /solution-architect
+/enterprise-architect  /ux-designer     /tech-lead
+/tester-qe          /backend-engineer   /frontend-engineer   /mobile-engineer
+/bmad-status        /new-story          /new-adr
+/handoff            /new-epic           /sprint-plan
+```
 
 ---
 
@@ -261,18 +261,17 @@ Then: `claude skills add .claude/skills/<agent-name>`
 **Global Install (once)**
 ```bash
 bash scripts/install-global.sh
-# → Copies agents/ and shared/ to ~/.skills/skills/
-# → Agents auto-discoverable via description matching
+# → Agents → ~/.skills/skills/  (auto-discoverable by description)
 ```
 
-**Project Install (per project)**
+**Project Install (per project, run from project root)**
 ```bash
-bash scripts/scaffold-project.sh "My Project"
-# → Creates .bmad/ directory
-# → Agents auto-load .bmad/ files when running
+bash /path/to/bmad-sdlc-agents/scripts/scaffold-project.sh "My Project"
+# → .bmad/      project context files (commit to git)
+# → CLAUDE.md   auto-loads .bmad/ at session start
 ```
 
-Agents dynamically detect and use `.bmad/` files in the project. No additional config needed.
+Agents detect `.bmad/` automatically. No additional config needed.
 
 ---
 
@@ -281,17 +280,18 @@ Agents dynamically detect and use `.bmad/` files in the project. No additional c
 **Global Install (once)**
 ```bash
 bash scripts/install-global.sh
-# → Copies agents/ and shared/ to ~/.cursor/rules/
+# → Agents + global rules → ~/.cursor/rules/
 ```
 
-**Project Install (per project)**
+**Project Install (per project, run from project root)**
 ```bash
-bash scripts/scaffold-project.sh "My Project"
-# → Creates .cursor/rules/ for project-specific overrides
-# → Creates .bmad/ for shared context
+bash /path/to/bmad-sdlc-agents/scripts/scaffold-project.sh "My Project"
+# → .bmad/                                    project context files (commit to git)
+# → .cursor/rules/001-project-context.mdc     auto-loads .bmad/ (alwaysApply: true)
+# → .cursor/rules/002-tech-stack.mdc          code generation rules
 ```
 
-In Cursor settings: `Rules` tab → add `.cursor/rules/` to rule paths.
+Address agents by role in your prompt: "Acting as the Solution Architect, …"
 
 ---
 
@@ -300,16 +300,17 @@ In Cursor settings: `Rules` tab → add `.cursor/rules/` to rule paths.
 **Global Install (once)**
 ```bash
 bash scripts/install-global.sh
-# → Copies agents/ and shared/ to ~/.windsurf/rules/
+# → Agents + global rules → ~/.windsurf/rules/
 ```
 
-**Project Install (per project)**
+**Project Install (per project, run from project root)**
 ```bash
-bash scripts/scaffold-project.sh "My Project"
-# → Creates .windsurf/rules/ or .windsurfrules for project rules
+bash /path/to/bmad-sdlc-agents/scripts/scaffold-project.sh "My Project"
+# → .bmad/           project context files (commit to git)
+# → .windsurfrules   auto-loads .bmad/ at session start
 ```
 
-Windsurf auto-discovers rules from `~/.windsurf/rules/` and project `.windsurfrules`.
+Address agents by role in your prompt: "Acting as the Backend Engineer, …"
 
 ---
 
@@ -318,16 +319,17 @@ Windsurf auto-discovers rules from `~/.windsurf/rules/` and project `.windsurfru
 **Global Install (once)**
 ```bash
 bash scripts/install-global.sh
-# → Copies agents/ to ~/.github/copilot-instructions.md
+# → Agents → ~/.github/copilot-instructions.md
 ```
 
-**Project Install (per project)**
+**Project Install (per project, run from project root)**
 ```bash
-bash scripts/scaffold-project.sh "My Project"
-# → Creates .github/copilot-instructions.md with project agents
+bash /path/to/bmad-sdlc-agents/scripts/scaffold-project.sh "My Project"
+# → .bmad/                               project context files (commit to git)
+# → .github/copilot-instructions.md      auto-loads .bmad/ at session start
 ```
 
-Edit `.github/copilot-instructions.md` and reference `.bmad/` context files.
+Address agents by role: "Acting as the Product Owner, …"
 
 ---
 
@@ -336,14 +338,17 @@ Edit `.github/copilot-instructions.md` and reference `.bmad/` context files.
 **Global Install (once)**
 ```bash
 bash scripts/install-global.sh
-# → Copies agents/ to ~/.gemini/GEMINI.md
+# → Agents + global rules → ~/.gemini/GEMINI.md
 ```
 
-**Project Install (per project)**
+**Project Install (per project, run from project root)**
 ```bash
-bash scripts/scaffold-project.sh "My Project"
-# → Creates GEMINI.md at project root linking to .bmad/
+bash /path/to/bmad-sdlc-agents/scripts/scaffold-project.sh "My Project"
+# → .bmad/       project context files (commit to git)
+# → GEMINI.md    auto-loads .bmad/ at session start
 ```
+
+Address agents by role: "Acting as the Enterprise Architect, …"
 
 ---
 
@@ -352,14 +357,17 @@ bash scripts/scaffold-project.sh "My Project"
 **Global Install (once)**
 ```bash
 bash scripts/install-global.sh
-# → Copies agents/ to ~/.opencode/instructions.md
+# → Agents + global rules → ~/.opencode/instructions.md
 ```
 
-**Project Install (per project)**
+**Project Install (per project, run from project root)**
 ```bash
-bash scripts/scaffold-project.sh "My Project"
-# → Creates AGENTS.md at project root with agent descriptions
+bash /path/to/bmad-sdlc-agents/scripts/scaffold-project.sh "My Project"
+# → .bmad/      project context files (commit to git)
+# → AGENTS.md   auto-loads .bmad/ at session start
 ```
+
+Address agents by role: "Acting as the Tech Lead, …"
 
 ---
 
@@ -368,14 +376,19 @@ bash scripts/scaffold-project.sh "My Project"
 **Global Install (once)**
 ```bash
 bash scripts/install-global.sh
-# → Copies agents/ to ~/.aider.conventions.md
+# → Agents + global conventions → ~/.aider.conventions.md
 ```
 
-**Project Install (per project)**
+**Project Install (per project, run from project root)**
 ```bash
-bash scripts/scaffold-project.sh "My Project"
-# → Creates .aider.conf.yml with agent configurations
-# → Creates docs/conventions/ with style guides
+bash /path/to/bmad-sdlc-agents/scripts/scaffold-project.sh "My Project"
+# → .bmad/                    project context files (commit to git)
+# → .aider.conventions.md     auto-loads .bmad/ at session start
+```
+
+Reference in `.aider.conf.yml`:
+```yaml
+conventions-file: .aider.conventions.md
 ```
 
 ---
@@ -413,153 +426,144 @@ After running `scaffold-project.sh`, the `.bmad/` directory contains:
 
 ## Sample Prompts
 
-### Using a Single Agent
+> **After running `install-global.sh` and `scaffold-project.sh`**, agents are already installed in your tool and `.bmad/` is already in your project. Just use the slash command — no need to reference any file paths.
+
+> **⚠ Avoiding Skill Conflicts (Claude Code):** If you have other plugins installed (e.g. superpowers, general planners), always invoke BMAD agents via their **explicit slash command** (`/business-analyst`, `/solution-architect`, etc.). Never use prose-only prompts like "Acting as the Business Analyst…" in Claude Code — without the slash command, another installed skill may intercept the request. The `CLAUDE.md` generated by `scaffold-project.sh` also instructs Claude to prefer BMAD over other skills for this project.
+
+### Using a Single Agent (Claude Code)
 
 **Get a project brief from Business Analyst:**
 ```
-Load the skill from agents/business-analyst/SKILL.md. Using .bmad/PROJECT-CONTEXT.md
-and shared/BMAD-SHARED-CONTEXT.md, generate a concise project brief that includes
-stakeholders, success criteria, and constraints.
+/business-analyst Generate a concise project brief including stakeholders, success
+criteria, and constraints, based on the project context.
 ```
 
 **Ask Solution Architect for system design:**
 ```
-Load the skill from agents/solution-architect/SKILL.md. Given the PRD in docs/stories/
-and tech-stack.md, propose a system architecture with service boundaries, API contracts,
-and data models.
+/solution-architect Propose a system architecture with service boundaries, API contracts,
+and data models. Reference the PRD in docs/stories/ and tech-stack.md.
 ```
 
 **Request UX/UI wireframes:**
 ```
-Load the skill from agents/ux-designer/SKILL.md. Based on user personas in docs/ux/
-and the PRD in docs/stories/, create wireframes and a design spec for the checkout flow.
+/ux-designer Create wireframes and a design spec for the checkout flow, based on user
+personas in docs/ux/ and the PRD in docs/stories/.
 ```
 
 **Backend Engineer implementation plan:**
 ```
-Load the skill from agents/backend-engineer/SKILL.md. Given the architecture decisions
-in docs/architecture/ and tech-stack.md, create a sprint-level implementation plan for
-the payment service.
+/backend-engineer Create a sprint-level implementation plan for the payment service,
+referencing the architecture decisions in docs/architecture/ and tech-stack.md.
 ```
 
 **QE test strategy:**
 ```
-Load the skill from agents/tester-qe/SKILL.md. Using the stories in docs/stories/
-and tech-stack.md, propose a comprehensive test strategy with test types, coverage
-goals, and security testing approach.
+/tester-qe Propose a comprehensive test strategy with test types, coverage goals, and
+security testing approach, based on docs/stories/ and tech-stack.md.
+```
+
+### Using a Single Agent (Cursor / Windsurf / Copilot / Gemini / OpenCode / Aider)
+
+Agents are already loaded via your global rules file. Just address the agent by role in your prompt — the tool has all agent definitions in context:
+
+```
+Acting as the Business Analyst, generate a concise project brief including stakeholders,
+success criteria, and constraints based on .bmad/PROJECT-CONTEXT.md.
+```
+
+```
+Acting as the Solution Architect, propose a system architecture with service boundaries,
+API contracts, and data models. Use .bmad/tech-stack.md and docs/stories/.
 ```
 
 ### Squad Mode: All Agents Together
 
-See the **Squad Prompt** section below to run all 10 agents in parallel.
+See the **Squad Prompt** section below to run all 10 agents in a single session.
 
 ---
 
 ## Squad Prompt
 
-Use this mega-prompt to coordinate all agents in a single session:
+Use this mega-prompt to coordinate all agents. **Agents and project context are pre-loaded** — no file paths needed.
+
+> **Claude Code users:** The squad prompt below names each agent with their slash command in parentheses, e.g. `(/business-analyst)`. Work through agents one at a time — start a turn with the slash command to explicitly select the skill, then paste your instruction. This prevents other installed skills from intercepting.
+
+### Claude Code
+
+Paste into a new Claude Code session in your project root, then invoke each agent with its slash command as you work through the phases:
 
 ```
 # BMAD Squad: Full Project Analysis & Design
 
-You are a squad of 10 specialized AI agents collaborating on a software development project.
-Load each agent's skill from the agents/ directory, then coordinate their work on the
-following phases:
+The BMAD agent squad is already installed. The project context is in .bmad/.
+Coordinate all 10 agents across the following phases:
 
-## Agent Skills
-Load these in order:
-
-1. agents/business-analyst/SKILL.md
-2. agents/product-owner/SKILL.md
-3. agents/solution-architect/SKILL.md
-4. agents/enterprise-architect/SKILL.md
-5. agents/ux-designer/SKILL.md
-6. agents/tech-lead/SKILL.md
-7. agents/tester-qe/SKILL.md
-8. agents/backend-engineer/SKILL.md
-9. agents/frontend-engineer/SKILL.md
-10. agents/mobile-engineer/SKILL.md
-
-## Project Context
-Load project context in this order:
-1. shared/BMAD-SHARED-CONTEXT.md (company baseline)
-2. .bmad/PROJECT-CONTEXT.md (project vision)
-3. .bmad/tech-stack.md (technology choices)
-4. .bmad/team-conventions.md (project rules)
+## Project Context (already loaded via CLAUDE.md)
+- .bmad/PROJECT-CONTEXT.md — project vision and goals
+- .bmad/tech-stack.md — technology choices
+- .bmad/team-conventions.md — project rules and standards
 
 ## Analysis Phase (Business Analyst → Product Owner)
-**Business Analyst:**
+**Business Analyst** (`/business-analyst`):
 - Review .bmad/PROJECT-CONTEXT.md
 - Identify stakeholders, constraints, risks
-- Generate project brief
+- Generate project brief — output to docs/project-brief.md
 
-**Product Owner:**
+**Product Owner** (`/product-owner`):
 - Take Business Analyst brief
-- Create PRD with user stories
-- Prioritize backlog
-- Link to docs/stories/ template
+- Create PRD with prioritized user stories
+- Output to docs/stories/ and docs/prd.md
 
 ## Solutioning Phase (Solution Architect → UX Designer → Enterprise Architect)
-**Solution Architect:**
+**Solution Architect** (`/solution-architect`):
 - Take PRD and tech-stack.md
-- Propose system architecture
+- Propose system architecture, service boundaries
 - Define API contracts, data models
-- Create ADRs (Architecture Decision Records)
-- Output to docs/architecture/
+- Create ADRs — output to docs/architecture/
 
-**UX Designer:**
+**UX Designer** (`/ux-designer`):
 - Work from PRD and user personas
-- Create wireframes, user journeys
-- Define design system
+- Create wireframes, user journeys, design system
 - Output to docs/ux/
 
-**Enterprise Architect:**
+**Enterprise Architect** (`/enterprise-architect`):
 - Review Solution Architect proposal
 - Propose cloud infrastructure, CI/CD, monitoring
 - Address compliance, cost optimization
 - Output to docs/architecture/
 
 ## Implementation Phase (Tech Lead → Backend → Frontend → Mobile)
-**Tech Lead:**
+**Tech Lead** (`/tech-lead`):
 - Coordinate backend, frontend, mobile teams
-- Identify integration points
-- Flag risks, dependencies
+- Identify integration points, flag risks and dependencies
 - Review for architectural consistency
 
-**Backend Engineer:**
+**Backend Engineer** (`/backend-engineer`):
 - Take architecture ADRs and tech-stack.md
-- Design API endpoints, data access layer
-- Event-driven service design
-- Create implementation plan
+- Design API endpoints, data access layer, event-driven services
 - Output to docs/architecture/
 
-**Frontend Engineer:**
+**Frontend Engineer** (`/frontend-engineer`):
 - Take UX wireframes and tech-stack.md
-- Design component architecture
-- State management approach
-- Accessibility strategy
+- Design component architecture, state management, accessibility strategy
 - Output to docs/ux/
 
-**Mobile Engineer:**
+**Mobile Engineer** (`/mobile-engineer`):
 - Take UX wireframes and tech-stack.md
-- Native vs. cross-platform decision
-- Mobile architecture
-- Device/network constraints
+- Decide native vs. cross-platform, mobile architecture, device/network constraints
 - Output to docs/ux/
 
-## Quality & Testing (QE)
-**Tester & QE:**
+## Quality & Testing
+**Tester & QE** (`/tester-qe`):
 - Take all artifacts (stories, architecture, designs, code plans)
 - Propose test strategy (unit, integration, e2e, security, performance)
-- Create test plan
-- Define quality gates
-- Output to docs/testing/
+- Define quality gates — output to docs/testing/
 
 ## Handoff & Documentation
 All agents:
-- Write decisions to .bmad/handoff-log.md
-- Link to shared templates in shared/templates/
-- Update domain-glossary.md with new business terms
+- Use `/handoff` to log each agent transition — it creates a numbered file in `.bmad/handoffs/` and updates the master index
+- Update `.bmad/domain-glossary.md` with new business terms
+- Never write directly to `.bmad/handoff-log.md` — use `/handoff` instead
 
 ## Output Format
 - **Analysis Artifacts:** project-brief, backlog, user stories (docs/stories/)
@@ -567,7 +571,6 @@ All agents:
 - **Design Artifacts:** Wireframes, personas, journeys (docs/ux/)
 - **Implementation Plans:** Service breakdown, sprint-level tasks, integration checklist
 - **Testing Artifacts:** Test strategy, test plan, automation roadmap (docs/testing/)
-- **Glossary:** Business terms and domain concepts (.bmad/domain-glossary.md)
 
 ---
 
@@ -578,6 +581,61 @@ All agents:
 - Design a microservices migration strategy for our monolith
 - Build a complete design-to-code workflow for a new feature
 - Plan Q2 development with risk assessment and sprint breakdown
+```
+
+### Cursor / Windsurf / Copilot / Gemini / OpenCode / Aider
+
+All agent definitions are already loaded in your global rules file. Address each agent by role directly:
+
+```
+# BMAD Squad: Full Project Analysis & Design
+
+You are a squad of 10 specialized AI agents. All agent skills are already loaded.
+The project context is in .bmad/ — read it before starting.
+
+## Analysis Phase
+Acting as the Business Analyst: review .bmad/PROJECT-CONTEXT.md, identify stakeholders,
+constraints, and risks, then generate a project brief.
+
+Acting as the Product Owner: take the project brief and create a PRD with prioritized
+user stories. Save to docs/stories/.
+
+## Solutioning Phase
+Acting as the Solution Architect: propose system architecture, service boundaries, API
+contracts, and data models using .bmad/tech-stack.md. Record decisions as ADRs in
+docs/architecture/adr/.
+
+Acting as the UX Designer: create wireframes and user journeys based on the PRD and
+personas. Save to docs/ux/.
+
+Acting as the Enterprise Architect: propose cloud infrastructure, CI/CD pipeline,
+monitoring, and compliance controls. Save to docs/architecture/.
+
+## Implementation Phase
+Acting as the Tech Lead: coordinate backend, frontend, and mobile plans. Flag risks and
+integration dependencies.
+
+Acting as the Backend Engineer: design API endpoints, data layers, and event-driven
+services from the ADRs and tech-stack.md.
+
+Acting as the Frontend Engineer: design component architecture and state management from
+the UX wireframes and tech-stack.md.
+
+Acting as the Mobile Engineer: design mobile architecture and decide native vs.
+cross-platform from the UX wireframes and tech-stack.md.
+
+## Quality & Testing
+Acting as the Tester & QE: produce a test strategy covering unit, integration, e2e,
+security, and performance. Save to docs/testing/.
+
+## Handoff
+All agents: use the `/handoff` command (Claude Code) or `Acting as Team: log handoff from [from-agent] to [to-agent]` (other tools) to record agent transitions in `.bmad/handoffs/`. Update `.bmad/domain-glossary.md` with new business terms.
+
+---
+
+## Your Task
+
+[Insert your project task here]
 ```
 
 ---
@@ -702,7 +760,7 @@ bash /path/to/bmad-sdlc-agents/scripts/update.sh
 ## FAQ
 
 **Q: Where do agents live?**
-A: In `agents/` (global, install once). Copy paths like `agents/solution-architect/SKILL.md` into your tool prompts.
+A: Source files live in `agents/` in this repo. After running `install-global.sh` they are deployed to your tool (e.g. `~/.claude/skills/` for Claude Code). You invoke them with a slash command (`/solution-architect`) or by addressing the agent by role — no file paths needed.
 
 **Q: Where does project context live?**
 A: In `.bmad/` (per project, checked into git). Each project has its own `.bmad/PROJECT-CONTEXT.md`, `tech-stack.md`, etc.

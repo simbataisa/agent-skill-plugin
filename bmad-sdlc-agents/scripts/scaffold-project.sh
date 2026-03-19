@@ -65,18 +65,81 @@ fi
 # Create directory structure
 # ============================================================
 echo -e "${BLUE}Creating directories...${NC}"
-mkdir -p ".bmad"
+mkdir -p ".bmad/handoffs"
 mkdir -p "docs/architecture/adr"
 mkdir -p "docs/stories"
+mkdir -p "docs/testing"
 mkdir -p "docs/ux"
 mkdir -p "tests/fixtures"
 
 echo "  ✓ .bmad/"
+echo "  ✓ .bmad/handoffs/"
 echo "  ✓ docs/architecture/adr"
 echo "  ✓ docs/stories/"
+echo "  ✓ docs/testing/"
 echo "  ✓ docs/ux/"
 echo "  ✓ tests/fixtures/"
 echo ""
+
+# Merge BMAD hooks into an existing settings.json, backing up first.
+# Usage: merge_settings_json <bmad_source.json> <target_settings.json>
+merge_settings_json() {
+    local src="$1"
+    local dst="$2"
+
+    if [[ ! -f "$dst" ]]; then
+        cp "$src" "$dst"
+        echo "  ✓ Created $(basename "$dst")"
+        return
+    fi
+
+    # Back up the existing file
+    local backup="${dst}.bak"
+    cp "$dst" "$backup"
+    echo "  ✓ Backed up existing $(basename "$dst") → $(basename "$backup")"
+
+    # Merge hook arrays using Python
+    python3 - "$src" "$dst" << 'PYEOF'
+import json, sys
+
+src_path, dst_path = sys.argv[1], sys.argv[2]
+
+with open(src_path) as f:
+    src = json.load(f)
+with open(dst_path) as f:
+    dst = json.load(f)
+
+src_hooks = src.get("hooks", {})
+dst_hooks = dst.setdefault("hooks", {})
+
+for event, entries in src_hooks.items():
+    if event not in dst_hooks:
+        dst_hooks[event] = entries
+    else:
+        # Append only entries whose commands aren't already present
+        existing_cmds = {
+            h.get("command", "")
+            for block in dst_hooks[event]
+            for h in block.get("hooks", [])
+        }
+        for entry in entries:
+            new_cmds = {h.get("command", "") for h in entry.get("hooks", [])}
+            if not new_cmds.issubset(existing_cmds):
+                dst_hooks[event].append(entry)
+
+with open(dst_path, "w") as f:
+    json.dump(dst, f, indent=2)
+    f.write("\n")
+PYEOF
+
+    if [[ $? -eq 0 ]]; then
+        echo "  ✓ Merged hooks into $(basename "$dst")"
+    else
+        # Restore backup on failure
+        cp "$backup" "$dst"
+        echo -e "  ${RED}✗ Merge failed — restored from backup. Manually merge: $src${NC}"
+    fi
+}
 
 # Function to replace placeholder
 replace_placeholder() {
@@ -93,12 +156,16 @@ echo -e "${BLUE}Scaffolding .bmad templates...${NC}"
 for template_file in "$SCAFFOLD_DIR/.bmad"/*.md; do
     filename="$(basename "$template_file")"
     dest_file=".bmad/$filename"
-
     cp "$template_file" "$dest_file"
     replace_placeholder "$dest_file"
-
     echo "  ✓ $filename"
 done
+
+# Copy handoff template into handoffs/ subdirectory
+if [[ -f "$SCAFFOLD_DIR/.bmad/handoffs/_template.md" ]]; then
+    cp "$SCAFFOLD_DIR/.bmad/handoffs/_template.md" ".bmad/handoffs/_template.md"
+    echo "  ✓ handoffs/_template.md"
+fi
 
 echo ""
 
@@ -249,16 +316,11 @@ if [[ "$DETECTED_TOOL" == "claude" ]] && [[ -d "$HOOKS_PROJECT_DIR" ]]; then
     PROJ_HOOKS_DEST=".claude"
     mkdir -p "$PROJ_HOOKS_DEST/hooks"
 
-    # Merge project hooks settings.json into .claude/settings.json
+    # Merge project hooks into .claude/settings.json (backs up first)
     if [[ -f "$HOOKS_PROJECT_DIR/settings.json" ]]; then
-        local_settings="$PROJ_HOOKS_DEST/settings.json"
-        if [[ ! -f "$local_settings" ]]; then
-            cp "$HOOKS_PROJECT_DIR/settings.json" "$local_settings"
-            echo "  ✓ .claude/settings.json (project hooks)"
-        else
-            echo -e "  ${YELLOW}⚠ .claude/settings.json already exists — skipping hook merge.${NC}"
-            echo "    Manually merge: $HOOKS_PROJECT_DIR/settings.json"
-        fi
+        merge_settings_json "$HOOKS_PROJECT_DIR/settings.json" "$PROJ_HOOKS_DEST/settings.json"
+        # Remove any duplicates introduced by previous merges
+        python3 "$SCRIPT_DIR/clean-duplicate-hooks.py" "$PROJ_HOOKS_DEST/settings.json" 2>/dev/null || true
     fi
 
     # Copy hook scripts
@@ -295,7 +357,19 @@ fi
 # ============================================================
 echo -e "${BLUE}Generating BMAD context auto-load instruction file...${NC}"
 
-BMAD_CONTEXT_BLOCK="## BMAD Project Context
+BMAD_CONTEXT_BLOCK="## Active Methodology: BMAD SDLC
+
+This project uses the **BMAD (Breakthrough Method of Agile AI-Driven Development)** methodology.
+BMAD agents are the authoritative source of truth for all analysis, design, and implementation work.
+
+**When multiple skills or agents are installed:**
+- Always prefer BMAD agents invoked via slash commands (\`/business-analyst\`, \`/solution-architect\`, etc.)
+- BMAD artifacts belong **only** in the paths defined in \`.bmad/PROJECT-CONTEXT.md\` (Artifacts Index section)
+- Do NOT use non-BMAD skills (e.g. superpowers, personas, generic planners) for this project's deliverables
+- Use \`/handoff\` to log agent transitions — this creates a numbered child file in \`.bmad/handoffs/\`
+- Use \`/bmad-status\` to check project phase and artifact status
+
+## BMAD Project Context
 
 At the start of every conversation, read these files to understand this project:
 
@@ -303,7 +377,7 @@ At the start of every conversation, read these files to understand this project:
 - \`.bmad/tech-stack.md\` — technology stack, versions, dependencies
 - \`.bmad/team-conventions.md\` — code style, naming conventions, patterns
 - \`.bmad/domain-glossary.md\` — business domain terminology
-- \`.bmad/handoff-log.md\` — recent agent decisions and handoffs
+- \`.bmad/handoff-log.md\` — agent handoff index (full records in \`.bmad/handoffs/\`)
 
 Apply all conventions from \`.bmad/team-conventions.md\` when writing or reviewing code."
 

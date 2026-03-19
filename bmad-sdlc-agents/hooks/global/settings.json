@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_HOOKS_DIR:-$HOME/.claude/hooks}/validate-bmad-paths.sh\" \"$CLAUDE_TOOL_INPUT_PATH\""
+            "command": "bash -c 'HOOKS=\"${CLAUDE_HOOKS_DIR:-$HOME/.claude/hooks}\"; [ -f \"$HOOKS/validate-bmad-paths.sh\" ] && bash \"$HOOKS/validate-bmad-paths.sh\" \"$CLAUDE_TOOL_INPUT_PATH\" || exit 0'"
           }
         ]
       },
@@ -15,7 +15,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_HOOKS_DIR:-$HOME/.claude/hooks}/check-direct-db.sh\" \"$CLAUDE_TOOL_INPUT_COMMAND\""
+            "command": "bash -c 'HOOKS=\"${CLAUDE_HOOKS_DIR:-$HOME/.claude/hooks}\"; [ -f \"$HOOKS/check-direct-db.sh\" ] && bash \"$HOOKS/check-direct-db.sh\" \"$CLAUDE_TOOL_INPUT_COMMAND\" || exit 0'"
           }
         ]
       }
@@ -26,7 +26,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_HOOKS_DIR:-$HOME/.claude/hooks}/notify-doc-written.sh\" \"$CLAUDE_TOOL_INPUT_PATH\""
+            "command": "bash -c 'HOOKS=\"${CLAUDE_HOOKS_DIR:-$HOME/.claude/hooks}\"; [ -f \"$HOOKS/notify-doc-written.sh\" ] && bash \"$HOOKS/notify-doc-written.sh\" \"$CLAUDE_TOOL_INPUT_PATH\" || exit 0'"
           }
         ]
       }
