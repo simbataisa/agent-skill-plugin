@@ -1,0 +1,2 @@
+[console_scripts]
+drawio-mcp-server = drawio_mcp_server.server:main

@@ -1,0 +1,46 @@
+<mxfile host="Claude MCP Server" modified="2026-03-20T00:00:00.000Z" agent="drawio-mcp-server/1.0" version="24.1.0">
+  <diagram name="System Architecture" id="0">
+    <mxGraphModel dx="1200" dy="750" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" background="#ffffff" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0" edge="0"/>
+        <mxCell id="frontend" value="Web Frontend" style="rounded=0;whiteSpace=wrap;html=1;componentfillColor=#DAE8FC;strokeColor=#6C8EBF;" vertex="1" parent="1">
+          <mxGeometry x="0" y="0" width="120" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="api_gateway" value="API Gateway" style="rounded=0;whiteSpace=wrap;html=1;componentfillColor=#DAE8FC;strokeColor=#6C8EBF;" vertex="1" parent="1">
+          <mxGeometry x="0" y="150" width="120" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="auth_service" value="Auth Service" style="rounded=0;whiteSpace=wrap;html=1;rounded=1fillColor=#D5E8D4;strokeColor=#82B366;" vertex="1" parent="1">
+          <mxGeometry x="0" y="300" width="120" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="user_service" value="User Service" style="rounded=0;whiteSpace=wrap;html=1;rounded=1fillColor=#D5E8D4;strokeColor=#82B366;" vertex="1" parent="1">
+          <mxGeometry x="0" y="300" width="120" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="data_service" value="Data Service" style="rounded=0;whiteSpace=wrap;html=1;rounded=1fillColor=#D5E8D4;strokeColor=#82B366;" vertex="1" parent="1">
+          <mxGeometry x="0" y="300" width="120" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="database" value="PostgreSQL" style="rounded=0;whiteSpace=wrap;html=1;cylinderfillColor=#FFE6CC;strokeColor=#D79B00;" vertex="1" parent="1">
+          <mxGeometry x="0" y="450" width="120" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="conn1" value="HTTP" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;orthogonalEdgeStyle=1;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="frontend" target="api_gateway">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="conn2" value="validate" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;orthogonalEdgeStyle=1;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="api_gateway" target="auth_service">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="conn3" value="get user" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;orthogonalEdgeStyle=1;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="api_gateway" target="user_service">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="conn4" value="get data" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;orthogonalEdgeStyle=1;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="api_gateway" target="data_service">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="conn5" value="query" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;orthogonalEdgeStyle=1;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="user_service" target="database">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="conn6" value="query" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;orthogonalEdgeStyle=1;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="data_service" target="database">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

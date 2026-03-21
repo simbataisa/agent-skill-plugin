@@ -486,101 +486,96 @@ See the **Squad Prompt** section below to run all 10 agents in a single session.
 
 Use this mega-prompt to coordinate all agents. **Agents and project context are pre-loaded** — no file paths needed.
 
-> **Claude Code users:** The squad prompt below names each agent with their slash command in parentheses, e.g. `(/business-analyst)`. Work through agents one at a time — start a turn with the slash command to explicitly select the skill, then paste your instruction. This prevents other installed skills from intercepting.
+> **⚠ Critical — Claude Code users:** Do NOT paste the squad prompt as a single block of text. That triggers skill-matching on the whole message, and any other installed planning/analysis plugin (e.g. superpowers) will intercept it. Each agent must be invoked in its own turn with an explicit slash command.
+>
+> Also: if you have a plugin with `PostToolUse` or `Stop` hooks that inject follow-up instructions (e.g. the thedotmack superpowers plugin), those hooks fire *below* the skill layer and override BMAD regardless of what slash command you use. **Disable any non-BMAD planning plugins before running a BMAD session** (Claude Code → Settings → Plugins).
 
-### Claude Code
+### Claude Code — One Agent Per Turn
 
-Paste into a new Claude Code session in your project root, then invoke each agent with its slash command as you work through the phases:
+Run each agent in a separate Claude Code message, starting with the slash command. Use this as your session script:
 
+**Turn 1 — Business Analyst:**
 ```
-# BMAD Squad: Full Project Analysis & Design
+/business-analyst
+Review .bmad/PROJECT-CONTEXT.md. Identify stakeholders, constraints, and risks.
+Generate a project brief and save to docs/project-brief.md.
+[Your task description here]
+```
 
-The BMAD agent squad is already installed. The project context is in .bmad/.
-Coordinate all 10 agents across the following phases:
+**Turn 2 — Product Owner:**
+```
+/product-owner
+Read docs/project-brief.md from the Business Analyst.
+Create a PRD with prioritized user stories. Save to docs/prd.md and docs/stories/.
+```
 
-## Project Context (already loaded via CLAUDE.md)
-- .bmad/PROJECT-CONTEXT.md — project vision and goals
-- .bmad/tech-stack.md — technology choices
-- .bmad/team-conventions.md — project rules and standards
+**Turn 3 — Solution Architect:**
+```
+/solution-architect
+Read docs/prd.md and .bmad/tech-stack.md.
+Propose system architecture, service boundaries, API contracts, data models.
+Record decisions as ADRs in docs/architecture/adr/.
+```
 
-## Analysis Phase (Business Analyst → Product Owner)
-**Business Analyst** (`/business-analyst`):
-- Review .bmad/PROJECT-CONTEXT.md
-- Identify stakeholders, constraints, risks
-- Generate project brief — output to docs/project-brief.md
+**Turn 4 — UX Designer:**
+```
+/ux-designer
+Read docs/prd.md and any personas in docs/ux/.
+Create wireframes, user journeys, and design system. Save to docs/ux/.
+```
 
-**Product Owner** (`/product-owner`):
-- Take Business Analyst brief
-- Create PRD with prioritized user stories
-- Output to docs/stories/ and docs/prd.md
+**Turn 5 — Enterprise Architect:**
+```
+/enterprise-architect
+Review docs/architecture/ from Solution Architect.
+Propose cloud infrastructure, CI/CD pipeline, monitoring, and compliance controls.
+Save to docs/architecture/.
+```
 
-## Solutioning Phase (Solution Architect → UX Designer → Enterprise Architect)
-**Solution Architect** (`/solution-architect`):
-- Take PRD and tech-stack.md
-- Propose system architecture, service boundaries
-- Define API contracts, data models
-- Create ADRs — output to docs/architecture/
+**Turn 6 — Tech Lead:**
+```
+/tech-lead
+Review all architecture and design artifacts.
+Identify integration points, flag risks and dependencies across backend/frontend/mobile.
+```
 
-**UX Designer** (`/ux-designer`):
-- Work from PRD and user personas
-- Create wireframes, user journeys, design system
-- Output to docs/ux/
+**Turn 7 — Backend Engineer:**
+```
+/backend-engineer
+Read docs/architecture/adr/ and .bmad/tech-stack.md.
+Design API endpoints, data access layer, event-driven services.
+```
 
-**Enterprise Architect** (`/enterprise-architect`):
-- Review Solution Architect proposal
-- Propose cloud infrastructure, CI/CD, monitoring
-- Address compliance, cost optimization
-- Output to docs/architecture/
+**Turn 8 — Frontend Engineer:**
+```
+/frontend-engineer
+Read docs/ux/ wireframes and .bmad/tech-stack.md.
+Design component architecture, state management, and accessibility strategy.
+```
 
-## Implementation Phase (Tech Lead → Backend → Frontend → Mobile)
-**Tech Lead** (`/tech-lead`):
-- Coordinate backend, frontend, mobile teams
-- Identify integration points, flag risks and dependencies
-- Review for architectural consistency
+**Turn 9 — Mobile Engineer:**
+```
+/mobile-engineer
+Read docs/ux/ wireframes and .bmad/tech-stack.md.
+Decide native vs. cross-platform, define mobile architecture and device constraints.
+```
 
-**Backend Engineer** (`/backend-engineer`):
-- Take architecture ADRs and tech-stack.md
-- Design API endpoints, data access layer, event-driven services
-- Output to docs/architecture/
+**Turn 10 — Tester & QE:**
+```
+/tester-qe
+Read all artifacts (docs/stories/, docs/architecture/, docs/ux/).
+Propose test strategy (unit, integration, e2e, security, performance).
+Define quality gates. Save to docs/testing/.
+```
 
-**Frontend Engineer** (`/frontend-engineer`):
-- Take UX wireframes and tech-stack.md
-- Design component architecture, state management, accessibility strategy
-- Output to docs/ux/
+**Between turns — log the handoff:**
+```
+/handoff
+```
 
-**Mobile Engineer** (`/mobile-engineer`):
-- Take UX wireframes and tech-stack.md
-- Decide native vs. cross-platform, mobile architecture, device/network constraints
-- Output to docs/ux/
-
-## Quality & Testing
-**Tester & QE** (`/tester-qe`):
-- Take all artifacts (stories, architecture, designs, code plans)
-- Propose test strategy (unit, integration, e2e, security, performance)
-- Define quality gates — output to docs/testing/
-
-## Handoff & Documentation
-All agents:
-- Use `/handoff` to log each agent transition — it creates a numbered file in `.bmad/handoffs/` and updates the master index
-- Update `.bmad/domain-glossary.md` with new business terms
-- Never write directly to `.bmad/handoff-log.md` — use `/handoff` instead
-
-## Output Format
-- **Analysis Artifacts:** project-brief, backlog, user stories (docs/stories/)
-- **Architecture Artifacts:** ADRs, API specs, data models (docs/architecture/)
-- **Design Artifacts:** Wireframes, personas, journeys (docs/ux/)
-- **Implementation Plans:** Service breakdown, sprint-level tasks, integration checklist
-- **Testing Artifacts:** Test strategy, test plan, automation roadmap (docs/testing/)
-
----
-
-## Your Task
-
-[Insert your project task here. Examples:]
-- Analyze this new market opportunity and produce PRD + architecture design
-- Design a microservices migration strategy for our monolith
-- Build a complete design-to-code workflow for a new feature
-- Plan Q2 development with risk assessment and sprint breakdown
+**Check overall status at any point:**
+```
+/bmad-status
 ```
 
 ### Cursor / Windsurf / Copilot / Gemini / OpenCode / Aider
@@ -744,7 +739,7 @@ git commit -m "Add BMAD project scaffold"
 ```
 
 ### Running Full Squad Analysis
-Copy the **Squad Prompt** above into your tool, update the task section, and run. All 10 agents coordinate on analysis, design, and planning.
+Use the **Squad Prompt** section above as a session script. For Claude Code, run one agent per turn using its slash command. Do not paste the whole squad prompt as one message — invoke each agent explicitly.
 
 ### Updating Agents Across All Projects
 ```bash
@@ -776,6 +771,16 @@ A: Keep `agents/` in the BMAD repository. Use `scripts/update.sh` to refresh. Pr
 
 **Q: Can multiple teams use different tech stacks?**
 A: Absolutely. Each project has its own `tech-stack.md`, so agents adapt to TypeScript, Python, Kotlin, etc.
+
+**Q: Another plugin (e.g. superpowers) keeps taking over my BMAD session. How do I stop it?**
+A: There are two layers to this conflict:
+
+1. **Hook injection** — Plugins with `PostToolUse` or `Stop` hooks can inject follow-up instructions *after every tool call*, below the skill-matching layer. Even an explicit slash command like `/business-analyst` can be overridden this way. The only fix is to **disable the conflicting plugin** in Claude Code → Settings → Plugins before running a BMAD session. You can re-enable it afterward for non-BMAD projects.
+
+2. **Skill-matching** — If you send a large prose prompt ("plan and design my project…"), Claude Code fuzzy-matches across all installed skills. A broad planning/analysis plugin wins because its triggers are wider. The fix is to **always start each message with the slash command** (`/business-analyst`, `/solution-architect`, etc.) — slash commands are explicit file lookups, not fuzzy matches, so they bypass skill competition.
+
+**Q: Can I run BMAD alongside other plugins?**
+A: Yes, but not in the same session. Disable broad planning plugins (superpowers, etc.) at the start of a BMAD session, do your BMAD work, then re-enable them. For per-project isolation, note that Claude Code doesn't support per-project plugin enable/disable today — it's global. The cleanest workflow is: keep BMAD enabled globally, disable competing plugins when doing structured BMAD sessions.
 
 ---
 

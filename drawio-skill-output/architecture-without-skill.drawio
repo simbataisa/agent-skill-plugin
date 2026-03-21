@@ -1,0 +1,82 @@
+<mxfile host="drawio" modified="2026-03-20T00:00:00.000Z" agent="5.0" version="20.0.0">
+  <diagram name="Web App Architecture" id="diagram1">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="800" background="#ffffff" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- React Frontend -->
+        <mxCell id="frontend" value="React Frontend" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4A90E2;fontColor=#ffffff;fontSize=14;fontStyle=1;shadow=1;strokeColor=#2E5C8A;" vertex="1" parent="1">
+          <mxGeometry x="480" y="40" width="240" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- API Gateway -->
+        <mxCell id="gateway" value="API Gateway" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#7ED321;fontColor=#ffffff;fontSize=14;fontStyle=1;shadow=1;strokeColor=#5AA214;" vertex="1" parent="1">
+          <mxGeometry x="480" y="160" width="240" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- Auth Service -->
+        <mxCell id="authService" value="Auth Service" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5A623;fontColor=#ffffff;fontSize=14;fontStyle=1;shadow=1;strokeColor=#C17F1A;" vertex="1" parent="1">
+          <mxGeometry x="80" y="300" width="200" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- Order Service -->
+        <mxCell id="orderService" value="Order Service" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5A623;fontColor=#ffffff;fontSize=14;fontStyle=1;shadow=1;strokeColor=#C17F1A;" vertex="1" parent="1">
+          <mxGeometry x="920" y="300" width="200" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- Auth Database -->
+        <mxCell id="authDB" value="Auth DB&#10;(PostgreSQL)" style="shape=cylinder;whiteSpace=wrap;html=1;fillColor=#9013FE;fontColor=#ffffff;fontSize=12;fontStyle=1;shadow=1;strokeColor=#5A0BA0;" vertex="1" parent="1">
+          <mxGeometry x="80" y="480" width="200" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- Order Database -->
+        <mxCell id="orderDB" value="Order DB&#10;(PostgreSQL)" style="shape=cylinder;whiteSpace=wrap;html=1;fillColor=#9013FE;fontColor=#ffffff;fontSize=12;fontStyle=1;shadow=1;strokeColor=#5A0BA0;" vertex="1" parent="1">
+          <mxGeometry x="920" y="480" width="200" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- Redis Cache -->
+        <mxCell id="redis" value="Redis Cache" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E84C3D;fontColor=#ffffff;fontSize=14;fontStyle=1;shadow=1;strokeColor=#A63329;" vertex="1" parent="1">
+          <mxGeometry x="480" y="480" width="240" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- Connections -->
+        <!-- Frontend to API Gateway -->
+        <mxCell id="conn1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=2;endArrow=classic;endFill=1;" edge="1" parent="1" source="frontend" target="gateway">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- API Gateway to Auth Service -->
+        <mxCell id="conn2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=2;endArrow=classic;endFill=1;" edge="1" parent="1" source="gateway" target="authService">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- API Gateway to Order Service -->
+        <mxCell id="conn3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=2;endArrow=classic;endFill=1;" edge="1" parent="1" source="gateway" target="orderService">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Auth Service to Auth DB -->
+        <mxCell id="conn4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=2;endArrow=classic;endFill=1;" edge="1" parent="1" source="authService" target="authDB">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Order Service to Order DB -->
+        <mxCell id="conn5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#333333;strokeWidth=2;endArrow=classic;endFill=1;" edge="1" parent="1" source="orderService" target="orderDB">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Auth Service to Redis -->
+        <mxCell id="conn6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FF6B6B;strokeWidth=2;endArrow=classic;endFill=1;dashed=1;" edge="1" parent="1" source="authService" target="redis">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Order Service to Redis -->
+        <mxCell id="conn7" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FF6B6B;strokeWidth=2;endArrow=classic;endFill=1;dashed=1;" edge="1" parent="1" source="orderService" target="redis">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
