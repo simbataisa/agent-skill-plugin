@@ -63,6 +63,55 @@ This creates project-aware agents that respect global conventions while adapting
 
 ---
 
+## Agent Intelligence
+
+Each agent skill embeds three layers of autonomous intelligence that eliminate manual overhead and keep sessions focused.
+
+### ⚡ Quick Mode Detection
+
+Before loading any project context, every agent runs a 2-second binary check to determine its operating mode:
+
+| Signal File | Mode |
+|---|---|
+| `docs/architecture/sprint-N-kickoff.md` exists | 🔨 **Execute Mode** — sprint implementation in progress |
+| `docs/testing/bugs/*-fix-plan.md` exists | 🔨 **Execute Mode** — bug fix in progress |
+| `docs/testing/hotfixes/*.md` exists | 🔨 **Execute Mode** — hotfix in progress |
+| None of the above | 📋 **Plan Mode** — creating or refining artifacts |
+
+**Why it matters:** Execute Mode agents skip `docs/prd.md` and the full planning artifact tree — loading only 2–3 targeted files (tech-stack, conventions, kickoff doc). This prevents context overload and dramatically speeds up sprint execution.
+
+### 🔍 Autonomous Task Detection
+
+After loading project context, each agent scans `.bmad/handoffs/` and `docs/` to determine its current task without explicit instructions. Each agent follows a priority table covering all work types it can handle — for example:
+
+- **Tech Lead** checks for hotfix docs → bug fix plans → sprint kickoffs → sprint plans → PRD, in that priority order, always handling the most urgent work type first
+- **Backend / Frontend / Mobile Engineers** scan for fix plans → sprint kickoffs → feature plans, selecting whichever is active
+- **Tester-QE** distinguishes "diagnose bug" (no fix-plan yet) from "verify fix" (fix-plan exists and fix applied)
+
+Each agent announces what it detected and what it will do — or reports `Blocked: [what's missing]` if prerequisites haven't been met, and names which agent to invoke first.
+
+### 🚀 Implementation Kickoff Suggestions
+
+Every agent's Completion Protocol includes a `🚀` line in the review summary pointing to the next agent in the chain:
+
+| Agent | 🚀 Suggests |
+|---|---|
+| Business Analyst | `/product-owner` — transform brief into PRD and backlog |
+| Product Owner | `/solution-architect` (new project) or `/tech-lead` (feature/backlog) |
+| Solution Architect | `/enterprise-architect` — infra, compliance, CI/CD design |
+| Enterprise Architect | `/ux-designer` — wireframes, design system, accessibility |
+| UX Designer | `/tech-lead` — sprint plan and implementation kickoff |
+| Tech Lead (Plan Mode) | Execute Prompt B (squad) or individual engineer commands |
+| Backend Engineer | `/frontend-engineer` then `/tester-qe` |
+| Frontend Engineer | `/mobile-engineer` (if in scope) or `/tester-qe` |
+| Mobile Engineer | `/tester-qe` — full sprint testing |
+| Tester-QE (all pass) | `/tech-lead` — release sign-off or next sprint kickoff |
+| Tester-QE (failures) | Return to the failing engineer for fixes |
+
+You never need to remember the agent sequence — each agent hands you off to the next one.
+
+---
+
 ## Quick Start (3 Steps)
 
 ### Step 1: Install Global Layer
@@ -184,6 +233,55 @@ At the start of every conversation, read these files:
 Apply all conventions from `team-conventions.md` when writing or reviewing code.
 ```
 
+### Kiro (AWS) — `AGENTS.md` + `.kiro/steering/`
+
+Kiro reads `AGENTS.md` at the project root automatically. It also reads `.kiro/steering/*.md` files. BMAD commands are installed as steering files with `inclusion: manual`, making them available as `/bmad-status`, `/handoff`, etc. in Kiro chat.
+
+```markdown
+## BMAD Project Context
+
+At the start of every conversation, read these files:
+
+- `.bmad/PROJECT-CONTEXT.md` — vision, goals, stakeholders, constraints
+- `.bmad/tech-stack.md` — technology stack, versions, dependencies
+- `.bmad/team-conventions.md` — code style, naming conventions, patterns
+- `.bmad/domain-glossary.md` — business domain terminology
+- `.bmad/handoff-log.md` — recent agent decisions and handoffs
+
+Apply all conventions from `team-conventions.md` when writing or reviewing code.
+```
+
+### Codex CLI (OpenAI) — `AGENTS.md`
+
+```markdown
+## BMAD Project Context
+
+At the start of every conversation, read these files:
+
+- `.bmad/PROJECT-CONTEXT.md` — vision, goals, stakeholders, constraints
+- `.bmad/tech-stack.md` — technology stack, versions, dependencies
+- `.bmad/team-conventions.md` — code style, naming conventions, patterns
+- `.bmad/domain-glossary.md` — business domain terminology
+- `.bmad/handoff-log.md` — recent agent decisions and handoffs
+
+## Available BMAD Agents (skills)
+
+| Skill ($ invoke) | Role |
+|-------------------|------|
+| `$business-analyst` | Discovery, stakeholder analysis, project brief |
+| `$product-owner` | PRD, backlog, user stories |
+| `$solution-architect` | System design, APIs, ADRs |
+| `$enterprise-architect` | Cloud infra, compliance, CI/CD |
+| `$ux-designer` | Wireframes, design system, accessibility |
+| `$tech-lead` | Orchestration, code review, risk |
+| `$tester-qe` | Test strategy, quality gates |
+| `$backend-engineer` | APIs, services, data layers |
+| `$frontend-engineer` | React/TypeScript, components, a11y |
+| `$mobile-engineer` | iOS/Android, native architecture |
+
+Apply all conventions from `team-conventions.md` when writing or reviewing code.
+```
+
 ### OpenCode — `AGENTS.md`
 
 ```markdown
@@ -252,6 +350,65 @@ After scaffolding, open your project in Claude Code and use slash commands direc
 /tester-qe          /backend-engineer   /frontend-engineer   /mobile-engineer
 /bmad-status        /new-story          /new-adr
 /handoff            /new-epic           /sprint-plan
+/bmad-eval
+```
+
+---
+
+### Codex CLI (OpenAI)
+
+**Global Install (once)**
+```bash
+bash scripts/install-global.sh
+# → Skills → ~/.codex/skills/<agent>/SKILL.md  (invoke: $business-analyst, etc.)
+# → Prompts → ~/.codex/prompts/                (slash commands: /bmad-status, /handoff, etc.)
+```
+
+**Project Install (per project, run from project root)**
+```bash
+bash /path/to/bmad-sdlc-agents/scripts/scaffold-project.sh "My Project"
+# → .bmad/                 project context files (commit to git)
+# → AGENTS.md              auto-loads .bmad/ at session start
+# → .codex/skills/         project-local copies of all agent skills
+# → .codex/prompts/        project-local slash commands
+```
+
+After scaffolding, open your project in Codex CLI and invoke agents with `$` prefix, commands with `/`:
+```
+$business-analyst   $product-owner      $solution-architect
+$enterprise-architect  $ux-designer     $tech-lead
+$tester-qe          $backend-engineer   $frontend-engineer   $mobile-engineer
+/bmad-status        /new-story          /new-adr
+/handoff            /new-epic           /sprint-plan
+/bmad-eval
+```
+
+---
+
+### Kiro (AWS)
+
+**Global Install (once)**
+```bash
+bash scripts/install-global.sh
+# → Skills → ~/.kiro/skills/<agent>/SKILL.md    (activate by description match)
+# → Steering → ~/.kiro/steering/                (auto/manual inclusion files)
+# → Commands → ~/.kiro/steering/ (inclusion: manual → /bmad-status, /handoff, etc.)
+```
+
+**Project Install (per project, run from project root)**
+```bash
+bash /path/to/bmad-sdlc-agents/scripts/scaffold-project.sh "My Project"
+# → .bmad/                  project context files (commit to git)
+# → AGENTS.md               auto-loaded by Kiro at session start
+# → .kiro/skills/           project-local agent skills
+# → .kiro/steering/         project-local steering + slash commands
+```
+
+After scaffolding, open your project in Kiro. Skills activate by description match. Commands are available as slash commands:
+```
+/bmad-status        /new-story          /new-adr
+/handoff            /new-epic           /sprint-plan
+/bmad-eval
 ```
 
 ---
@@ -462,6 +619,43 @@ referencing the architecture decisions in docs/architecture/ and tech-stack.md.
 security testing approach, based on docs/stories/ and tech-stack.md.
 ```
 
+### Using a Single Agent (Codex CLI)
+
+Invoke agents with the `$` prefix. Codex matches skills by name:
+
+```
+$business-analyst Generate a concise project brief including stakeholders, success
+criteria, and constraints, based on the project context.
+```
+
+```
+$solution-architect Propose a system architecture with service boundaries, API contracts,
+and data models. Reference the PRD in docs/stories/ and tech-stack.md.
+```
+
+```
+$ux-designer Create wireframes and a design spec for the checkout flow, based on user
+personas in docs/ux/ and the PRD in docs/stories/.
+```
+
+### Using a Single Agent (Kiro)
+
+Kiro skills activate by description match. Just describe the task — Kiro selects the matching BMAD agent automatically. You can also use slash commands for BMAD operations:
+
+```
+Generate a concise project brief including stakeholders, success criteria, and constraints,
+based on .bmad/PROJECT-CONTEXT.md.
+```
+
+```
+Propose a system architecture with service boundaries, API contracts, and data models.
+Reference the PRD in docs/stories/ and tech-stack.md.
+```
+
+```
+/bmad-status
+```
+
 ### Using a Single Agent (Cursor / Windsurf / Copilot / Gemini / OpenCode / Aider)
 
 Agents are already loaded via your global rules file. Just address the agent by role in your prompt — the tool has all agent definitions in context:
@@ -492,7 +686,13 @@ Use this mega-prompt to coordinate all agents. **Agents and project context are 
 
 ### Claude Code — One Agent Per Turn
 
-Run each agent in a separate Claude Code message, starting with the slash command. Use this as your session script:
+Run each agent in a **separate** Claude Code message starting with its slash command.
+Each agent's skill automatically pauses after completing its work and asks for your review.
+Reply `refine: [feedback]` to iterate with the same agent, or `next` to advance.
+
+---
+
+#### 🗂 Phase 1 — Plan (Turns 1–10)
 
 **Turn 1 — Business Analyst:**
 ```
@@ -505,7 +705,7 @@ Generate a project brief and save to docs/project-brief.md.
 **Turn 2 — Product Owner:**
 ```
 /product-owner
-Read docs/project-brief.md from the Business Analyst.
+Read docs/project-brief.md.
 Create a PRD with prioritized user stories. Save to docs/prd.md and docs/stories/.
 ```
 
@@ -513,125 +713,848 @@ Create a PRD with prioritized user stories. Save to docs/prd.md and docs/stories
 ```
 /solution-architect
 Read docs/prd.md and .bmad/tech-stack.md.
-Propose system architecture, service boundaries, API contracts, data models.
-Record decisions as ADRs in docs/architecture/adr/.
+Propose system architecture, service boundaries, API contracts, and data models.
+Record every architectural decision as an ADR in docs/architecture/adr/.
+Save overall architecture to docs/architecture/solution-architecture.md.
 ```
 
 **Turn 4 — UX Designer:**
 ```
 /ux-designer
-Read docs/prd.md and any personas in docs/ux/.
-Create wireframes, user journeys, and design system. Save to docs/ux/.
+Read docs/prd.md and docs/architecture/solution-architecture.md.
+Create wireframes, user journeys, and a design system. Save to docs/ux/.
 ```
 
 **Turn 5 — Enterprise Architect:**
 ```
 /enterprise-architect
-Review docs/architecture/ from Solution Architect.
+Read docs/architecture/solution-architecture.md and all ADRs in docs/architecture/adr/.
 Propose cloud infrastructure, CI/CD pipeline, monitoring, and compliance controls.
-Save to docs/architecture/.
+Save to docs/architecture/enterprise-architecture.md.
 ```
 
-**Turn 6 — Tech Lead:**
+**Turn 6 — Tech Lead (sequencing):**
 ```
 /tech-lead
-Review all architecture and design artifacts.
-Identify integration points, flag risks and dependencies across backend/frontend/mobile.
+Review all planning artifacts:
+- docs/project-brief.md, docs/prd.md
+- docs/architecture/ (all ADRs, solution-architecture.md, enterprise-architecture.md)
+- docs/stories/ (all epics), docs/ux/
+
+Sequence stories into sprint batches. Identify:
+1. Which stories each engineer must implement first (dependencies)
+2. Any missing specs or unresolved ADRs that would block implementation
+3. Acceptance criteria gaps that need clarification before coding starts
+Save sprint plan to docs/architecture/sprint-plan.md.
 ```
 
-**Turn 7 — Backend Engineer:**
+**Turn 7 — Backend Engineer (spec):**
 ```
 /backend-engineer
-Read docs/architecture/adr/ and .bmad/tech-stack.md.
-Design API endpoints, data access layer, event-driven services.
+Read docs/architecture/sprint-plan.md and docs/architecture/adr/.
+Write the backend implementation spec:
+- API endpoint contracts (routes, request/response schemas)
+- Data access layer patterns and repository interfaces
+- Event/message contracts if applicable
+Save to docs/architecture/backend-implementation-spec.md.
+Do NOT write application code yet — output spec only.
 ```
 
-**Turn 8 — Frontend Engineer:**
+**Turn 8 — Frontend Engineer (spec):**
 ```
 /frontend-engineer
-Read docs/ux/ wireframes and .bmad/tech-stack.md.
-Design component architecture, state management, and accessibility strategy.
+Read docs/ux/, docs/architecture/sprint-plan.md, and docs/architecture/backend-implementation-spec.md.
+Write the frontend implementation spec:
+- Component tree and responsibility breakdown
+- State management approach
+- API contract consumption patterns
+- Accessibility and responsive requirements
+Save to docs/architecture/frontend-implementation-spec.md.
+Do NOT write application code yet — output spec only.
 ```
 
-**Turn 9 — Mobile Engineer:**
+**Turn 9 — Mobile Engineer (spec):**
 ```
 /mobile-engineer
-Read docs/ux/ wireframes and .bmad/tech-stack.md.
-Decide native vs. cross-platform, define mobile architecture and device constraints.
+Read docs/ux/ and docs/architecture/sprint-plan.md.
+Write the mobile implementation spec:
+- Native vs. cross-platform decision with rationale
+- Screen-to-component mapping
+- Device constraints and offline handling strategy
+Save to docs/architecture/mobile-implementation-spec.md.
+Do NOT write application code yet — output spec only.
 ```
 
-**Turn 10 — Tester & QE:**
+**Turn 10 — Tester & QE (strategy):**
 ```
 /tester-qe
-Read all artifacts (docs/stories/, docs/architecture/, docs/ux/).
-Propose test strategy (unit, integration, e2e, security, performance).
-Define quality gates. Save to docs/testing/.
+Read all planning artifacts (docs/stories/, docs/architecture/, docs/ux/).
+Write a test strategy covering unit, integration, e2e, security, and performance.
+Define quality gates and acceptance criteria per story.
+Save to docs/testing/test-strategy.md.
+Do NOT write test code yet — output strategy only.
 ```
 
-**Between turns — log the handoff:**
+**After each turn — log the handoff:**
 ```
 /handoff
 ```
 
-**Check overall status at any point:**
+**Gate before Phase 2 — confirm all planning artifacts exist:**
 ```
 /bmad-status
 ```
 
-### Cursor / Windsurf / Copilot / Gemini / OpenCode / Aider
-
-All agent definitions are already loaded in your global rules file. Address each agent by role directly:
-
-```
-# BMAD Squad: Full Project Analysis & Design
-
-You are a squad of 10 specialized AI agents. All agent skills are already loaded.
-The project context is in .bmad/ — read it before starting.
-
-## Analysis Phase
-Acting as the Business Analyst: review .bmad/PROJECT-CONTEXT.md, identify stakeholders,
-constraints, and risks, then generate a project brief.
-
-Acting as the Product Owner: take the project brief and create a PRD with prioritized
-user stories. Save to docs/stories/.
-
-## Solutioning Phase
-Acting as the Solution Architect: propose system architecture, service boundaries, API
-contracts, and data models using .bmad/tech-stack.md. Record decisions as ADRs in
-docs/architecture/adr/.
-
-Acting as the UX Designer: create wireframes and user journeys based on the PRD and
-personas. Save to docs/ux/.
-
-Acting as the Enterprise Architect: propose cloud infrastructure, CI/CD pipeline,
-monitoring, and compliance controls. Save to docs/architecture/.
-
-## Implementation Phase
-Acting as the Tech Lead: coordinate backend, frontend, and mobile plans. Flag risks and
-integration dependencies.
-
-Acting as the Backend Engineer: design API endpoints, data layers, and event-driven
-services from the ADRs and tech-stack.md.
-
-Acting as the Frontend Engineer: design component architecture and state management from
-the UX wireframes and tech-stack.md.
-
-Acting as the Mobile Engineer: design mobile architecture and decide native vs.
-cross-platform from the UX wireframes and tech-stack.md.
-
-## Quality & Testing
-Acting as the Tester & QE: produce a test strategy covering unit, integration, e2e,
-security, and performance. Save to docs/testing/.
-
-## Handoff
-All agents: use the `/handoff` command (Claude Code) or `Acting as Team: log handoff from [from-agent] to [to-agent]` (other tools) to record agent transitions in `.bmad/handoffs/`. Update `.bmad/domain-glossary.md` with new business terms.
+> All 8 artifact paths must show ✅ before starting Phase 2.
 
 ---
 
-## Your Task
+#### ⚙️ Phase 2 — Execute (Turns 11–15)
 
-[Insert your project task here]
+> **Prerequisite:** `/bmad-status` shows ✅ on all 8 paths. ADRs are now locked.
+
+**Turn 11 — Tech Lead (execution kickoff):**
 ```
+/tech-lead
+Read docs/architecture/sprint-plan.md. Extract Sprint 1 stories.
+Produce a kickoff doc listing each story with its assigned engineer role
+(backend / frontend / mobile). Declare all ADRs locked.
+Save to docs/architecture/sprint-1-kickoff.md.
+```
+
+**Turn 12 — Backend Engineer (implement):**
+```
+/backend-engineer
+Read docs/architecture/sprint-1-kickoff.md — find all stories assigned to backend.
+Read docs/architecture/backend-implementation-spec.md for API contracts and patterns.
+Stack: .bmad/tech-stack.md  |  Style: .bmad/team-conventions.md
+
+For each assigned story:
+1. Implement API endpoints per the spec
+2. Write data access layer code
+3. Add inline documentation
+4. Note any unavoidable spec deviations: // DEVIATION: [reason]
+```
+
+**Turn 13 — Frontend Engineer (implement):**
+```
+/frontend-engineer
+Read docs/architecture/sprint-1-kickoff.md — find all stories assigned to frontend.
+Read docs/architecture/frontend-implementation-spec.md for component tree and state.
+Read docs/ux/ for wireframes and design system (locked — do not redesign).
+Stack: .bmad/tech-stack.md  |  Style: .bmad/team-conventions.md
+
+For each assigned story:
+1. Build components per the frontend spec
+2. Wire up state management and API calls
+3. Apply accessibility and responsive rules from docs/ux/
+```
+
+**Turn 14 — Mobile Engineer (implement):**
+```
+/mobile-engineer
+Read docs/architecture/sprint-1-kickoff.md — find all stories assigned to mobile.
+Read docs/architecture/mobile-implementation-spec.md for screen mapping and constraints.
+Stack: .bmad/tech-stack.md  |  Style: .bmad/team-conventions.md
+
+For each assigned story:
+1. Implement screens per the mobile spec
+2. Apply device constraint handling
+3. Wire up API calls per the backend contracts
+```
+
+**Turn 15 — Tester & QE (write and run tests):**
+```
+/tester-qe
+Read docs/architecture/sprint-1-kickoff.md for the full Sprint 1 story list.
+Read docs/testing/test-strategy.md for quality gates and acceptance criteria.
+
+For each story:
+1. Write unit tests per the quality gates
+2. Write integration tests for API contracts
+3. Flag any acceptance criteria from docs/stories/ that are NOT met
+4. Save test results to docs/testing/sprint-1-results.md
+```
+
+**Log Phase 1 → Phase 2 handoffs:**
+```
+/handoff tl be
+/handoff tl fe
+/handoff tl me
+```
+
+**Final status check:**
+```
+/bmad-status
+```
+
+---
+
+#### 🔁 Sprint Continuation (Sprint N+1, N+2, …)
+
+> After Tester-QE completes Sprint N and you type `next` to accept. Replace `N` throughout.
+
+**Step 1 — Close out the sprint:**
+```
+/bmad-eval
+```
+
+**Step 2 — Tech Lead: review + kick off Sprint N+1:**
+```
+/tech-lead
+Sprint N is complete. Read docs/testing/sprint-N-results.md.
+Identify unmet acceptance criteria and carry-over stories.
+Read docs/architecture/sprint-plan.md — extract Sprint N+1 stories.
+List each story with its assigned engineer role. Lock any new ADRs.
+Save to docs/architecture/sprint-N+1-kickoff.md.
+```
+
+**Step 3 — Backend Engineer:**
+```
+/backend-engineer
+Read docs/architecture/sprint-N+1-kickoff.md — find all stories assigned to backend.
+Read docs/architecture/backend-implementation-spec.md for patterns.
+Stack: .bmad/tech-stack.md  |  Style: .bmad/team-conventions.md
+Implement assigned stories. Mark deviations: // DEVIATION: [reason]
+```
+
+**Step 4 — Frontend Engineer:**
+```
+/frontend-engineer
+Read docs/architecture/sprint-N+1-kickoff.md — find all stories assigned to frontend.
+Read docs/architecture/frontend-implementation-spec.md + docs/ux/.
+Stack: .bmad/tech-stack.md  |  Style: .bmad/team-conventions.md
+Build UI components and wire up API calls. Mark deviations: // DEVIATION: [reason]
+```
+
+**Step 5 — Mobile Engineer:**
+```
+/mobile-engineer
+Read docs/architecture/sprint-N+1-kickoff.md — find all stories assigned to mobile.
+Read docs/architecture/mobile-implementation-spec.md.
+Stack: .bmad/tech-stack.md  |  Style: .bmad/team-conventions.md
+Write screens and wire up API calls. Mark deviations: // DEVIATION: [reason]
+```
+
+**Step 6 — Tester-QE:**
+```
+/tester-qe
+Read docs/architecture/sprint-N+1-kickoff.md for the full story list.
+Read docs/testing/test-strategy.md for quality gates.
+Write and run tests. Flag unmet criteria.
+Save results to docs/testing/sprint-N+1-results.md.
+```
+
+---
+
+### Codex CLI — One Agent Per Turn
+
+Same two-phase pattern as Claude Code. Use `$` prefix for skills, `/` for commands.
+The review gate is built into each agent's skill — no need to add it to the prompt.
+
+#### 🗂 Phase 1 — Plan
+
+Follow the Claude Code Phase 1 turns exactly, replacing `/` with `$` for each skill invocation:
+
+```
+$business-analyst    $product-owner       $solution-architect
+$ux-designer         $enterprise-architect $tech-lead
+$backend-engineer    $frontend-engineer   $mobile-engineer    $tester-qe
+```
+
+The task description for each turn is identical to the Claude Code section above.
+After each turn: `/handoff`. After Turn 10: `/bmad-status`.
+
+#### ⚙️ Phase 2 — Execute
+
+Follow the Claude Code Phase 2 turns exactly, replacing `/` with `$`:
+
+```
+$tech-lead  (kickoff)  →  $backend-engineer  →  $frontend-engineer
+$mobile-engineer  →  $tester-qe
+```
+
+#### 🔁 Sprint Continuation (Sprint N+1, N+2, …)
+
+Follow the Claude Code Sprint Continuation steps exactly, replacing `/` with `$`:
+
+```
+$bmad-eval                  # close out Sprint N
+$tech-lead                  # review results + kick off Sprint N+1
+$backend-engineer           # implement Sprint N+1 backend stories
+$frontend-engineer          # implement Sprint N+1 frontend stories
+$mobile-engineer            # implement Sprint N+1 mobile screens
+$tester-qe                  # test Sprint N+1, save sprint-N+1-results.md
+```
+
+Use the same task descriptions from the Claude Code Sprint Continuation section above,
+replacing `/` with `$` in all skill invocations.
+
+### Kiro — Description-Driven
+
+Kiro activates skills by description match. Prefix each turn with the agent's role.
+The review gate is built into each agent's skill.
+
+#### 🗂 Phase 1 — Plan
+
+**Turn 1 — Business Analyst:**
+```
+As a business analyst, review .bmad/PROJECT-CONTEXT.md. Identify stakeholders,
+constraints, and risks. Generate a project brief and save to docs/project-brief.md.
+[Your task description here]
+```
+
+**Turn 2 — Product Owner:**
+```
+As product owner, read docs/project-brief.md. Create a PRD with prioritized user stories.
+Save to docs/prd.md and docs/stories/.
+```
+
+**Turn 3 — Solution Architect:**
+```
+As solution architect, read docs/prd.md and .bmad/tech-stack.md. Propose system
+architecture, service boundaries, API contracts, and data models. Record all decisions
+as ADRs in docs/architecture/adr/. Save to docs/architecture/solution-architecture.md.
+```
+
+**Turn 4 — UX Designer:**
+```
+As UX designer, read docs/prd.md and docs/architecture/solution-architecture.md.
+Create wireframes, user journeys, and a design system. Save to docs/ux/.
+```
+
+**Turn 5 — Enterprise Architect:**
+```
+As enterprise architect, read docs/architecture/solution-architecture.md and all ADRs.
+Propose cloud infrastructure, CI/CD pipeline, monitoring, and compliance controls.
+Save to docs/architecture/enterprise-architecture.md.
+```
+
+**Turn 6 — Tech Lead (sequencing):**
+```
+As tech lead, review all planning artifacts in docs/. Sequence stories into sprint batches.
+Identify dependencies and missing specs. Save to docs/architecture/sprint-plan.md.
+```
+
+**Turn 7 — Backend Engineer (spec):**
+```
+As backend engineer, read sprint-plan.md and all ADRs. Write the backend implementation
+spec: API contracts, data access patterns, event contracts.
+Save to docs/architecture/backend-implementation-spec.md. No code yet.
+```
+
+**Turn 8 — Frontend Engineer (spec):**
+```
+As frontend engineer, read docs/ux/, sprint-plan.md, and backend-implementation-spec.md.
+Write the frontend implementation spec: component tree, state management, API consumption.
+Save to docs/architecture/frontend-implementation-spec.md. No code yet.
+```
+
+**Turn 9 — Mobile Engineer (spec):**
+```
+As mobile engineer, read docs/ux/ and sprint-plan.md. Write the mobile implementation spec:
+platform decision, screen mapping, device constraints.
+Save to docs/architecture/mobile-implementation-spec.md. No code yet.
+```
+
+**Turn 10 — Tester & QE (strategy):**
+```
+As tester and QE engineer, read all planning artifacts. Write a test strategy: unit,
+integration, e2e, security, performance quality gates, acceptance criteria per story.
+Save to docs/testing/test-strategy.md. No test code yet.
+```
+
+Use `/bmad-status` after Turn 10. Use `/handoff` between turns.
+
+#### ⚙️ Phase 2 — Execute
+
+> Start only after `/bmad-status` confirms all 8 artifact paths are ✅.
+
+**Turn 11 — Tech Lead (kickoff):**
+```
+As tech lead, planning is approved. Read docs/architecture/sprint-plan.md.
+Extract Sprint 1 stories. Produce a kickoff doc listing each story with its assigned
+engineer role (backend / frontend / mobile). Declare all ADRs locked.
+Save to docs/architecture/sprint-1-kickoff.md.
+```
+
+**Turn 12 — Backend Engineer (implement):**
+```
+As backend engineer, read docs/architecture/sprint-1-kickoff.md — find all stories
+assigned to backend. Read docs/architecture/backend-implementation-spec.md for API
+contracts and patterns. Follow .bmad/tech-stack.md and .bmad/team-conventions.md.
+Implement each assigned story. Mark deviations: // DEVIATION: [reason]
+```
+
+**Turn 13 — Frontend Engineer (implement):**
+```
+As frontend engineer, read docs/architecture/sprint-1-kickoff.md — find all stories
+assigned to frontend. Read docs/architecture/frontend-implementation-spec.md for
+component tree and state. Read docs/ux/ for wireframes (locked — do not redesign).
+Follow .bmad/tech-stack.md and .bmad/team-conventions.md.
+Build UI components and wire up API calls. Mark deviations: // DEVIATION: [reason]
+```
+
+**Turn 14 — Mobile Engineer (implement):**
+```
+As mobile engineer, read docs/architecture/sprint-1-kickoff.md — find all stories
+assigned to mobile. Read docs/architecture/mobile-implementation-spec.md for screen
+mapping and constraints. Follow .bmad/tech-stack.md and .bmad/team-conventions.md.
+Write mobile screens and wire up API calls. Mark deviations: // DEVIATION: [reason]
+```
+
+**Turn 15 — Tester & QE (write and run tests):**
+```
+As tester and QE engineer, read docs/architecture/sprint-1-kickoff.md for the full
+Sprint 1 story list. Read docs/testing/test-strategy.md for quality gates.
+Write and run unit + integration tests for every Sprint 1 story.
+Flag unmet acceptance criteria. Save results to docs/testing/sprint-1-results.md.
+```
+
+#### 🔁 Sprint Continuation (Sprint N+1, N+2, …)
+
+> After Tester-QE accepts Sprint N and you type `next`. Replace `N` throughout.
+
+**Close out Sprint N:**
+```
+As the BMAD eval collector, run /bmad-eval to log Sprint N metrics.
+```
+
+**Tech Lead — Sprint N+1 Kickoff:**
+```
+As tech lead, Sprint N is complete. Read docs/testing/sprint-N-results.md for
+carry-overs. Read docs/architecture/sprint-plan.md — extract Sprint N+1 stories.
+List each story with its assigned engineer role. Lock any new ADRs.
+Save to docs/architecture/sprint-N+1-kickoff.md.
+```
+
+**Backend Engineer — Sprint N+1:**
+```
+As backend engineer, read docs/architecture/sprint-N+1-kickoff.md — find all stories
+assigned to backend. Read docs/architecture/backend-implementation-spec.md for patterns.
+Follow .bmad/tech-stack.md. Implement assigned stories. Mark deviations: // DEVIATION: [reason]
+```
+
+**Frontend Engineer — Sprint N+1:**
+```
+As frontend engineer, read docs/architecture/sprint-N+1-kickoff.md — find all stories
+assigned to frontend. Read docs/architecture/frontend-implementation-spec.md + docs/ux/.
+Build UI components and wire up API calls. Mark deviations: // DEVIATION: [reason]
+```
+
+**Mobile Engineer — Sprint N+1:**
+```
+As mobile engineer, read docs/architecture/sprint-N+1-kickoff.md — find all stories
+assigned to mobile. Read docs/architecture/mobile-implementation-spec.md.
+Write screens and wire up API calls. Mark deviations: // DEVIATION: [reason]
+```
+
+**Tester & QE — Sprint N+1:**
+```
+As tester and QE engineer, read docs/architecture/sprint-N+1-kickoff.md for the full
+story list. Read docs/testing/test-strategy.md for quality gates.
+Write and run tests. Flag unmet criteria. Save to docs/testing/sprint-N+1-results.md.
+```
+
+### Cursor / Windsurf / Copilot / Gemini / OpenCode / Aider
+
+All agent skills are loaded from your global rules file. Select the prompt set that matches your work type below. Each agent follows its built-in Completion Protocol — it prints a `✅` review summary and waits. Reply `next` to advance or `refine: [feedback]` to iterate.
+
+> **Claude Code / Codex / Kiro users:** Run each agent block as a separate turn using its `/slash-command` (or `$` / description prefix) instead of pasting the whole prompt at once.
+
+**Key design principle:** Prompt A (Plan) saves all artifacts to known file paths. Prompt B (Execute) tells each agent to **read those files directly** — no manual copy-paste between prompts. The Tech Lead's kickoff doc is the bridge: it reads the plan, assigns stories per engineer, and saves a kickoff file that every execution agent reads.
+
+---
+
+#### 🏗 New Project
+
+Use when starting a project from scratch. Full 10-agent planning → multi-sprint execution.
+
+**Prompt A — Plan (10 agents, no code):**
+```
+# BMAD Squad: New Project Plan
+
+You are a squad of 10 specialized AI agents working ONE AT A TIME.
+All agent skills are loaded. The project context is in .bmad/ — read it before starting.
+OUTPUT ONLY DOCUMENTATION — do NOT write any application code yet.
+
+Each agent must follow its built-in Completion Protocol: run the quality gate, save
+outputs, print the ✅ review summary, and wait for my reply.
+Only advance to the next agent when I reply 'next'.
+
+---
+
+## Agent 1 — Business Analyst
+Review .bmad/PROJECT-CONTEXT.md. Identify stakeholders, constraints, risks, and success
+criteria. Generate a project brief. Save to docs/project-brief.md.
+[Describe the project goal here]
+
+## Agent 2 — Product Owner
+Read docs/project-brief.md. Create a full PRD: vision, epics, prioritized user stories
+with acceptance criteria. Save to docs/prd.md and individual stories to docs/stories/.
+
+## Agent 3 — Solution Architect
+Read docs/prd.md and .bmad/tech-stack.md. Propose system architecture, service
+boundaries, API contracts, and data models. Record all decisions as ADRs in
+docs/architecture/adr/. Save to docs/architecture/solution-architecture.md.
+
+## Agent 4 — UX Designer
+Read docs/prd.md and docs/architecture/solution-architecture.md. Create wireframes,
+user journeys, and a component design system. Save to docs/ux/.
+
+## Agent 5 — Enterprise Architect
+Read docs/architecture/solution-architecture.md and all ADRs. Define cloud
+infrastructure, CI/CD pipeline, observability, and compliance controls.
+Save to docs/architecture/enterprise-architecture.md.
+
+## Agent 6 — Tech Lead (sequencing)
+Review all planning artifacts. Sequence stories into sprint batches. For each sprint,
+list story assignments per engineer role (backend, frontend, mobile).
+Identify dependencies and spec gaps. Save to docs/architecture/sprint-plan.md.
+
+## Agent 7 — Backend Engineer (spec only — no code)
+Read sprint-plan.md and all ADRs. Write backend implementation spec: API contracts,
+data access patterns, event contracts. Save to docs/architecture/backend-implementation-spec.md.
+
+## Agent 8 — Frontend Engineer (spec only — no code)
+Read docs/ux/, sprint-plan.md, backend-implementation-spec.md. Write frontend spec:
+component tree, state management, API consumption. Save to docs/architecture/frontend-implementation-spec.md.
+
+## Agent 9 — Mobile Engineer (spec only — no code)
+Read docs/ux/ and sprint-plan.md. Write mobile spec: platform decision, screen mapping,
+device constraints. Save to docs/architecture/mobile-implementation-spec.md.
+
+## Agent 10 — Tester & QE (strategy only — no test code)
+Read all planning artifacts. Write a test strategy: unit, integration, e2e, security,
+performance quality gates, acceptance criteria per story. Save to docs/testing/test-strategy.md.
+```
+
+> ✅ Before Prompt B: run `/bmad-status` — all 8 artifact paths must be present.
+
+**Prompt B — Execute (Sprint 1):**
+```
+# BMAD Squad: Sprint 1 Implementation
+
+All planning is approved. All ADRs are locked — do NOT reopen architectural decisions.
+Each agent must follow its built-in Completion Protocol: print the ✅ review summary
+and wait for my reply. Only proceed when I reply 'next'.
+
+## Tech Lead (execution kickoff)
+Read docs/architecture/sprint-plan.md. Extract Sprint 1 stories. Produce a kickoff doc
+listing each story with its assigned engineer role (backend / frontend / mobile).
+Declare all ADRs locked. Save to docs/architecture/sprint-1-kickoff.md.
+
+## Backend Engineer
+Read docs/architecture/sprint-1-kickoff.md — find all stories assigned to backend.
+Read docs/architecture/backend-implementation-spec.md for API contracts and patterns.
+Stack: .bmad/tech-stack.md  |  Style: .bmad/team-conventions.md
+Implement each assigned story. Mark deviations: // DEVIATION: [reason]
+
+## Frontend Engineer
+Read docs/architecture/sprint-1-kickoff.md — find all stories assigned to frontend.
+Read docs/architecture/frontend-implementation-spec.md for component tree and state.
+Read docs/ux/ for wireframes and design system.
+Stack: .bmad/tech-stack.md  |  Style: .bmad/team-conventions.md
+Build UI components and wire up API calls. Mark deviations: // DEVIATION: [reason]
+
+## Mobile Engineer
+Read docs/architecture/sprint-1-kickoff.md — find all stories assigned to mobile.
+Read docs/architecture/mobile-implementation-spec.md for screen mapping and constraints.
+Stack: .bmad/tech-stack.md  |  Style: .bmad/team-conventions.md
+Write mobile screens and wire up API calls. Mark deviations: // DEVIATION: [reason]
+
+## Tester & QE
+Read docs/architecture/sprint-1-kickoff.md for the full Sprint 1 story list.
+Read docs/testing/test-strategy.md for quality gates and acceptance criteria.
+Write and run unit + integration tests for every Sprint 1 story.
+Flag any unmet acceptance criteria. Save results to docs/testing/sprint-1-results.md.
+```
+
+**Prompt C — Sprint N+1 Continuation:**
+
+> After Tester-QE accepts Sprint N and you type `next`. Replace `N` throughout.
+
+```
+# BMAD Squad: Sprint N+1 Implementation
+
+Sprint N is complete. ADRs remain locked.
+Each agent must follow its built-in Completion Protocol: print the ✅ review summary
+and wait for my reply. Only proceed when I reply 'next'.
+
+## Tech Lead — Sprint N+1 Kickoff
+Read docs/testing/sprint-N-results.md for carry-overs and unmet criteria.
+Read docs/architecture/sprint-plan.md — extract Sprint N+1 stories.
+List each story with its assigned engineer role. Lock any new ADRs.
+Save to docs/architecture/sprint-N+1-kickoff.md.
+
+## Backend Engineer
+Read docs/architecture/sprint-N+1-kickoff.md — find all stories assigned to backend.
+Read docs/architecture/backend-implementation-spec.md for patterns.
+Stack: .bmad/tech-stack.md  |  Style: .bmad/team-conventions.md
+Implement assigned stories. Mark deviations: // DEVIATION: [reason]
+
+## Frontend Engineer
+Read docs/architecture/sprint-N+1-kickoff.md — find all stories assigned to frontend.
+Read docs/architecture/frontend-implementation-spec.md + docs/ux/.
+Build UI components and wire up API calls. Mark deviations: // DEVIATION: [reason]
+
+## Mobile Engineer
+Read docs/architecture/sprint-N+1-kickoff.md — find all stories assigned to mobile.
+Read docs/architecture/mobile-implementation-spec.md.
+Write screens and wire up API calls. Mark deviations: // DEVIATION: [reason]
+
+## Tester & QE
+Read docs/architecture/sprint-N+1-kickoff.md for the full story list.
+Read docs/testing/test-strategy.md for quality gates.
+Write and run tests. Flag unmet criteria. Save to docs/testing/sprint-N+1-results.md.
+```
+
+> 💡 Run `/bmad-eval` first to log Sprint N metrics before starting Prompt C.
+
+---
+
+#### ✨ Feature Request / Enhancement
+
+Use when adding a new capability to an existing project. Skips BA and EA (project context already exists). Only runs architecture agents if the feature touches service boundaries or infrastructure.
+
+**Prompt A — Plan (5 agents, no code):**
+```
+# BMAD Squad: Feature Plan
+
+You are a squad of specialized AI agents working ONE AT A TIME on a new feature.
+All agent skills are loaded. Read .bmad/PROJECT-CONTEXT.md and existing docs/ first.
+OUTPUT ONLY DOCUMENTATION — do NOT write any code yet.
+
+Each agent must follow its built-in Completion Protocol: run the quality gate, save
+outputs, print the ✅ review summary, and wait for my reply.
+Only advance to the next agent when I reply 'next'.
+
+Feature: [describe the feature or paste the request here]
+
+---
+
+## Agent 1 — Product Owner
+Read docs/prd.md and existing docs/stories/. Define the feature scope: write new user
+stories with clear acceptance criteria. Identify any existing stories affected.
+Save stories to docs/stories/[feature-name]/ and update docs/prd.md.
+
+## Agent 2 — Solution Architect
+Read the new feature stories in docs/stories/[feature-name]/ and docs/architecture/.
+Assess architectural impact: new endpoints, data model changes, service boundary
+changes, third-party integrations. Create or update ADRs in docs/architecture/adr/.
+Update docs/architecture/solution-architecture.md if needed.
+
+## Agent 3 — UX Designer
+[Skip if no UI impact — reply 'next' immediately]
+Read docs/stories/[feature-name]/ and docs/ux/. Design wireframes and user flows for
+new or updated screens. Save to docs/ux/[feature-name]/.
+
+## Agent 4 — Tech Lead
+Read docs/stories/[feature-name]/, all updated ADRs, and docs/ux/[feature-name]/ if
+present. Break down stories by engineer role (backend / frontend / mobile). Estimate
+effort. Identify dependencies. Save the feature execution plan to
+docs/architecture/[feature-name]-plan.md — this file must list every story with its
+assigned engineer role, referenced spec, and any ADRs to follow.
+
+## Agent 5 — Tester & QE
+Read docs/stories/[feature-name]/ and the acceptance criteria within each story.
+Write test cases: unit, integration, regression impact on existing features.
+Update docs/testing/test-strategy.md with the feature's test section.
+```
+
+**Prompt B — Execute:**
+```
+# BMAD Squad: Feature Implementation
+
+Feature planning is approved. ADRs are locked for this feature.
+Each agent must follow its built-in Completion Protocol: print the ✅ review summary
+and wait for my reply. Only proceed when I reply 'next'.
+
+## Tech Lead — Kickoff
+Scan docs/architecture/ for the most recent *-plan.md file (created by Prompt A).
+Read it. Confirm story assignments per engineer. Lock all feature ADRs.
+Print the full assignment summary including the feature name and plan path so all
+subsequent agents know exactly which files to read.
+
+## Backend Engineer
+Read the feature plan identified by Tech Lead — find all stories assigned to backend.
+Read docs/architecture/solution-architecture.md and any referenced ADRs for API
+contracts and data model changes.
+Stack: .bmad/tech-stack.md  |  Style: .bmad/team-conventions.md
+Implement each assigned story. Mark deviations: // DEVIATION: [reason]
+
+## Frontend Engineer
+Read the feature plan identified by Tech Lead — find all stories assigned to frontend.
+Read the feature's UX folder in docs/ux/ for wireframes and interaction specs.
+Read docs/architecture/solution-architecture.md for API contracts.
+Stack: .bmad/tech-stack.md  |  Style: .bmad/team-conventions.md
+Build feature UI. Mark deviations: // DEVIATION: [reason]
+
+## Mobile Engineer
+Read the feature plan identified by Tech Lead — find all stories assigned to mobile.
+Read docs/architecture/mobile-implementation-spec.md and any referenced ADRs.
+Stack: .bmad/tech-stack.md  |  Style: .bmad/team-conventions.md
+Write feature mobile screens. Mark deviations: // DEVIATION: [reason]
+
+## Tester & QE
+Read the feature plan identified by Tech Lead for the complete story list.
+Read the feature's story folder in docs/stories/ for acceptance criteria per story.
+Read docs/testing/test-strategy.md for quality gates and regression scope.
+Write and run tests. Verify all acceptance criteria. Flag regressions.
+Save results to docs/testing/ with the feature name prefix.
+```
+
+> In a continuing session the agents will find the correct files automatically. If starting
+> a new session, tell the Tech Lead which feature plan to read (e.g. `docs/architecture/payment-retry-plan.md`).
+
+---
+
+#### 🐛 Bug Fix
+
+Use when investigating and resolving a reported defect. Starts with diagnosis before any fix code.
+
+**Prompt A — Diagnose (2 agents):**
+```
+# BMAD Squad: Bug Diagnosis
+
+Two agents will investigate this bug. Each must follow its built-in Completion
+Protocol: print the ✅ review summary and wait for my reply before the next agent.
+
+Bug report: [paste bug description, error message, or ticket here]
+
+---
+
+## Agent 1 — Tester & QE
+Reproduce the bug using the report above and the codebase. Document:
+- Exact reproduction steps
+- Actual vs expected behavior
+- Affected user stories or features (cross-ref docs/stories/)
+- Root-cause hypotheses (at least 2)
+- Regression risk: what else could be affected
+Choose a short bug-id slug (e.g. auth-timeout, cart-double-charge).
+Save bug report to docs/testing/bugs/[bug-id].md.
+
+## Agent 2 — Tech Lead
+Read the bug report saved by Tester-QE — scan docs/testing/bugs/ for the most recent
+.md file created in this session. Also read the relevant source files.
+Confirm the root cause. Define the minimal safe fix: which files change, what changes,
+what must NOT change. Identify the engineer role needed (backend / frontend / mobile).
+Assess regression scope. Save fix plan to docs/testing/bugs/[bug-id]-fix-plan.md.
+```
+
+**Prompt B — Fix & Verify:**
+```
+# BMAD Squad: Bug Fix Implementation
+
+Root cause confirmed. Fix plan is approved.
+Each agent must follow its built-in Completion Protocol: print the ✅ review summary
+and wait for my reply. Only proceed when I reply 'next'.
+
+## [Backend / Frontend / Mobile] Engineer
+Scan docs/testing/bugs/ for the most recent *-fix-plan.md file.
+Read the fix plan. Apply the targeted fix only — no unrelated refactoring.
+Mark every changed line: // FIX: [bug-id]
+
+## Tester & QE
+Read the bug report from docs/testing/bugs/ (the .md file without -fix-plan suffix).
+Re-run the reproduction steps — confirm the bug is fixed.
+Run regression tests for all areas identified in the fix plan.
+Save verification results to docs/testing/bugs/[bug-id]-verified.md.
+```
+
+> In a continuing session the agents will find the correct files automatically. If starting
+> a new session, replace `[bug-id]` with the slug from Prompt A (e.g. `auth-timeout`).
+
+---
+
+#### 🚨 Hotfix (Production Emergency)
+
+Use when a critical production issue needs the fastest possible resolution. Assess, fix, smoke test in one session — no planning docs.
+
+**Single Prompt — Assess, Fix, Verify:**
+```
+# BMAD Squad: Production Hotfix
+
+PRODUCTION EMERGENCY. Three agents work in strict sequence.
+Each agent must follow its built-in Completion Protocol: print the ✅ review summary
+and wait for my reply. Only proceed when I reply 'next'.
+
+Issue: [describe production symptoms, error logs, or incident report here]
+
+---
+
+## Agent 1 — Tech Lead
+Read the issue above and relevant source files. Identify root cause. Define the
+smallest safe fix (no refactoring, no scope creep). Confirm rollback plan.
+Identify the engineer role needed (backend / frontend / mobile).
+Save assessment to docs/testing/hotfixes/[date]-[issue].md.
+
+## Agent 2 — [Backend / Frontend / Mobile] Engineer
+Read the most recent assessment in docs/testing/hotfixes/.
+Implement the fix exactly as scoped.
+Mark every changed line: // HOTFIX: [date]-[issue]
+Do NOT refactor, rename, or clean up anything outside the fix scope.
+
+## Agent 3 — Tester & QE
+Read the assessment in docs/testing/hotfixes/ and the engineer's changes.
+Smoke test only — verify the critical path is unbroken.
+Confirm the production symptom is resolved.
+Save results to docs/testing/hotfixes/[date]-[issue]-verified.md.
+```
+
+---
+
+#### 📋 Backlog Item / Tech Debt / Chore
+
+Use for known stories already in the backlog, dependency upgrades, refactors, or maintenance tasks that don't need full architecture review.
+
+**Prompt A — Refine (2 agents, no code):**
+```
+# BMAD Squad: Backlog Refinement
+
+Two agents will refine and plan this work item. Each must follow its built-in
+Completion Protocol: print the ✅ review summary and wait for my reply.
+
+Work item: [paste story, tech debt description, or chore here]
+
+---
+
+## Agent 1 — Product Owner
+Read the work item and docs/prd.md. Choose a short story-id slug (e.g. upgrade-redis,
+refactor-auth-middleware). Clarify scope: write or refine the story with unambiguous
+acceptance criteria and explicit out-of-scope boundaries.
+Save refined story to docs/stories/[story-id].md.
+
+## Agent 2 — Tech Lead
+Read the refined story saved by the Product Owner — scan docs/stories/ for the most
+recent .md file created in this session. Also read relevant source files.
+Produce a technical breakdown: affected files, implementation approach, estimated
+effort, dependencies, risks. Identify the engineer role needed (backend / frontend / mobile).
+Flag any ADR implications. Save to docs/architecture/[story-id]-notes.md.
+```
+
+**Prompt B — Execute:**
+```
+# BMAD Squad: Backlog Item Implementation
+
+Story is refined and technical breakdown is approved.
+Each agent must follow its built-in Completion Protocol: print the ✅ review summary
+and wait for my reply. Only proceed when I reply 'next'.
+
+## [Backend / Frontend / Mobile] Engineer
+Scan docs/architecture/ for the most recent *-notes.md file.
+Read the tech notes and the linked story in docs/stories/.
+Implement per the approach defined. Follow .bmad/tech-stack.md and
+.bmad/team-conventions.md. Mark deviations: // DEVIATION: [reason]
+
+## Tester & QE
+Read the story file linked in the tech notes — find acceptance criteria.
+Write and run targeted tests. Verify all criteria are met.
+Save results to docs/testing/[story-id]-results.md.
+```
+
+> In a continuing session the agents will find the correct files automatically. If starting
+> a new session, replace `[story-id]` with the slug from Prompt A (e.g. `upgrade-redis`).
 
 ---
 
@@ -704,7 +1627,7 @@ The `scripts/update.sh` pulls the latest agent skills and shared resources, then
 ### Version Control
 - **Commit to git:** `.bmad/` directory (context files are project-specific)
 - **Commit to git:** `docs/` directory (all artifacts)
-- **Do not commit:** Global `~/.claude/`, `~/.skills/`, `~/.cursor/`, etc. (manage with `install-global.sh`)
+- **Do not commit:** Global `~/.claude/`, `~/.codex/`, `~/.kiro/`, `~/.skills/`, `~/.cursor/`, etc. (manage with `install-global.sh`)
 - **Do not commit:** Tool-specific config files unless project-managed
 
 ---
@@ -741,6 +1664,25 @@ git commit -m "Add BMAD project scaffold"
 ### Running Full Squad Analysis
 Use the **Squad Prompt** section above as a session script. For Claude Code, run one agent per turn using its slash command. Do not paste the whole squad prompt as one message — invoke each agent explicitly.
 
+### Continuing to the Next Sprint
+
+After each sprint the Tester-QE agent prints a `✅` review summary and waits. Once you've reviewed and type `next`, here's how to continue:
+
+**Claude Code / Codex CLI** — invoke each agent individually with the Sprint Continuation prompts from the Squad Prompt section. The sprint plan (produced by Tech Lead in Turn 6) already contains all sprint batches, so you only need to pull the next batch from it.
+
+**Cursor / Windsurf / Kiro** — paste **Prompt C** (Sprint N+1 Continuation) from the Squad Prompt section, replacing `N` with the completed sprint number.
+
+The key steps for every sprint boundary are the same regardless of tool:
+
+1. Type `next` to accept the Tester-QE review (closes Sprint N)
+2. Run `/bmad-eval` to log Sprint N productivity metrics
+3. Invoke **Tech Lead** — read `sprint-N-results.md`, confirm carry-overs, produce `sprint-N+1-kickoff.md`
+4. Invoke **Backend / Frontend / Mobile** engineers with Sprint N+1 story lists from the kickoff doc
+5. Invoke **Tester-QE** — test Sprint N+1, save `sprint-N+1-results.md`
+6. Repeat from step 1
+
+> The sprint plan is written once (Turn 6) and covers all sprints. You never need to re-plan unless scope changes — in that case, re-invoke Tech Lead with a `// SCOPE CHANGE:` note.
+
 ### Updating Agents Across All Projects
 ```bash
 # Pull latest agents and shared resources
@@ -749,6 +1691,248 @@ bash /path/to/bmad-sdlc-agents/scripts/update.sh
 # All projects instantly have access to updated agents
 # Project context files are preserved
 ```
+
+---
+
+## Workflow Diagrams
+
+Visual reference for all five work types. Each diagram shows the agent chain, key artifact outputs, and decision points.
+
+### 🏗 New Project
+
+Full 10-agent flow from project brief through multi-sprint execution.
+
+```mermaid
+flowchart TD
+    START([🏗 New Project Brief]) --> BA
+
+    subgraph PLAN["📋 Plan Phase (Prompt A — 10 agents)"]
+        BA["Business Analyst\n📄 docs/project-brief.md"]
+        PO["Product Owner\n📄 docs/prd.md\n📄 docs/stories/"]
+        SA["Solution Architect\n📄 solution-architecture.md\n📄 adr/"]
+        EA["Enterprise Architect\n📄 enterprise-architecture.md"]
+        UX["UX Designer\n📄 docs/ux/"]
+        TL_PLAN["Tech Lead\n📄 sprint-plan.md"]
+        BE_SPEC["Backend Engineer\n📄 backend-implementation-spec.md"]
+        FE_SPEC["Frontend Engineer\n📄 frontend-implementation-spec.md"]
+        ME_SPEC["Mobile Engineer\n📄 mobile-implementation-spec.md"]
+        TQE_STRAT["Tester & QE\n📄 test-strategy.md"]
+
+        BA --> PO --> SA --> EA --> UX --> TL_PLAN
+        TL_PLAN --> BE_SPEC & FE_SPEC & ME_SPEC
+        BE_SPEC & FE_SPEC & ME_SPEC --> TQE_STRAT
+    end
+
+    TQE_STRAT --> KICKOFF
+
+    subgraph EXEC["🔨 Execute Phase (Prompt B + C — per sprint)"]
+        KICKOFF["Tech Lead\n📄 sprint-N-kickoff.md"]
+        BE["Backend Engineer"]
+        FE["Frontend Engineer"]
+        ME["Mobile Engineer"]
+        TQE["Tester & QE\n📄 sprint-N-results.md"]
+        PASS{All stories\npass?}
+
+        KICKOFF --> BE & FE & ME --> TQE --> PASS
+        PASS -->|"🔁 Failures"| BE
+        PASS -->|"✅ Next Sprint"| KICKOFF
+    end
+
+    PASS -->|"🚀 Release"| DONE([Release / Deploy])
+```
+
+---
+
+### ✨ Feature Request / Enhancement
+
+Skips BA and EA (project context already exists). Architecture agents run only if the feature touches service boundaries.
+
+```mermaid
+flowchart TD
+    START([✨ Feature Request]) --> PO
+
+    subgraph PLAN["📋 Plan Phase (Prompt A — up to 5 agents)"]
+        PO["Product Owner\n📄 docs/stories/feature-name/\n📄 docs/prd.md updated"]
+        ARCH_Q{Architecture\nimpact?}
+        SA["Solution Architect\n📄 solution-architecture.md\n📄 ADRs updated"]
+        UI_Q{UI\nchanges?}
+        UX["UX Designer\n📄 docs/ux/feature-name/"]
+        TL_PLAN["Tech Lead\n📄 feature-name-plan.md"]
+        TQE_STRAT["Tester & QE\n📄 test-strategy.md updated"]
+
+        PO --> ARCH_Q
+        ARCH_Q -->|Yes| SA --> UI_Q
+        ARCH_Q -->|No| UI_Q
+        UI_Q -->|Yes| UX --> TL_PLAN
+        UI_Q -->|No| TL_PLAN
+        TL_PLAN --> TQE_STRAT
+    end
+
+    TQE_STRAT --> KICKOFF
+
+    subgraph EXEC["🔨 Execute Phase (Prompt B)"]
+        KICKOFF["Tech Lead\nConfirm kickoff + ADRs locked"]
+        BE["Backend Engineer"]
+        FE["Frontend Engineer"]
+        ME["Mobile Engineer"]
+        TQE["Tester & QE\nVerify + Regression"]
+        PASS{Pass?}
+
+        KICKOFF --> BE & FE & ME --> TQE --> PASS
+        PASS -->|"🔁 Fix"| BE
+    end
+
+    PASS -->|"✅ Done"| DONE([Feature Shipped])
+```
+
+---
+
+### 🐛 Bug Fix
+
+Diagnosis before fix. Two diagnosis agents confirm root cause before any code changes.
+
+```mermaid
+flowchart TD
+    START([🐛 Bug Report]) --> TQE1
+
+    subgraph DIAGNOSE["📋 Diagnose (Prompt A — 2 agents)"]
+        TQE1["Tester & QE\nReproduce + Root-Cause Hypotheses\n📄 docs/testing/bugs/bug-id.md"]
+        TL1["Tech Lead\nConfirm Root Cause + Minimal Safe Fix\n📄 docs/testing/bugs/bug-id-fix-plan.md"]
+
+        TQE1 --> TL1
+    end
+
+    TL1 --> ENG_Q
+
+    subgraph FIX["🔨 Fix & Verify (Prompt B — 2 agents)"]
+        ENG_Q{Engineer\nRole?}
+        BE["Backend Engineer\n// FIX: bug-id"]
+        FE["Frontend Engineer\n// FIX: bug-id"]
+        ME["Mobile Engineer\n// FIX: bug-id"]
+        TQE2["Tester & QE\nVerify Fix + Regression\n📄 bug-id-verified.md"]
+        PASS{Bug\nResolved?}
+
+        ENG_Q -->|Backend| BE
+        ENG_Q -->|Frontend| FE
+        ENG_Q -->|Mobile| ME
+        BE & FE & ME --> TQE2 --> PASS
+        PASS -->|"🔁 Still failing"| TL1
+    end
+
+    PASS -->|"✅ Resolved"| DONE([Bug Closed])
+```
+
+---
+
+### 🚨 Hotfix (Production Emergency)
+
+Assess, fix, smoke test in a single session. No planning docs, no refactoring.
+
+```mermaid
+flowchart TD
+    START([🚨 Production Incident]) --> TL
+
+    subgraph HOTFIX["Single Prompt — 3 agents in strict sequence"]
+        TL["Tech Lead\nAssess Root Cause\nMinimal Safe Fix + Rollback Plan\n📄 docs/testing/hotfixes/date-issue.md"]
+        ENG_Q{Smallest\nSafe Fix}
+        BE["Backend Engineer\n// HOTFIX: date-issue\nNo refactoring outside fix scope"]
+        FE["Frontend Engineer\n// HOTFIX: date-issue\nNo refactoring outside fix scope"]
+        ME["Mobile Engineer\n// HOTFIX: date-issue\nNo refactoring outside fix scope"]
+        TQE["Tester & QE\nSmoke Test Only — Critical Path\n📄 date-issue-verified.md"]
+        PASS{Critical Path\nUnbroken?}
+
+        TL --> ENG_Q
+        ENG_Q -->|Backend| BE
+        ENG_Q -->|Frontend| FE
+        ENG_Q -->|Mobile| ME
+        BE & FE & ME --> TQE --> PASS
+        PASS -->|"🔁 Rollback"| TL
+    end
+
+    PASS -->|"✅ Stable"| DONE([Hotfix Deployed])
+```
+
+---
+
+### 📋 Backlog Item / Tech Debt / Chore
+
+Lightweight two-agent refinement then direct execution. No architecture review needed.
+
+```mermaid
+flowchart TD
+    START([📋 Backlog Item\nTech Debt / Chore]) --> PO
+
+    subgraph REFINE["📋 Refine (Prompt A — 2 agents)"]
+        PO["Product Owner\nClarify Scope + Acceptance Criteria\n📄 docs/stories/story-id.md"]
+        TL["Tech Lead\nTechnical Breakdown + Effort\n📄 docs/architecture/story-id-notes.md"]
+
+        PO --> TL
+    end
+
+    TL --> ENG_Q
+
+    subgraph EXEC["🔨 Execute (Prompt B — 2 agents)"]
+        ENG_Q{Engineer\nRole?}
+        BE["Backend Engineer"]
+        FE["Frontend Engineer"]
+        ME["Mobile Engineer"]
+        TQE["Tester & QE\nVerify Acceptance Criteria\n📄 docs/testing/story-id-results.md"]
+        PASS{Criteria\nMet?}
+
+        ENG_Q -->|Backend| BE
+        ENG_Q -->|Frontend| FE
+        ENG_Q -->|Mobile| ME
+        BE & FE & ME --> TQE --> PASS
+        PASS -->|"🔁 Rework"| ENG_Q
+    end
+
+    PASS -->|"✅ Done"| DONE([Story Closed])
+```
+
+---
+
+## Productivity Evaluation
+
+BMAD includes a framework for measuring AI-assisted productivity gains, specifically designed for Enterprise Architect (EA) and Solution Architect (SA) roles.
+
+### Three Dimensions × Nine Metrics
+
+| Dimension | Metrics | Weight |
+|-----------|---------|--------|
+| **Speed** | Time-to-First-Draft, Time-to-Approval, Iteration Turnaround | 35% |
+| **Quality** | First-Pass Review Rate, NFR Coverage Score, Arch Debt Introduced | 35% |
+| **Coverage** | Alternatives Evaluated, Risks Identified, Stakeholder Scenarios | 30% |
+
+**Composite Score** = `0.35 × Speed + 0.35 × Quality + 0.30 × Coverage` (normalized 0–100)
+
+### The `/bmad-eval` Command
+
+Run `/bmad-eval` inside any BMAD project to auto-collect metrics from `.bmad/` artifacts, git history, and architecture docs. The command:
+
+1. Scans artifact files for NFR sections, ADR options, risk mentions, and scenario counts
+2. Measures revision history and time-to-commit from git
+3. Asks the practitioner for manual inputs (time-to-artifact, first-pass rate)
+4. Outputs a JSON record compatible with the evaluation dashboard
+
+Records accumulate in `.bmad/eval/eval-log.jsonl` for longitudinal tracking.
+
+### Interactive Dashboard
+
+The dashboard ships as `eval/bmad-agent-eval-dashboard.html` in this repo. After install:
+
+- **Per-project:** `.bmad/eval/bmad-agent-eval-dashboard.html` — scaffolded automatically by `scaffold-project.sh`
+- **Global reference:** `~/.bmad/eval/bmad-agent-eval-dashboard.html` — copied by `install-global.sh`
+
+It is a self-contained HTML file (Chart.js, no server required) that visualizes:
+
+- KPI cards with baseline → assisted deltas
+- Weekly composite trend (bar chart)
+- Per-dimension breakdowns (speed, quality, coverage)
+- EA vs SA radar comparison
+- Two-sample t-test statistical significance table
+- Sortable practitioner detail table
+
+**Getting started:** Collect 4 weeks of baseline data (no AI), then 4+ weeks of AI-assisted data. Replace the sample `DATA` array in the dashboard with your real records from `/bmad-eval`.
 
 ---
 
@@ -792,5 +1976,5 @@ To contribute an agent or template, see the contribution guidelines in `CONTRIBU
 
 ---
 
-**Last updated:** 2026-03-18
-**BMAD Version:** 2.0 (Two-Layer Architecture)
+**Last updated:** 2026-03-27
+**BMAD Version:** 2.1 (Agent Intelligence — Quick Mode Detection, Autonomous Task Detection, Kickoff Suggestions + Mermaid Workflow Diagrams)

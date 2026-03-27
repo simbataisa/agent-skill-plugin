@@ -11,6 +11,20 @@ BMAD (Breakthrough Method of Agile AI-Driven Development) is a structured, agent
 3. **Solutioning** — Design architecture, define technical specifications, create detailed implementation stories
 4. **Implementation** — Build, test, review, and deliver working software
 
+## Work Types
+
+Choose the squad prompt set that matches the nature of the work:
+
+| Work Type | Prompt Set | Key Agents | When to Use |
+|-----------|-----------|------------|-------------|
+| **New Project** | A → B → C | All 10 planning + 5 execution | Greenfield project from scratch |
+| **Feature / Enhancement** | A → B | PO → SA → UX → TL → TQE + execution | New capability on an existing project |
+| **Bug Fix** | A → B | TQE diagnose → TL root cause → fix + verify | Defect in existing functionality |
+| **Hotfix** | Single prompt | TL + engineer + TQE | Critical production emergency |
+| **Backlog / Tech Debt** | A → B | PO refine → TL breakdown + execution | Known story, chore, or refactor |
+
+Full prompt templates for all work types are in `bmad-sdlc-agents/README.md` under **Squad Prompt**.
+
 ## Collaborative Handoff Model
 
 Agents operate in a collaborative/iterative mode:
@@ -61,10 +75,13 @@ project-root/
 │   │   │   ├── story-1.1.md
 │   │   │   └── story-1.2.md
 │   │   └── epic-2/
-│   ├── test-plans/
-│   │   ├── test-strategy.md
-│   │   ├── test-cases/
-│   │   └── qa-checklists/
+│   ├── testing/
+│   │   ├── test-strategy.md      # TQE strategy (all work types)
+│   │   ├── sprint-N-results.md   # Per-sprint test results
+│   │   ├── bugs/                 # Bug fix reports (bug-report-template.md)
+│   │   │   └── [bug-id].md
+│   │   └── hotfixes/             # Hotfix assessments (hotfix-template.md)
+│   │       └── [date]-[issue].md
 │   ├── tech-specs/
 │   │   ├── api-spec.md
 │   │   ├── data-model.md

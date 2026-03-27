@@ -167,6 +167,14 @@ if [[ -f "$SCAFFOLD_DIR/.bmad/handoffs/_template.md" ]]; then
     echo "  ✓ handoffs/_template.md"
 fi
 
+# Copy eval dashboard into .bmad/eval/
+EVAL_SOURCE="$BASE_DIR/eval/bmad-agent-eval-dashboard.html"
+if [[ -f "$EVAL_SOURCE" ]]; then
+    mkdir -p ".bmad/eval"
+    cp "$EVAL_SOURCE" ".bmad/eval/bmad-agent-eval-dashboard.html"
+    echo "  ✓ .bmad/eval/bmad-agent-eval-dashboard.html"
+fi
+
 echo ""
 
 # ============================================================
@@ -179,6 +187,12 @@ DETECTED_TOOL=""
 if [[ -d "$HOME/.claude" ]] || command -v claude &> /dev/null; then
     DETECTED_TOOL="claude"
     echo -e "${GREEN}✓ Claude Code detected${NC}"
+elif [[ -d "$HOME/.codex" ]] || command -v codex &> /dev/null; then
+    DETECTED_TOOL="codex"
+    echo -e "${GREEN}✓ Codex CLI detected${NC}"
+elif [[ -d "$HOME/.kiro" ]] || command -v kiro &> /dev/null; then
+    DETECTED_TOOL="kiro"
+    echo -e "${GREEN}✓ Kiro detected${NC}"
 elif [[ -d "$HOME/.cursor" ]] || command -v cursor &> /dev/null; then
     DETECTED_TOOL="cursor"
     echo -e "${GREEN}✓ Cursor detected${NC}"
@@ -208,10 +222,30 @@ if [[ "$DETECTED_TOOL" != "none" ]]; then
             mkdir -p "$PROJECT_SKILLS"
             mkdir -p "$PROJECT_COMMANDS"
 
+            # Remove legacy installs (flat .md files and bmad-* prefixed folders)
             for agent_dir in "$BASE_DIR/agents"/*; do
                 if [[ -d "$agent_dir" ]]; then
                     agent_name="$(basename "$agent_dir")"
-                    cp "$agent_dir/SKILL.md" "$PROJECT_SKILLS/${agent_name}.md"
+                    flat_file="$PROJECT_SKILLS/${agent_name}.md"
+                    if [[ -f "$flat_file" ]]; then
+                        rm -f "$flat_file"
+                        echo "  ✓ Removed legacy flat file: ${agent_name}.md"
+                    fi
+                fi
+            done
+            for legacy in "$PROJECT_SKILLS"/bmad-*/; do
+                if [[ -d "$legacy" ]]; then
+                    rm -rf "$legacy"
+                    echo "  ✓ Removed legacy skill folder: $(basename "$legacy")"
+                fi
+            done
+
+            # Copy agents as folder-based skills: .claude/skills/<name>/SKILL.md
+            for agent_dir in "$BASE_DIR/agents"/*; do
+                if [[ -d "$agent_dir" ]]; then
+                    agent_name="$(basename "$agent_dir")"
+                    mkdir -p "$PROJECT_SKILLS/$agent_name"
+                    cp "$agent_dir/SKILL.md" "$PROJECT_SKILLS/$agent_name/SKILL.md"
                     echo "  ✓ agent: $agent_name"
                 fi
             done
@@ -228,6 +262,104 @@ if [[ "$DETECTED_TOOL" != "none" ]]; then
 
             echo "  Agents:   $PROJECT_SKILLS/"
             echo "  Commands: $PROJECT_COMMANDS/"
+            ;;
+
+        codex)
+            PROJECT_SKILLS=".codex/skills"
+            PROJECT_PROMPTS=".codex/prompts"
+            mkdir -p "$PROJECT_SKILLS"
+            mkdir -p "$PROJECT_PROMPTS"
+
+            # Remove legacy bmad-* prefixed skill folders
+            for legacy in "$PROJECT_SKILLS"/bmad-*/; do
+                if [[ -d "$legacy" ]]; then
+                    rm -rf "$legacy"
+                    echo "  ✓ Removed legacy skill folder: $(basename "$legacy")"
+                fi
+            done
+
+            # Codex skills are folder-based: .codex/skills/<name>/SKILL.md
+            for agent_dir in "$BASE_DIR/agents"/*; do
+                if [[ -d "$agent_dir" ]]; then
+                    agent_name="$(basename "$agent_dir")"
+                    mkdir -p "$PROJECT_SKILLS/$agent_name"
+                    cp "$agent_dir/SKILL.md" "$PROJECT_SKILLS/$agent_name/SKILL.md"
+                    # Copy references/ and templates/ if they exist
+                    if [[ -d "$agent_dir/references" ]]; then
+                        cp -r "$agent_dir/references" "$PROJECT_SKILLS/$agent_name/"
+                    fi
+                    if [[ -d "$agent_dir/templates" ]]; then
+                        cp -r "$agent_dir/templates" "$PROJECT_SKILLS/$agent_name/"
+                    fi
+                    echo "  ✓ skill: $agent_name"
+                fi
+            done
+
+            # Copy slash commands to .codex/prompts/
+            if [[ -d "$COMMANDS_DIR" ]]; then
+                for cmd_file in "$COMMANDS_DIR"/*.md; do
+                    if [[ -f "$cmd_file" ]]; then
+                        cp "$cmd_file" "$PROJECT_PROMPTS/$(basename "$cmd_file")"
+                        echo "  ✓ prompt: $(basename "$cmd_file" .md)"
+                    fi
+                done
+            fi
+
+            echo "  Skills:  $PROJECT_SKILLS/"
+            echo "  Prompts: $PROJECT_PROMPTS/"
+            ;;
+
+        kiro)
+            PROJECT_SKILLS=".kiro/skills"
+            PROJECT_STEERING=".kiro/steering"
+            mkdir -p "$PROJECT_SKILLS"
+            mkdir -p "$PROJECT_STEERING"
+
+            # Remove legacy bmad-* prefixed skill folders
+            for legacy in "$PROJECT_SKILLS"/bmad-*/; do
+                if [[ -d "$legacy" ]]; then
+                    rm -rf "$legacy"
+                    echo "  ✓ Removed legacy skill folder: $(basename "$legacy")"
+                fi
+            done
+
+            # Skills are folder-based: .kiro/skills/<name>/SKILL.md
+            for agent_dir in "$BASE_DIR/agents"/*; do
+                if [[ -d "$agent_dir" ]]; then
+                    agent_name="$(basename "$agent_dir")"
+                    mkdir -p "$PROJECT_SKILLS/$agent_name"
+                    cp "$agent_dir/SKILL.md" "$PROJECT_SKILLS/$agent_name/SKILL.md"
+                    if [[ -d "$agent_dir/references" ]]; then
+                        cp -r "$agent_dir/references" "$PROJECT_SKILLS/$agent_name/"
+                    fi
+                    if [[ -d "$agent_dir/templates" ]]; then
+                        cp -r "$agent_dir/templates" "$PROJECT_SKILLS/$agent_name/"
+                    fi
+                    echo "  ✓ skill: $agent_name"
+                fi
+            done
+
+            # Commands → steering files with inclusion: manual (become /slash-commands)
+            if [[ -d "$COMMANDS_DIR" ]]; then
+                for cmd_file in "$COMMANDS_DIR"/*.md; do
+                    if [[ -f "$cmd_file" ]]; then
+                        cmd_name="$(basename "$cmd_file" .md)"
+                        desc=$(head -5 "$cmd_file" | grep "^description:" | sed 's/^description: *//')
+                        {
+                            echo "---"
+                            echo "description: ${desc:-BMAD command: $cmd_name}"
+                            echo "inclusion: manual"
+                            echo "---"
+                            echo ""
+                            awk '/^---$/{n++} n>=2{if(n==2 && /^---$/){n++;next}; print}' "$cmd_file"
+                        } > "$PROJECT_STEERING/$cmd_name.md"
+                        echo "  ✓ command: $cmd_name (→ /$cmd_name)"
+                    fi
+                done
+            fi
+
+            echo "  Skills:   $PROJECT_SKILLS/"
+            echo "  Steering: $PROJECT_STEERING/"
             ;;
 
         cursor)
@@ -292,10 +424,30 @@ if [[ "$DETECTED_TOOL" != "none" ]]; then
             PROJECT_SKILLS=".skills/skills"
             mkdir -p "$PROJECT_SKILLS"
 
+            # Remove legacy installs (flat .md files and bmad-* prefixed folders)
             for agent_dir in "$BASE_DIR/agents"/*; do
                 if [[ -d "$agent_dir" ]]; then
                     agent_name="$(basename "$agent_dir")"
-                    cp "$agent_dir/SKILL.md" "$PROJECT_SKILLS/${agent_name}.md"
+                    flat_file="$PROJECT_SKILLS/${agent_name}.md"
+                    if [[ -f "$flat_file" ]]; then
+                        rm -f "$flat_file"
+                        echo "  ✓ Removed legacy flat file: ${agent_name}.md"
+                    fi
+                fi
+            done
+            for legacy in "$PROJECT_SKILLS"/bmad-*/; do
+                if [[ -d "$legacy" ]]; then
+                    rm -rf "$legacy"
+                    echo "  ✓ Removed legacy skill folder: $(basename "$legacy")"
+                fi
+            done
+
+            # Copy agents as folder-based skills: .skills/skills/<name>/SKILL.md
+            for agent_dir in "$BASE_DIR/agents"/*; do
+                if [[ -d "$agent_dir" ]]; then
+                    agent_name="$(basename "$agent_dir")"
+                    mkdir -p "$PROJECT_SKILLS/$agent_name"
+                    cp "$agent_dir/SKILL.md" "$PROJECT_SKILLS/$agent_name/SKILL.md"
                     echo "  ✓ agent: $agent_name"
                 fi
             done
@@ -419,6 +571,117 @@ case "$DETECTED_TOOL" in
         fi
         ;;
 
+    codex)
+        INSTRUCTION_FILE="AGENTS.md"
+        AGENT_TABLE="
+## Available BMAD Agents (Codex skills)
+
+| Skill (\$ invoke) | Role |
+|-------------------|------|
+| \`\$business-analyst\` | Discovery, stakeholder analysis, project brief |
+| \`\$product-owner\` | PRD, backlog, user stories |
+| \`\$solution-architect\` | System design, APIs, ADRs |
+| \`\$enterprise-architect\` | Cloud infra, compliance, CI/CD |
+| \`\$ux-designer\` | Wireframes, design system, accessibility |
+| \`\$tech-lead\` | Orchestration, code review, risk |
+| \`\$tester-qe\` | Test strategy, quality gates |
+| \`\$backend-engineer\` | APIs, services, data layers |
+| \`\$frontend-engineer\` | React/TypeScript, components, a11y |
+| \`\$mobile-engineer\` | iOS/Android, native architecture |
+
+## Available BMAD Commands (slash commands)
+
+| Command | Role |
+|---------|------|
+| \`/bmad-status\` | Show project phase & artifact status |
+| \`/handoff\` | Log an agent handoff |
+| \`/new-story\` | Create a new user story |
+| \`/new-adr\` | Record an architecture decision |
+| \`/new-epic\` | Plan a full 4-phase epic |
+| \`/sprint-plan\` | Generate a capacity-matched sprint |"
+
+        if [[ -f "$INSTRUCTION_FILE" ]]; then
+            {
+                echo ""
+                echo "$BMAD_CONTEXT_BLOCK"
+                echo "$AGENT_TABLE"
+            } >> "$INSTRUCTION_FILE"
+            echo "  ✓ Appended to existing $INSTRUCTION_FILE"
+        else
+            {
+                echo "# $PROJECT_NAME"
+                echo ""
+                echo "$BMAD_CONTEXT_BLOCK"
+                echo "$AGENT_TABLE"
+            } > "$INSTRUCTION_FILE"
+            echo "  ✓ Created $INSTRUCTION_FILE"
+        fi
+        ;;
+
+    kiro)
+        # Kiro reads AGENTS.md natively AND .kiro/steering/ files
+        # Generate both: AGENTS.md at project root + auto-included steering file
+        INSTRUCTION_FILE="AGENTS.md"
+        AGENT_TABLE="
+## Available BMAD Agents (Kiro skills)
+
+Skills activate by description match. You can also invoke commands with / prefix:
+
+| Skill | Role |
+|-------|------|
+| business-analyst | Discovery, stakeholder analysis, project brief |
+| product-owner | PRD, backlog, user stories |
+| solution-architect | System design, APIs, ADRs |
+| enterprise-architect | Cloud infra, compliance, CI/CD |
+| ux-designer | Wireframes, design system, accessibility |
+| tech-lead | Orchestration, code review, risk |
+| tester-qe | Test strategy, quality gates |
+| backend-engineer | APIs, services, data layers |
+| frontend-engineer | React/TypeScript, components, a11y |
+| mobile-engineer | iOS/Android, native architecture |
+
+## Available BMAD Commands (/ slash commands)
+
+| Command | Role |
+|---------|------|
+| \`/bmad-status\` | Show project phase & artifact status |
+| \`/handoff\` | Log an agent handoff |
+| \`/new-story\` | Create a new user story |
+| \`/new-adr\` | Record an architecture decision |
+| \`/new-epic\` | Plan a full 4-phase epic |
+| \`/sprint-plan\` | Generate a capacity-matched sprint |"
+
+        # Create AGENTS.md at project root (Kiro reads this natively)
+        if [[ -f "$INSTRUCTION_FILE" ]]; then
+            {
+                echo ""
+                echo "$BMAD_CONTEXT_BLOCK"
+                echo "$AGENT_TABLE"
+            } >> "$INSTRUCTION_FILE"
+            echo "  ✓ Appended to existing $INSTRUCTION_FILE"
+        else
+            {
+                echo "# $PROJECT_NAME"
+                echo ""
+                echo "$BMAD_CONTEXT_BLOCK"
+                echo "$AGENT_TABLE"
+            } > "$INSTRUCTION_FILE"
+            echo "  ✓ Created $INSTRUCTION_FILE"
+        fi
+
+        # Also create auto-included steering file for belt-and-suspenders
+        mkdir -p ".kiro/steering"
+        {
+            echo "---"
+            echo "description: BMAD project context — auto-loaded at session start"
+            echo "inclusion: auto"
+            echo "---"
+            echo ""
+            echo "$BMAD_CONTEXT_BLOCK"
+        } > ".kiro/steering/bmad-project-context.md"
+        echo "  ✓ Created .kiro/steering/bmad-project-context.md"
+        ;;
+
     cursor)
         INSTRUCTION_FILE=".cursor/rules/001-project-context.mdc"
         mkdir -p ".cursor/rules"
@@ -502,7 +765,7 @@ case "$DETECTED_TOOL" in
         echo "$BMAD_CONTEXT_BLOCK" > "GEMINI.md"
         echo "  ✓ GEMINI.md"
 
-        # AGENTS.md (OpenCode)
+        # AGENTS.md (OpenCode + Codex CLI)
         echo "$BMAD_CONTEXT_BLOCK" > "AGENTS.md"
         echo "  ✓ AGENTS.md"
         ;;
@@ -533,6 +796,14 @@ echo "  ✓ docs/ux/design-system.md"
 touch "docs/architecture/adr/ADR-INDEX.md"
 echo "  ✓ docs/architecture/adr/ADR-INDEX.md"
 
+mkdir -p "docs/testing/bugs"
+touch "docs/testing/bugs/.gitkeep"
+echo "  ✓ docs/testing/bugs/"
+
+mkdir -p "docs/testing/hotfixes"
+touch "docs/testing/hotfixes/.gitkeep"
+echo "  ✓ docs/testing/hotfixes/"
+
 echo ""
 
 # ============================================================
@@ -548,6 +819,7 @@ echo "  • .bmad/tech-stack.md          — technology decisions"
 echo "  • .bmad/team-conventions.md    — coding standards"
 echo "  • .bmad/domain-glossary.md     — domain terminology"
 echo "  • .bmad/handoff-log.md         — agent handoff tracking"
+echo "  • .bmad/eval/bmad-agent-eval-dashboard.html — productivity evaluation dashboard"
 echo "  • docs/                        — documentation structure"
 if [[ "$DETECTED_TOOL" != "none" ]]; then
     echo "  • Project-level agent configurations"
@@ -557,25 +829,48 @@ if [[ "$DETECTED_TOOL" == "claude" ]] && [[ -d "$HOOKS_PROJECT_DIR" ]]; then
 fi
 case "$DETECTED_TOOL" in
     claude|cowork) echo "  • CLAUDE.md                    — auto-loads .bmad/ context on session start" ;;
+    codex)         echo "  • AGENTS.md                    — auto-loads .bmad/ context on session start" ;;
+    kiro)          echo "  • AGENTS.md + .kiro/steering/  — auto-loads .bmad/ context on session start" ;;
     cursor)        echo "  • .cursor/rules/001-project-context.mdc — auto-loads .bmad/ context" ;;
     windsurf)      echo "  • .windsurfrules               — auto-loads .bmad/ context on session start" ;;
-    none)          echo "  • CLAUDE.md / .windsurfrules / .cursor/rules/ / GEMINI.md / AGENTS.md — all tool instruction files" ;;
+    none)          echo "  • CLAUDE.md / AGENTS.md / .windsurfrules / .cursor/rules/ / GEMINI.md — all tool instruction files" ;;
 esac
 echo ""
 echo -e "${GREEN}Next steps:${NC}"
 echo "  1. Edit .bmad/PROJECT-CONTEXT.md to fill in project details"
 echo "  2. Edit .bmad/tech-stack.md with your stack decisions"
-echo "  3. Commit all .bmad/, .claude/, and instruction files to version control"
-echo "     (CLAUDE.md / .windsurfrules / .cursor/rules/ — whichever your team uses)"
+echo "  3. Commit all .bmad/, .claude/, .codex/, and instruction files to version control"
+echo "     (CLAUDE.md / AGENTS.md / .windsurfrules / .cursor/rules/ — whichever your team uses)"
 echo "  4. Teams review .bmad/*.md files before starting work"
 echo ""
-echo "Useful slash commands (Claude Code):"
-echo "  /bmad-status    — show project phase & artifact status"
-echo "  /new-story      — create a new user story"
-echo "  /new-adr        — record an architecture decision"
-echo "  /handoff        — log an agent handoff"
-echo "  /new-epic       — plan a full 4-phase epic"
-echo "  /sprint-plan    — generate a capacity-matched sprint"
+case "$DETECTED_TOOL" in
+    codex)
+        echo "Useful commands (Codex CLI):"
+        echo "  \$business-analyst — invoke Business Analyst skill"
+        echo "  \$solution-architect — invoke Solution Architect skill"
+        echo "  /bmad-status     — show project phase & artifact status"
+        echo "  /handoff         — log an agent handoff"
+        echo "  /new-story       — create a new user story"
+        echo "  /new-adr         — record an architecture decision"
+        ;;
+    kiro)
+        echo "Useful commands (Kiro):"
+        echo "  Skills activate by description match (e.g. ask for a 'project brief')"
+        echo "  /bmad-status     — show project phase & artifact status"
+        echo "  /handoff         — log an agent handoff"
+        echo "  /new-story       — create a new user story"
+        echo "  /new-adr         — record an architecture decision"
+        ;;
+    *)
+        echo "Useful slash commands (Claude Code):"
+        echo "  /bmad-status    — show project phase & artifact status"
+        echo "  /new-story      — create a new user story"
+        echo "  /new-adr        — record an architecture decision"
+        echo "  /handoff        — log an agent handoff"
+        echo "  /new-epic       — plan a full 4-phase epic"
+        echo "  /sprint-plan    — generate a capacity-matched sprint"
+        ;;
+esac
 echo ""
 echo "For more info, see:"
 echo "  • .bmad/PROJECT-CONTEXT.md (orientation)"

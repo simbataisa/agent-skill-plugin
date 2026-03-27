@@ -198,11 +198,41 @@ if [[ -d "$HOME/.claude" ]] || command -v claude &> /dev/null; then
     # Copy shared context to ~/.claude/
     copy_file "$SHARED_CONTEXT" "$HOME/.claude/BMAD-SHARED-CONTEXT.md"
 
-    # Copy all agents to ~/.claude/skills/
+    # Remove legacy installs (flat .md files and bmad-* prefixed folders from older versions)
+    if [[ "$DRY_RUN" == true ]]; then
+        echo "  [DRY] remove legacy flat skill files and bmad-* folders from $CLAUDE_SKILLS/"
+    else
+        # Remove old flat .md skill files (e.g. tech-lead.md, backend-engineer.md)
+        for agent_dir in "$AGENTS_DIR"/*; do
+            if [[ -d "$agent_dir" ]]; then
+                agent_name="$(basename "$agent_dir")"
+                flat_file="$CLAUDE_SKILLS/${agent_name}.md"
+                if [[ -f "$flat_file" ]]; then
+                    rm -f "$flat_file"
+                    echo "  ✓ Removed legacy flat file: ${agent_name}.md"
+                fi
+            fi
+        done
+        # Remove old bmad-* prefixed skill folders
+        for legacy in "$CLAUDE_SKILLS"/bmad-*/; do
+            if [[ -d "$legacy" ]]; then
+                rm -rf "$legacy"
+                echo "  ✓ Removed legacy skill folder: $(basename "$legacy")"
+            fi
+        done
+    fi
+
+    # Copy all agents to ~/.claude/skills/<agent-name>/SKILL.md (folder format required by Claude Code)
     for agent_dir in "$AGENTS_DIR"/*; do
         if [[ -d "$agent_dir" ]]; then
             agent_name="$(basename "$agent_dir")"
-            copy_file "$agent_dir/SKILL.md" "$CLAUDE_SKILLS/${agent_name}.md"
+            if [[ "$DRY_RUN" == true ]]; then
+                echo "  [DRY] mkdir + cp $agent_dir/SKILL.md -> $CLAUDE_SKILLS/$agent_name/SKILL.md"
+            else
+                mkdir -p "$CLAUDE_SKILLS/$agent_name"
+                cp "$agent_dir/SKILL.md" "$CLAUDE_SKILLS/$agent_name/SKILL.md"
+                echo "  ✓ Installed skill: $agent_name"
+            fi
         fi
     done
 
@@ -251,15 +281,192 @@ if [[ -d "$HOME/.skills" ]]; then
         mkdir -p "$COWORK_SKILLS"
     fi
 
+    # Remove legacy installs (flat .md files and bmad-* prefixed folders)
+    if [[ "$DRY_RUN" == false ]]; then
+        for agent_dir in "$AGENTS_DIR"/*; do
+            if [[ -d "$agent_dir" ]]; then
+                agent_name="$(basename "$agent_dir")"
+                flat_file="$COWORK_SKILLS/${agent_name}.md"
+                if [[ -f "$flat_file" ]]; then
+                    rm -f "$flat_file"
+                    echo "  ✓ Removed legacy flat file: ${agent_name}.md"
+                fi
+            fi
+        done
+        for legacy in "$COWORK_SKILLS"/bmad-*/; do
+            if [[ -d "$legacy" ]]; then
+                rm -rf "$legacy"
+                echo "  ✓ Removed legacy skill folder: $(basename "$legacy")"
+            fi
+        done
+    fi
+
+    # Copy all agents to ~/.skills/skills/<agent-name>/SKILL.md (folder format)
     for agent_dir in "$AGENTS_DIR"/*; do
         if [[ -d "$agent_dir" ]]; then
             agent_name="$(basename "$agent_dir")"
-            copy_file "$agent_dir/SKILL.md" "$COWORK_SKILLS/${agent_name}.md"
+            if [[ "$DRY_RUN" == true ]]; then
+                echo "  [DRY] mkdir + cp $agent_dir/SKILL.md -> $COWORK_SKILLS/$agent_name/SKILL.md"
+            else
+                mkdir -p "$COWORK_SKILLS/$agent_name"
+                cp "$agent_dir/SKILL.md" "$COWORK_SKILLS/$agent_name/SKILL.md"
+                echo "  ✓ Installed skill: $agent_name"
+            fi
         fi
     done
 
     echo "  Install path: $COWORK_SKILLS/"
     INSTALLED_TOOLS+=("Cowork")
+    echo ""
+fi
+
+# ============================================================
+# Codex CLI (OpenAI)
+# ============================================================
+if [[ -d "$HOME/.codex" ]] || command -v codex &> /dev/null; then
+    echo -e "${GREEN}✓ Codex CLI${NC} found"
+    CODEX_SKILLS="$HOME/.codex/skills"
+    CODEX_PROMPTS="$HOME/.codex/prompts"
+
+    if [[ "$DRY_RUN" == false ]]; then
+        mkdir -p "$CODEX_SKILLS"
+        mkdir -p "$CODEX_PROMPTS"
+    fi
+
+    # Remove legacy bmad-* prefixed skill folders
+    if [[ "$DRY_RUN" == false ]]; then
+        for legacy in "$CODEX_SKILLS"/bmad-*/; do
+            if [[ -d "$legacy" ]]; then
+                rm -rf "$legacy"
+                echo "  ✓ Removed legacy skill folder: $(basename "$legacy")"
+            fi
+        done
+    fi
+
+    # Copy shared context
+    copy_file "$SHARED_CONTEXT" "$HOME/.codex/BMAD-SHARED-CONTEXT.md"
+
+    # Copy all agents to ~/.codex/skills/<agent-name>/SKILL.md (folder-based)
+    for agent_dir in "$AGENTS_DIR"/*; do
+        if [[ -d "$agent_dir" ]]; then
+            agent_name="$(basename "$agent_dir")"
+            if [[ "$DRY_RUN" == true ]]; then
+                echo "  [DRY] mkdir + cp $agent_dir/SKILL.md -> $CODEX_SKILLS/$agent_name/SKILL.md"
+            else
+                mkdir -p "$CODEX_SKILLS/$agent_name"
+                cp "$agent_dir/SKILL.md" "$CODEX_SKILLS/$agent_name/SKILL.md"
+                # Copy references/ and templates/ if they exist
+                if [[ -d "$agent_dir/references" ]]; then
+                    cp -r "$agent_dir/references" "$CODEX_SKILLS/$agent_name/"
+                fi
+                if [[ -d "$agent_dir/templates" ]]; then
+                    cp -r "$agent_dir/templates" "$CODEX_SKILLS/$agent_name/"
+                fi
+            fi
+        fi
+    done
+
+    # Copy slash commands to ~/.codex/prompts/ (Codex uses prompts/ not commands/)
+    if [[ -d "$COMMANDS_DIR" ]]; then
+        for cmd_file in "$COMMANDS_DIR"/*.md; do
+            if [[ -f "$cmd_file" ]]; then
+                copy_file "$cmd_file" "$CODEX_PROMPTS/$(basename "$cmd_file")"
+            fi
+        done
+    fi
+
+    echo "  Skills:  $CODEX_SKILLS/"
+    echo "  Prompts: $CODEX_PROMPTS/"
+    echo "  Invoke agents:  \$business-analyst, \$solution-architect, etc."
+    echo "  Invoke commands: /bmad-status, /handoff, etc."
+    INSTALLED_TOOLS+=("Codex CLI")
+    echo ""
+fi
+
+# ============================================================
+# Kiro (AWS)
+# ============================================================
+if [[ -d "$HOME/.kiro" ]] || command -v kiro &> /dev/null; then
+    echo -e "${GREEN}✓ Kiro${NC} found"
+    KIRO_SKILLS="$HOME/.kiro/skills"
+    KIRO_STEERING="$HOME/.kiro/steering"
+
+    if [[ "$DRY_RUN" == false ]]; then
+        mkdir -p "$KIRO_SKILLS"
+        mkdir -p "$KIRO_STEERING"
+    fi
+
+    # Remove legacy bmad-* prefixed skill folders
+    if [[ "$DRY_RUN" == false ]]; then
+        for legacy in "$KIRO_SKILLS"/bmad-*/; do
+            if [[ -d "$legacy" ]]; then
+                rm -rf "$legacy"
+                echo "  ✓ Removed legacy skill folder: $(basename "$legacy")"
+            fi
+        done
+    fi
+
+    # Copy shared context as auto-included steering file
+    if [[ "$DRY_RUN" == true ]]; then
+        echo "  [DRY] write bmad-shared-context steering file -> $KIRO_STEERING/"
+    else
+        {
+            echo "---"
+            echo "description: BMAD shared context — organization standards and conventions"
+            echo "inclusion: auto"
+            echo "---"
+            echo ""
+            cat "$SHARED_CONTEXT"
+        } > "$KIRO_STEERING/bmad-shared-context.md"
+    fi
+
+    # Copy all agents as folder-based skills to ~/.kiro/skills/<name>/SKILL.md
+    for agent_dir in "$AGENTS_DIR"/*; do
+        if [[ -d "$agent_dir" ]]; then
+            agent_name="$(basename "$agent_dir")"
+            if [[ "$DRY_RUN" == true ]]; then
+                echo "  [DRY] mkdir + cp $agent_dir/SKILL.md -> $KIRO_SKILLS/$agent_name/SKILL.md"
+            else
+                mkdir -p "$KIRO_SKILLS/$agent_name"
+                cp "$agent_dir/SKILL.md" "$KIRO_SKILLS/$agent_name/SKILL.md"
+                if [[ -d "$agent_dir/references" ]]; then
+                    cp -r "$agent_dir/references" "$KIRO_SKILLS/$agent_name/"
+                fi
+                if [[ -d "$agent_dir/templates" ]]; then
+                    cp -r "$agent_dir/templates" "$KIRO_SKILLS/$agent_name/"
+                fi
+            fi
+        fi
+    done
+
+    # Copy commands as manual-inclusion steering files (become /slash-commands in Kiro)
+    if [[ -d "$COMMANDS_DIR" ]]; then
+        for cmd_file in "$COMMANDS_DIR"/*.md; do
+            if [[ -f "$cmd_file" ]]; then
+                cmd_name="$(basename "$cmd_file" .md)"
+                if [[ "$DRY_RUN" == true ]]; then
+                    echo "  [DRY] transform command -> $KIRO_STEERING/$cmd_name.md"
+                else
+                    # Read existing frontmatter description, wrap with Kiro's inclusion: manual
+                    desc=$(head -5 "$cmd_file" | grep "^description:" | sed 's/^description: *//')
+                    {
+                        echo "---"
+                        echo "description: ${desc:-BMAD command: $cmd_name}"
+                        echo "inclusion: manual"
+                        echo "---"
+                        echo ""
+                        # Skip original frontmatter, keep body
+                        awk '/^---$/{n++} n>=2{if(n==2 && /^---$/){n++;next}; print}' "$cmd_file"
+                    } > "$KIRO_STEERING/$cmd_name.md"
+                fi
+            fi
+        done
+    fi
+
+    echo "  Skills:   $KIRO_SKILLS/"
+    echo "  Steering: $KIRO_STEERING/"
+    echo "  Invoke skills by description match, commands with / prefix"
+    INSTALLED_TOOLS+=("Kiro")
     echo ""
 fi
 
@@ -473,6 +680,24 @@ if [[ -d "$HOME/.aider" ]] || command -v aider &> /dev/null; then
 fi
 
 # ============================================================
+# Eval Dashboard — deploy to ~/.bmad/eval/
+# ============================================================
+EVAL_DIR="$BASE_DIR/eval"
+BMAD_HOME="$HOME/.bmad"
+
+if [[ -d "$EVAL_DIR" ]]; then
+    echo -e "${BLUE}Installing BMAD Eval Dashboard...${NC}"
+    for eval_file in "$EVAL_DIR"/*; do
+        if [[ -f "$eval_file" ]]; then
+            copy_file "$eval_file" "$BMAD_HOME/eval/$(basename "$eval_file")"
+            echo -e "  ${GREEN}✓${NC} $(basename "$eval_file") → $BMAD_HOME/eval/"
+        fi
+    done
+    echo "  Open $BMAD_HOME/eval/bmad-agent-eval-dashboard.html in a browser to view."
+    echo ""
+fi
+
+# ============================================================
 # MCP Configs — display guidance (not auto-installed)
 # ============================================================
 if [[ -d "$MCP_CONFIGS_DIR" ]]; then
@@ -488,6 +713,8 @@ if [[ -d "$MCP_CONFIGS_DIR" ]]; then
     done
     echo ""
     echo "  Claude Code:  ~/.claude/claude_desktop_config.json"
+    echo "  Codex CLI:    ~/.codex/config.toml  (mcp_servers section)"
+    echo "  Kiro:         ~/.kiro/settings/mcp.json"
     echo "  Cursor:       ~/.cursor/mcp.json"
     echo "  Windsurf:     ~/.windsurf/mcp_config.json"
     echo "  Gemini CLI:   ~/.gemini/settings.json  (tools section)"
@@ -503,6 +730,16 @@ echo -e "${BLUE}Tools not found:${NC}"
 if ! [[ -d "$HOME/.claude" ]] && ! command -v claude &> /dev/null; then
     echo -e "${RED}✗ Claude Code${NC} — not installed"
     SKIPPED_TOOLS+=("Claude Code")
+fi
+
+if ! [[ -d "$HOME/.codex" ]] && ! command -v codex &> /dev/null; then
+    echo -e "${RED}✗ Codex CLI${NC} — not installed"
+    SKIPPED_TOOLS+=("Codex CLI")
+fi
+
+if ! [[ -d "$HOME/.kiro" ]] && ! command -v kiro &> /dev/null; then
+    echo -e "${RED}✗ Kiro${NC} — not installed"
+    SKIPPED_TOOLS+=("Kiro")
 fi
 
 if ! [[ -d "$HOME/.cursor" ]] && ! command -v cursor &> /dev/null; then
@@ -570,6 +807,7 @@ echo "  1. Review installed agent configurations"
 echo "  2. Review MCP configs in $BASE_DIR/mcp-configs/ and merge as needed"
 echo "  3. Run: ./scripts/scaffold-project.sh <project-name>"
 echo "  4. Teams fill in .bmad/*.md files in the project root"
+echo "  5. Open $BMAD_HOME/eval/bmad-agent-eval-dashboard.html to track productivity"
 echo ""
 
 exit 0
