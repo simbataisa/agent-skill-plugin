@@ -614,6 +614,15 @@ Call the **Business Analyst** agent when:
 - Requirements need structured documentation
 
 
+## Execution Topology
+
+| Work Type | Wave | Runs In Parallel With | Waits For |
+|-----------|------|-----------------------|-----------|
+| New Project | W1 | — (sole agent) | — |
+
+> BA always runs first. No parallelism at this stage.
+> After BA → PO runs alone (W2) → SA runs alone (W3) → then EA ∥ UX run in parallel (W4).
+
 ## Completion Protocol
 
 After finishing your work, **always** follow these steps — regardless of how you were invoked (squad prompt, standalone turn, or direct call):

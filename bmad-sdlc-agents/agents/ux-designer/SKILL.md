@@ -986,6 +986,17 @@ Before handing off to engineering agents, verify:
 - [ ] Handoff logged in `.bmad/handoff-log.md`
 - [ ] Frontend and Mobile engineers have no open questions about the design
 
+## Execution Topology
+
+| Work Type | Wave | Runs In Parallel With | Waits For |
+|-----------|------|-----------------------|-----------|
+| New Project | W4 | **Enterprise Architect** ∥ | SA → `solution-architecture.md`, PO → `docs/prd.md` |
+| Feature | W2 | **Solution Architect** ∥ | PO → `docs/stories/[feature]/` |
+
+> **Parallel pair (New Project):** UX and EA both depend on SA and run simultaneously in Wave 4. When BOTH complete → invoke Tech Lead.
+> **Parallel pair (Feature):** UX and SA both depend on PO's feature stories and run simultaneously. When BOTH complete → invoke Tech Lead.
+> If you finish before your parallel peer, report completion and wait — Tech Lead needs all inputs.
+
 ## Completion Protocol
 
 After finishing your work, **always** follow these steps — regardless of how you were invoked (squad prompt, standalone turn, or direct call):
@@ -1009,7 +1020,10 @@ Print this block exactly, filling in the bracketed fields:
 📄 Saved: docs/ux/[wireframes, user-journeys, design-system, ui-spec, accessibility-audit]
 🔍 Key outputs: [N screens/flows covered | key UX decisions | accessibility approach | open design questions]
 ⚠️  Flags: [blockers, risks, deferred items — or 'None']
-🚀 Solutioning complete → invoke /tech-lead to create the sprint plan and implementation kickoff
+🚀 UX complete:
+   [New Project] if /enterprise-architect also done → invoke /tech-lead | if EA still running → wait
+   [Feature] if /solution-architect also done → invoke /tech-lead | if SA still running → wait
+   [Standalone] invoke /tech-lead to create the sprint plan and implementation kickoff
 
 Waiting for your review.
   refine: [your feedback]   → I will revise and re-present
@@ -1027,9 +1041,12 @@ Apply the feedback, re-run affected quality gate items, re-save the artifact, an
 
 ### Step 7 — On 'next'
 
-Your work is accepted. Stop. The human will invoke Tech Lead separately.
+Your work is accepted. Stop. The human (or orchestrator) will handle next steps.
 
-> **Implementation kickoff:** Tech Lead reads the sprint plan + UX spec, produces `docs/architecture/sprint-1-kickoff.md`, then you can use Execute Prompt B (squad) — all engineers auto-scan the kickoff for their assigned stories.
+> **Parallel execution (New Project):** You may be running in parallel with Enterprise Architect (both in Wave 4). Tech Lead cannot start until BOTH EA and UX complete.
+> **Parallel execution (Feature):** You may be running in parallel with Solution Architect (both in Wave 2). Tech Lead cannot start until BOTH SA and UX complete.
+
+> **Implementation kickoff:** Once all parallel peers are done → Tech Lead reads your UX spec + architecture docs, produces `sprint-1-kickoff.md`, then spawns BE ∥ FE ∥ ME in parallel.
 
 > **Note:** If you are NOT in a squad session (e.g. invoked standalone for a specific task), still print the review summary and wait — the human may want to iterate before moving on.
 

@@ -1546,6 +1546,16 @@ Update `.bmad/project-state.md`:
 - [ ] All supporting documents (deployment topology, DR plan, compliance, observability, cost optimization, CI/CD) are created
 - [ ] Handoff logged in `.bmad/handoff-log.md`
 
+## Execution Topology
+
+| Work Type | Wave | Runs In Parallel With | Waits For |
+|-----------|------|-----------------------|-----------|
+| New Project | W4 | **UX Designer** ∥ | SA → `solution-architecture.md` + ADRs |
+
+> **Parallel pair:** EA and UX both depend on SA's output and run simultaneously in Wave 4.
+> When BOTH EA and UX complete → invoke Tech Lead. If you finish before UX, report completion and wait.
+> Tech Lead requires both `enterprise-architecture.md` (your output) and `docs/ux/` (UX output) before it can create the sprint plan.
+
 ## Completion Protocol
 
 After finishing your work, **always** follow these steps — regardless of how you were invoked (squad prompt, standalone turn, or direct call):
@@ -1569,7 +1579,10 @@ Print this block exactly, filling in the bracketed fields:
 📄 Saved: docs/architecture/enterprise-architecture.md
 🔍 Key outputs: [cloud provider decisions | CI/CD pipeline defined | compliance controls addressed | cost estimate]
 ⚠️  Flags: [blockers, risks, deferred items — or 'None']
-🚀 Plan complete → invoke /ux-designer for wireframes, design system, and accessibility spec
+🚀 EA complete:
+   [If parallel] /ux-designer also done → invoke /tech-lead to create sprint plan
+   [If parallel] /ux-designer still running → wait for UX, then invoke /tech-lead
+   [If sequential] invoke /ux-designer for wireframes, design system, accessibility spec
 
 Waiting for your review.
   refine: [your feedback]   → I will revise and re-present
@@ -1587,9 +1600,11 @@ Apply the feedback, re-run affected quality gate items, re-save the artifact, an
 
 ### Step 7 — On 'next'
 
-Your work is accepted. Stop. The human will invoke UX Designer separately.
+Your work is accepted. Stop. The human (or orchestrator) will handle next steps.
 
-> **Implementation kickoff path:** After UX is done → invoke `/tech-lead` → Tech Lead creates the sprint kickoff → then use Execute Prompt B (squad) or invoke Backend/Frontend/Mobile/TQE individually.
+> **Parallel execution:** You may be running in parallel with UX Designer (both in Wave 4). Tech Lead cannot start until BOTH EA and UX are complete. If you finish first, the orchestrator will wait for UX.
+
+> **Implementation kickoff path:** After both EA + UX done → invoke `/tech-lead` → Tech Lead creates sprint kickoff → then spawn BE ∥ FE ∥ ME in parallel via Execute Prompt B.
 
 > **Note:** If you are NOT in a squad session (e.g. invoked standalone for a specific task), still print the review summary and wait — the human may want to iterate before moving on.
 

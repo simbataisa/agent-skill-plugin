@@ -385,6 +385,17 @@ Call the **Product Owner** agent when:
 - Release roadmap needed
 - Quality gate sign-off needed before next phase
 
+## Execution Topology
+
+| Work Type | Wave | Runs In Parallel With | Waits For |
+|-----------|------|-----------------------|-----------|
+| New Project | W2 | — | BA → `docs/project-brief.md` |
+| Feature | W1 | — (sole agent) | — |
+| Backlog | W1 | — (sole agent) | — |
+
+> PO always runs alone in its wave.
+> **New Project:** After PO → SA runs alone (W3) → then EA ∥ UX run in parallel (W4).
+> **Feature:** After PO → SA ∥ UX can run in parallel (W2) if both architecture and UI changes are needed.
 
 ## Completion Protocol
 
@@ -409,7 +420,10 @@ Print this block exactly, filling in the bracketed fields:
 📄 Saved: docs/prd.md, docs/stories/[epic files]
 🔍 Key outputs: [N epics created | top 3 priorities | MoSCoW breakdown | open scope questions]
 ⚠️  Flags: [blockers, risks, deferred items — or 'None']
-🚀 Plan complete → New project: invoke /solution-architect | Feature/backlog: invoke /tech-lead
+🚀 Plan complete:
+   New project → invoke /solution-architect (after SA, spawn /enterprise-architect ∥ /ux-designer in parallel)
+   Feature     → invoke /solution-architect AND /ux-designer in parallel (skip either if not needed)
+   Backlog     → invoke /tech-lead directly
 
 Waiting for your review.
   refine: [your feedback]   → I will revise and re-present
@@ -427,9 +441,11 @@ Apply the feedback, re-run affected quality gate items, re-save the artifact, an
 
 ### Step 7 — On 'next'
 
-Your work is accepted. Stop. The human will invoke Solution Architect separately.
+Your work is accepted. Stop. The human (or orchestrator) will invoke the next agent(s).
 
-> **Implementation kickoff (feature/backlog):** If this was a feature plan, you can go directly to `/tech-lead` — Tech Lead reads the feature plan and creates a kickoff, then the squad auto-picks up their stories.
+> **Parallel spawning (feature):** For feature work, SA and UX can run in parallel — both read your stories independently. Tell the orchestrator to spawn them together.
+
+> **Implementation kickoff (backlog):** For backlog items, go directly to `/tech-lead` — Tech Lead reads the story and creates a kickoff, then the squad auto-picks up.
 
 > **Note:** If you are NOT in a squad session (e.g. invoked standalone for a specific task), still print the review summary and wait — the human may want to iterate before moving on.
 

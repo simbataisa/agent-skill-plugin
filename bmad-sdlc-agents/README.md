@@ -110,6 +110,41 @@ Every agent's Completion Protocol includes a `🚀` line in the review summary p
 
 You never need to remember the agent sequence — each agent hands you off to the next one.
 
+### ⚡ Parallel Execution Waves
+
+Agents are organized into **waves** — all agents in the same wave run simultaneously with no inter-dependencies. The orchestrator (human, squad prompt, or parent agent) spawns a wave, waits for all agents to complete, then spawns the next wave.
+
+**New Project — Plan Phase:**
+
+| Wave | Agents | Depends On |
+|------|--------|------------|
+| W1 | Business Analyst | — |
+| W2 | Product Owner | BA → `docs/project-brief.md` |
+| W3 | Solution Architect | PO → `docs/prd.md` |
+| W4 | Enterprise Architect ∥ UX Designer | SA → `solution-architecture.md` |
+| W5 | Tech Lead | EA + UX (both must complete) |
+| W6 | Backend Eng ∥ Frontend Eng ∥ Mobile Eng (spec only) | TL → `sprint-plan.md` |
+| W7 | Tester & QE (strategy only) | All three specs from W6 |
+
+**Sprint Execution:**
+
+| Wave | Agents | Depends On |
+|------|--------|------------|
+| E1 | Tech Lead (kickoff) | Plan approval or previous sprint results |
+| E2 | Backend Eng ∥ Frontend Eng ∥ Mobile Eng | TL → `sprint-N-kickoff.md` |
+| E3 | Tester & QE | All three engineers from E2 |
+
+**Feature — Plan Phase:**
+
+| Wave | Agents | Depends On |
+|------|--------|------------|
+| W1 | Product Owner | — |
+| W2 | Solution Architect ∥ UX Designer | PO → `docs/stories/[feature]/` |
+| W3 | Tech Lead | SA + UX (both must complete) |
+| W4 | Tester & QE | TL → `[feature]-plan.md` |
+
+**How to spawn parallel waves:** In Claude Code, use the Agent tool to launch multiple sub-agents in a single message. In Cursor/Windsurf, open parallel composer windows. The key rule: **never start the next wave until ALL agents in the current wave have printed their ✅ summary.** Each agent knows its topology — if it finishes before a parallel peer, it reports completion and notes which peer to wait for.
+
 ---
 
 ## Quick Start (3 Steps)
@@ -1174,57 +1209,66 @@ Use when starting a project from scratch. Full 10-agent planning → multi-sprin
 ```
 # BMAD Squad: New Project Plan
 
-You are a squad of 10 specialized AI agents working ONE AT A TIME.
+You are a squad of 10 specialized AI agents organized into parallel execution waves.
 All agent skills are loaded. The project context is in .bmad/ — read it before starting.
 OUTPUT ONLY DOCUMENTATION — do NOT write any application code yet.
 
 Each agent must follow its built-in Completion Protocol: run the quality gate, save
 outputs, print the ✅ review summary, and wait for my reply.
-Only advance to the next agent when I reply 'next'.
+Agents in the same wave run in PARALLEL — spawn them together.
+Only advance to the next wave when ALL agents in the current wave reply 'next'.
 
 ---
 
-## Agent 1 — Business Analyst
+## Wave 1 — Business Analyst
 Review .bmad/PROJECT-CONTEXT.md. Identify stakeholders, constraints, risks, and success
 criteria. Generate a project brief. Save to docs/project-brief.md.
 [Describe the project goal here]
 
-## Agent 2 — Product Owner
+## Wave 2 — Product Owner
 Read docs/project-brief.md. Create a full PRD: vision, epics, prioritized user stories
 with acceptance criteria. Save to docs/prd.md and individual stories to docs/stories/.
 
-## Agent 3 — Solution Architect
+## Wave 3 — Solution Architect
 Read docs/prd.md and .bmad/tech-stack.md. Propose system architecture, service
 boundaries, API contracts, and data models. Record all decisions as ADRs in
 docs/architecture/adr/. Save to docs/architecture/solution-architecture.md.
 
-## Agent 4 — UX Designer
-Read docs/prd.md and docs/architecture/solution-architecture.md. Create wireframes,
-user journeys, and a component design system. Save to docs/ux/.
+## Wave 4 ∥ — Enterprise Architect + UX Designer (parallel)
+**Spawn both agents simultaneously — they have no inter-dependencies.**
 
-## Agent 5 — Enterprise Architect
+### Enterprise Architect
 Read docs/architecture/solution-architecture.md and all ADRs. Define cloud
 infrastructure, CI/CD pipeline, observability, and compliance controls.
 Save to docs/architecture/enterprise-architecture.md.
 
-## Agent 6 — Tech Lead (sequencing)
+### UX Designer
+Read docs/prd.md and docs/architecture/solution-architecture.md. Create wireframes,
+user journeys, and a component design system. Save to docs/ux/.
+
+## Wave 5 — Tech Lead (sequencing)
+**Wait for BOTH Enterprise Architect and UX Designer to complete.**
 Review all planning artifacts. Sequence stories into sprint batches. For each sprint,
 list story assignments per engineer role (backend, frontend, mobile).
 Identify dependencies and spec gaps. Save to docs/architecture/sprint-plan.md.
 
-## Agent 7 — Backend Engineer (spec only — no code)
+## Wave 6 ∥ — Backend + Frontend + Mobile Engineer (parallel, spec only — no code)
+**Spawn all three agents simultaneously — they read sprint-plan.md independently.**
+
+### Backend Engineer
 Read sprint-plan.md and all ADRs. Write backend implementation spec: API contracts,
 data access patterns, event contracts. Save to docs/architecture/backend-implementation-spec.md.
 
-## Agent 8 — Frontend Engineer (spec only — no code)
+### Frontend Engineer
 Read docs/ux/, sprint-plan.md, backend-implementation-spec.md. Write frontend spec:
 component tree, state management, API consumption. Save to docs/architecture/frontend-implementation-spec.md.
 
-## Agent 9 — Mobile Engineer (spec only — no code)
+### Mobile Engineer
 Read docs/ux/ and sprint-plan.md. Write mobile spec: platform decision, screen mapping,
 device constraints. Save to docs/architecture/mobile-implementation-spec.md.
 
-## Agent 10 — Tester & QE (strategy only — no test code)
+## Wave 7 — Tester & QE (strategy only — no test code)
+**Wait for ALL three engineer specs to complete.**
 Read all planning artifacts. Write a test strategy: unit, integration, e2e, security,
 performance quality gates, acceptance criteria per story. Save to docs/testing/test-strategy.md.
 ```
@@ -1237,33 +1281,38 @@ performance quality gates, acceptance criteria per story. Save to docs/testing/t
 
 All planning is approved. All ADRs are locked — do NOT reopen architectural decisions.
 Each agent must follow its built-in Completion Protocol: print the ✅ review summary
-and wait for my reply. Only proceed when I reply 'next'.
+and wait for my reply. Agents in the same wave run in PARALLEL.
+Only advance to the next wave when ALL agents in the current wave complete.
 
-## Tech Lead (execution kickoff)
+## Wave E1 — Tech Lead (execution kickoff)
 Read docs/architecture/sprint-plan.md. Extract Sprint 1 stories. Produce a kickoff doc
 listing each story with its assigned engineer role (backend / frontend / mobile).
 Declare all ADRs locked. Save to docs/architecture/sprint-1-kickoff.md.
 
-## Backend Engineer
+## Wave E2 ∥ — Backend + Frontend + Mobile Engineer (parallel)
+**Spawn all three agents simultaneously — they read the kickoff doc independently.**
+
+### Backend Engineer
 Read docs/architecture/sprint-1-kickoff.md — find all stories assigned to backend.
 Read docs/architecture/backend-implementation-spec.md for API contracts and patterns.
 Stack: .bmad/tech-stack.md  |  Style: .bmad/team-conventions.md
 Implement each assigned story. Mark deviations: // DEVIATION: [reason]
 
-## Frontend Engineer
+### Frontend Engineer
 Read docs/architecture/sprint-1-kickoff.md — find all stories assigned to frontend.
 Read docs/architecture/frontend-implementation-spec.md for component tree and state.
 Read docs/ux/ for wireframes and design system.
 Stack: .bmad/tech-stack.md  |  Style: .bmad/team-conventions.md
 Build UI components and wire up API calls. Mark deviations: // DEVIATION: [reason]
 
-## Mobile Engineer
+### Mobile Engineer
 Read docs/architecture/sprint-1-kickoff.md — find all stories assigned to mobile.
 Read docs/architecture/mobile-implementation-spec.md for screen mapping and constraints.
 Stack: .bmad/tech-stack.md  |  Style: .bmad/team-conventions.md
 Write mobile screens and wire up API calls. Mark deviations: // DEVIATION: [reason]
 
-## Tester & QE
+## Wave E3 — Tester & QE
+**Wait for ALL three engineers to complete before starting.**
 Read docs/architecture/sprint-1-kickoff.md for the full Sprint 1 story list.
 Read docs/testing/test-strategy.md for quality gates and acceptance criteria.
 Write and run unit + integration tests for every Sprint 1 story.
@@ -1279,31 +1328,35 @@ Flag any unmet acceptance criteria. Save results to docs/testing/sprint-1-result
 
 Sprint N is complete. ADRs remain locked.
 Each agent must follow its built-in Completion Protocol: print the ✅ review summary
-and wait for my reply. Only proceed when I reply 'next'.
+and wait for my reply. Agents in the same wave run in PARALLEL.
 
-## Tech Lead — Sprint N+1 Kickoff
+## Wave E1 — Tech Lead — Sprint N+1 Kickoff
 Read docs/testing/sprint-N-results.md for carry-overs and unmet criteria.
 Read docs/architecture/sprint-plan.md — extract Sprint N+1 stories.
 List each story with its assigned engineer role. Lock any new ADRs.
 Save to docs/architecture/sprint-N+1-kickoff.md.
 
-## Backend Engineer
+## Wave E2 ∥ — Backend + Frontend + Mobile Engineer (parallel)
+**Spawn all three simultaneously after Tech Lead completes.**
+
+### Backend Engineer
 Read docs/architecture/sprint-N+1-kickoff.md — find all stories assigned to backend.
 Read docs/architecture/backend-implementation-spec.md for patterns.
 Stack: .bmad/tech-stack.md  |  Style: .bmad/team-conventions.md
 Implement assigned stories. Mark deviations: // DEVIATION: [reason]
 
-## Frontend Engineer
+### Frontend Engineer
 Read docs/architecture/sprint-N+1-kickoff.md — find all stories assigned to frontend.
 Read docs/architecture/frontend-implementation-spec.md + docs/ux/.
 Build UI components and wire up API calls. Mark deviations: // DEVIATION: [reason]
 
-## Mobile Engineer
+### Mobile Engineer
 Read docs/architecture/sprint-N+1-kickoff.md — find all stories assigned to mobile.
 Read docs/architecture/mobile-implementation-spec.md.
 Write screens and wire up API calls. Mark deviations: // DEVIATION: [reason]
 
-## Tester & QE
+## Wave E3 — Tester & QE
+**Wait for ALL three engineers to complete.**
 Read docs/architecture/sprint-N+1-kickoff.md for the full story list.
 Read docs/testing/test-strategy.md for quality gates.
 Write and run tests. Flag unmet criteria. Save to docs/testing/sprint-N+1-results.md.
@@ -1321,42 +1374,46 @@ Use when adding a new capability to an existing project. Skips BA and EA (projec
 ```
 # BMAD Squad: Feature Plan
 
-You are a squad of specialized AI agents working ONE AT A TIME on a new feature.
+You are a squad of specialized AI agents organized into parallel execution waves.
 All agent skills are loaded. Read .bmad/PROJECT-CONTEXT.md and existing docs/ first.
 OUTPUT ONLY DOCUMENTATION — do NOT write any code yet.
 
 Each agent must follow its built-in Completion Protocol: run the quality gate, save
 outputs, print the ✅ review summary, and wait for my reply.
-Only advance to the next agent when I reply 'next'.
+Agents in the same wave run in PARALLEL — spawn them together.
 
 Feature: [describe the feature or paste the request here]
 
 ---
 
-## Agent 1 — Product Owner
+## Wave 1 — Product Owner
 Read docs/prd.md and existing docs/stories/. Define the feature scope: write new user
 stories with clear acceptance criteria. Identify any existing stories affected.
 Save stories to docs/stories/[feature-name]/ and update docs/prd.md.
 
-## Agent 2 — Solution Architect
+## Wave 2 ∥ — Solution Architect + UX Designer (parallel)
+**Spawn both agents simultaneously — both read PO's feature stories independently.**
+[Skip UX if no UI impact. Skip SA if no architecture impact.]
+
+### Solution Architect
 Read the new feature stories in docs/stories/[feature-name]/ and docs/architecture/.
 Assess architectural impact: new endpoints, data model changes, service boundary
 changes, third-party integrations. Create or update ADRs in docs/architecture/adr/.
 Update docs/architecture/solution-architecture.md if needed.
 
-## Agent 3 — UX Designer
-[Skip if no UI impact — reply 'next' immediately]
+### UX Designer
 Read docs/stories/[feature-name]/ and docs/ux/. Design wireframes and user flows for
 new or updated screens. Save to docs/ux/[feature-name]/.
 
-## Agent 4 — Tech Lead
+## Wave 3 — Tech Lead
+**Wait for BOTH Solution Architect and UX Designer to complete.**
 Read docs/stories/[feature-name]/, all updated ADRs, and docs/ux/[feature-name]/ if
 present. Break down stories by engineer role (backend / frontend / mobile). Estimate
 effort. Identify dependencies. Save the feature execution plan to
 docs/architecture/[feature-name]-plan.md — this file must list every story with its
 assigned engineer role, referenced spec, and any ADRs to follow.
 
-## Agent 5 — Tester & QE
+## Wave 4 — Tester & QE
 Read docs/stories/[feature-name]/ and the acceptance criteria within each story.
 Write test cases: unit, integration, regression impact on existing features.
 Update docs/testing/test-strategy.md with the feature's test section.
@@ -1368,35 +1425,39 @@ Update docs/testing/test-strategy.md with the feature's test section.
 
 Feature planning is approved. ADRs are locked for this feature.
 Each agent must follow its built-in Completion Protocol: print the ✅ review summary
-and wait for my reply. Only proceed when I reply 'next'.
+and wait for my reply. Agents in the same wave run in PARALLEL.
 
-## Tech Lead — Kickoff
+## Wave E1 — Tech Lead — Kickoff
 Scan docs/architecture/ for the most recent *-plan.md file (created by Prompt A).
 Read it. Confirm story assignments per engineer. Lock all feature ADRs.
 Print the full assignment summary including the feature name and plan path so all
 subsequent agents know exactly which files to read.
 
-## Backend Engineer
+## Wave E2 ∥ — Backend + Frontend + Mobile Engineer (parallel)
+**Spawn all three simultaneously after Tech Lead completes.**
+
+### Backend Engineer
 Read the feature plan identified by Tech Lead — find all stories assigned to backend.
 Read docs/architecture/solution-architecture.md and any referenced ADRs for API
 contracts and data model changes.
 Stack: .bmad/tech-stack.md  |  Style: .bmad/team-conventions.md
 Implement each assigned story. Mark deviations: // DEVIATION: [reason]
 
-## Frontend Engineer
+### Frontend Engineer
 Read the feature plan identified by Tech Lead — find all stories assigned to frontend.
 Read the feature's UX folder in docs/ux/ for wireframes and interaction specs.
 Read docs/architecture/solution-architecture.md for API contracts.
 Stack: .bmad/tech-stack.md  |  Style: .bmad/team-conventions.md
 Build feature UI. Mark deviations: // DEVIATION: [reason]
 
-## Mobile Engineer
+### Mobile Engineer
 Read the feature plan identified by Tech Lead — find all stories assigned to mobile.
 Read docs/architecture/mobile-implementation-spec.md and any referenced ADRs.
 Stack: .bmad/tech-stack.md  |  Style: .bmad/team-conventions.md
 Write feature mobile screens. Mark deviations: // DEVIATION: [reason]
 
-## Tester & QE
+## Wave E3 — Tester & QE
+**Wait for ALL three engineers to complete.**
 Read the feature plan identified by Tech Lead for the complete story list.
 Read the feature's story folder in docs/stories/ for acceptance criteria per story.
 Read docs/testing/test-strategy.md for quality gates and regression scope.
@@ -1706,34 +1767,57 @@ Full 10-agent flow from project brief through multi-sprint execution.
 flowchart TD
     START([🏗 New Project Brief]) --> BA
 
-    subgraph PLAN["📋 Plan Phase (Prompt A — 10 agents)"]
-        BA["Business Analyst\n📄 docs/project-brief.md"]
-        PO["Product Owner\n📄 docs/prd.md\n📄 docs/stories/"]
-        SA["Solution Architect\n📄 solution-architecture.md\n📄 adr/"]
-        EA["Enterprise Architect\n📄 enterprise-architecture.md"]
-        UX["UX Designer\n📄 docs/ux/"]
-        TL_PLAN["Tech Lead\n📄 sprint-plan.md"]
-        BE_SPEC["Backend Engineer\n📄 backend-implementation-spec.md"]
-        FE_SPEC["Frontend Engineer\n📄 frontend-implementation-spec.md"]
-        ME_SPEC["Mobile Engineer\n📄 mobile-implementation-spec.md"]
-        TQE_STRAT["Tester & QE\n📄 test-strategy.md"]
+    subgraph PLAN["📋 Plan Phase — 7 Waves"]
+        subgraph W1["W1"]
+            BA["Business Analyst\n📄 project-brief.md"]
+        end
+        subgraph W2["W2"]
+            PO["Product Owner\n📄 prd.md + stories/"]
+        end
+        subgraph W3["W3"]
+            SA["Solution Architect\n📄 solution-architecture.md"]
+        end
+        subgraph W4["W4 ∥ parallel"]
+            EA["Enterprise Architect\n📄 enterprise-architecture.md"]
+            UX["UX Designer\n📄 docs/ux/"]
+        end
+        subgraph W5["W5"]
+            TL_PLAN["Tech Lead\n📄 sprint-plan.md"]
+        end
+        subgraph W6["W6 ∥ parallel"]
+            BE_SPEC["BE spec"]
+            FE_SPEC["FE spec"]
+            ME_SPEC["ME spec"]
+        end
+        subgraph W7["W7"]
+            TQE_STRAT["Tester & QE\n📄 test-strategy.md"]
+        end
 
-        BA --> PO --> SA --> EA --> UX --> TL_PLAN
+        BA --> PO --> SA
+        SA --> EA & UX
+        EA & UX --> TL_PLAN
         TL_PLAN --> BE_SPEC & FE_SPEC & ME_SPEC
         BE_SPEC & FE_SPEC & ME_SPEC --> TQE_STRAT
     end
 
     TQE_STRAT --> KICKOFF
 
-    subgraph EXEC["🔨 Execute Phase (Prompt B + C — per sprint)"]
-        KICKOFF["Tech Lead\n📄 sprint-N-kickoff.md"]
-        BE["Backend Engineer"]
-        FE["Frontend Engineer"]
-        ME["Mobile Engineer"]
-        TQE["Tester & QE\n📄 sprint-N-results.md"]
+    subgraph EXEC["🔨 Execute Phase — 3 Waves per Sprint"]
+        subgraph E1["E1"]
+            KICKOFF["Tech Lead\n📄 sprint-N-kickoff.md"]
+        end
+        subgraph E2["E2 ∥ parallel"]
+            BE["Backend Engineer"]
+            FE["Frontend Engineer"]
+            ME["Mobile Engineer"]
+        end
+        subgraph E3["E3"]
+            TQE["Tester & QE\n📄 sprint-N-results.md"]
+        end
         PASS{All stories\npass?}
 
-        KICKOFF --> BE & FE & ME --> TQE --> PASS
+        KICKOFF --> BE & FE & ME
+        BE & FE & ME --> TQE --> PASS
         PASS -->|"🔁 Failures"| BE
         PASS -->|"✅ Next Sprint"| KICKOFF
     end
@@ -1751,34 +1835,43 @@ Skips BA and EA (project context already exists). Architecture agents run only i
 flowchart TD
     START([✨ Feature Request]) --> PO
 
-    subgraph PLAN["📋 Plan Phase (Prompt A — up to 5 agents)"]
-        PO["Product Owner\n📄 docs/stories/feature-name/\n📄 docs/prd.md updated"]
-        ARCH_Q{Architecture\nimpact?}
-        SA["Solution Architect\n📄 solution-architecture.md\n📄 ADRs updated"]
-        UI_Q{UI\nchanges?}
-        UX["UX Designer\n📄 docs/ux/feature-name/"]
-        TL_PLAN["Tech Lead\n📄 feature-name-plan.md"]
-        TQE_STRAT["Tester & QE\n📄 test-strategy.md updated"]
+    subgraph PLAN["📋 Plan Phase — 4 Waves"]
+        subgraph W1["W1"]
+            PO["Product Owner\n📄 stories/feature-name/"]
+        end
+        subgraph W2["W2 ∥ parallel"]
+            SA["Solution Architect\n📄 ADRs updated"]
+            UX["UX Designer\n📄 docs/ux/feature-name/"]
+        end
+        subgraph W3["W3"]
+            TL_PLAN["Tech Lead\n📄 feature-name-plan.md"]
+        end
+        subgraph W4["W4"]
+            TQE_STRAT["Tester & QE\n📄 test-strategy.md"]
+        end
 
-        PO --> ARCH_Q
-        ARCH_Q -->|Yes| SA --> UI_Q
-        ARCH_Q -->|No| UI_Q
-        UI_Q -->|Yes| UX --> TL_PLAN
-        UI_Q -->|No| TL_PLAN
-        TL_PLAN --> TQE_STRAT
+        PO --> SA & UX
+        SA & UX --> TL_PLAN --> TQE_STRAT
     end
 
     TQE_STRAT --> KICKOFF
 
-    subgraph EXEC["🔨 Execute Phase (Prompt B)"]
-        KICKOFF["Tech Lead\nConfirm kickoff + ADRs locked"]
-        BE["Backend Engineer"]
-        FE["Frontend Engineer"]
-        ME["Mobile Engineer"]
-        TQE["Tester & QE\nVerify + Regression"]
+    subgraph EXEC["🔨 Execute Phase — 3 Waves"]
+        subgraph E1["E1"]
+            KICKOFF["Tech Lead\nKickoff + ADRs locked"]
+        end
+        subgraph E2["E2 ∥ parallel"]
+            BE["Backend Engineer"]
+            FE["Frontend Engineer"]
+            ME["Mobile Engineer"]
+        end
+        subgraph E3["E3"]
+            TQE["Tester & QE\nVerify + Regression"]
+        end
         PASS{Pass?}
 
-        KICKOFF --> BE & FE & ME --> TQE --> PASS
+        KICKOFF --> BE & FE & ME
+        BE & FE & ME --> TQE --> PASS
         PASS -->|"🔁 Fix"| BE
     end
 
@@ -1977,4 +2070,4 @@ To contribute an agent or template, see the contribution guidelines in `CONTRIBU
 ---
 
 **Last updated:** 2026-03-27
-**BMAD Version:** 2.1 (Agent Intelligence — Quick Mode Detection, Autonomous Task Detection, Kickoff Suggestions + Mermaid Workflow Diagrams)
+**BMAD Version:** 2.2 (Parallel Execution Waves + Agent Intelligence + Mermaid Workflow Diagrams)

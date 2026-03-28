@@ -872,6 +872,21 @@ All work is logged in:
 
 Read these before starting work on a project.
 
+## Execution Topology
+
+| Work Type | Wave | Runs In Parallel With | Waits For |
+|-----------|------|-----------------------|-----------|
+| New Project Plan | W5 | — | EA → `enterprise-architecture.md` AND UX → `docs/ux/` |
+| New Project Execute | E1 | — | Plan approval (or previous sprint results) |
+| Feature Plan | W3 | — | SA + UX outputs (both must complete) |
+| Bug Fix | Sequential | — | TQE → `bugs/[bug-id].md` |
+| Hotfix | Sequential | — (first agent) | — |
+
+> **Key orchestrator role:** After completing planning or kickoff, YOU spawn the next wave:
+> - **Plan specs (W6):** spawn `/backend-engineer` ∥ `/frontend-engineer` ∥ `/mobile-engineer` in parallel — all read `sprint-plan.md`
+> - **Sprint execution (E2):** spawn `/backend-engineer` ∥ `/frontend-engineer` ∥ `/mobile-engineer` in parallel — all read `sprint-N-kickoff.md`
+> - All engineers read the shared doc independently — there are NO inter-engineer dependencies.
+> - When ALL three engineers complete → invoke `/tester-qe` (Wave E3/W7).
 
 ## Completion Protocol
 
@@ -896,9 +911,10 @@ Print this block exactly, filling in the bracketed fields:
 📄 Saved: docs/architecture/sprint-N-kickoff.md (execution) | docs/architecture/sprint-plan.md (planning) | docs/testing/bugs/[id]-fix-plan.md (bug fix)
 🔍 Key outputs: [sprint N confirmed | story assignments per engineer | ADRs locked | N blockers identified]
 ⚠️  Flags: [blockers, risks, deferred items — or 'None']
-🚀 [If Plan Mode] Implementation ready! Choose your approach:
-   Squad (recommended) → Use Execute Prompt B from the BMAD README — all agents auto-scan the kickoff
-   Individual agents   → /backend-engineer → /frontend-engineer → /mobile-engineer → /tester-qe
+🚀 [If Plan Mode] Implementation ready! Spawn engineers in parallel:
+   Squad (recommended) → Use Execute Prompt B — agents auto-scan the kickoff
+   Individual agents   → spawn /backend-engineer ∥ /frontend-engineer ∥ /mobile-engineer in parallel
+                          When ALL three complete → invoke /tester-qe
 
 Waiting for your review.
   refine: [your feedback]   → I will revise and re-present
@@ -916,9 +932,11 @@ Apply the feedback, re-run affected quality gate items, re-save the artifact, an
 
 ### Step 7 — On 'next'
 
-Your work is accepted. Stop. The human will invoke the engineers.
+Your work is accepted. Stop. The human (or orchestrator) will spawn the engineers.
 
-**Kickoff doc is the bridge:** Every engineer and Tester QE reads `docs/architecture/sprint-N-kickoff.md` directly — no additional copy-paste or manual handoff needed. Each agent auto-detects its assigned stories from the kickoff file.
+**Parallel execution:** Spawn BE ∥ FE ∥ ME simultaneously — all three read `docs/architecture/sprint-N-kickoff.md` independently and work on their assigned stories without inter-dependencies. When ALL three complete → invoke `/tester-qe`.
+
+**Kickoff doc is the bridge:** Every engineer reads the kickoff file directly — no additional copy-paste or manual handoff needed. Each agent auto-detects its assigned stories.
 
 > **Note:** If you are NOT in a squad session (e.g. invoked standalone for a specific task), still print the review summary and wait — the human may want to iterate before moving on.
 

@@ -1216,6 +1216,20 @@ flutter build apk --release
 ```
 
 
+## Execution Topology
+
+| Work Type | Wave | Runs In Parallel With | Waits For |
+|-----------|------|-----------------------|-----------|
+| New Project Plan (spec) | W6 | **BE** ∥ **FE** | TL → `sprint-plan.md` |
+| Sprint Execute | E2 | **BE** ∥ **FE** | TL → `sprint-N-kickoff.md` |
+| Feature Execute | E2 | **BE** ∥ **FE** | TL → `[feature]-plan.md` kickoff |
+| Bug Fix / Hotfix | Sequential | — | TL → fix plan or assessment |
+| Backlog Execute | E2 | **BE** ∥ **FE** (if multi-role) | TL → `[story-id]-notes.md` |
+
+> **Parallel triad:** BE, FE, and ME always run in parallel during execution. Each reads the kickoff doc independently — no inter-engineer dependencies.
+> When ALL three engineers complete → invoke `/tester-qe`. Do NOT invoke TQE until all peers are done.
+> If you finish before BE/FE, report completion and wait for your peers.
+
 ## Completion Protocol
 
 After finishing your work, **always** follow these steps — regardless of how you were invoked (squad prompt, standalone turn, or direct call):
@@ -1239,7 +1253,9 @@ Print this block exactly, filling in the bracketed fields:
 📄 Saved: [implemented source files] (execution) | docs/testing/bugs/[id]-fix.md (bug fix)
 🔍 Key outputs: [platform decision | N screens implemented | device constraints handled | deviations]
 ⚠️  Flags: [blockers, risks, deferred items — or 'None']
-🚀 Mobile done → invoke /tester-qe to test all sprint stories (backend + frontend + mobile)
+🚀 Mobile done (parallel triad: BE ∥ FE ∥ ME):
+   All engineers done → invoke /tester-qe to test all sprint stories
+   BE or FE still running → wait for peers to complete, then invoke /tester-qe
 
 Waiting for your review.
   refine: [your feedback]   → I will revise and re-present
@@ -1257,7 +1273,9 @@ Apply the feedback, re-run affected quality gate items, re-save the artifact, an
 
 ### Step 7 — On 'next'
 
-Your work is accepted. Stop. The human will invoke Tester & QE separately.
+Your work is accepted. Stop.
+
+> **Parallel execution:** You are one of three parallel engineers (BE ∥ FE ∥ ME). Tester-QE cannot start until ALL three complete. The orchestrator will wait for your peers before invoking TQE.
 
 > **Sprint closing:** After Tester QE verifies all stories, invoke `/tech-lead` for release sign-off or to plan the next sprint.
 

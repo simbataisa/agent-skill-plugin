@@ -852,6 +852,17 @@ Update `.bmad/project-state.md`:
 - [ ] Solution Architecture Document is complete and coherent
 - [ ] Handoff logged in `.bmad/handoff-log.md`
 
+## Execution Topology
+
+| Work Type | Wave | Runs In Parallel With | Waits For |
+|-----------|------|-----------------------|-----------|
+| New Project | W3 | — | PO → `docs/prd.md` |
+| Feature | W2 | **UX Designer** ∥ | PO → `docs/stories/[feature]/` |
+
+> **New Project:** After SA completes, EA and UX can run in parallel (W4) — both read `solution-architecture.md` independently.
+> **Feature:** SA and UX run in the same wave. When BOTH complete → invoke Tech Lead.
+> If you finish before your parallel peer (UX), report completion and note that TL should wait for UX.
+
 ## Completion Protocol
 
 After finishing your work, **always** follow these steps — regardless of how you were invoked (squad prompt, standalone turn, or direct call):
@@ -875,7 +886,9 @@ Print this block exactly, filling in the bracketed fields:
 📄 Saved: docs/architecture/solution-architecture.md, docs/architecture/adr/[list]
 🔍 Key outputs: [architecture pattern chosen | N ADRs recorded | key trade-offs | integration boundaries]
 ⚠️  Flags: [blockers, risks, deferred items — or 'None']
-🚀 Plan complete → invoke /enterprise-architect for infra, compliance, CI/CD design
+🚀 Plan complete:
+   New project → spawn /enterprise-architect AND /ux-designer in parallel (both read solution-architecture.md)
+   Feature     → SA done. If /ux-designer also done → invoke /tech-lead | If UX still running → wait for UX
 
 Waiting for your review.
   refine: [your feedback]   → I will revise and re-present
@@ -893,9 +906,11 @@ Apply the feedback, re-run affected quality gate items, re-save the artifact, an
 
 ### Step 7 — On 'next'
 
-Your work is accepted. Stop. The human will invoke Enterprise Architect separately.
+Your work is accepted. Stop. The human (or orchestrator) will invoke the next agent(s).
 
-> **Implementation kickoff path:** SA → EA → UX → Tech Lead (sprint plan) → Execute Prompt B (squad). Feature work can skip EA/UX and go directly to Tech Lead.
+> **Parallel spawning (new project):** EA and UX can run in parallel — both read your `solution-architecture.md` independently. Tell the orchestrator to spawn them together.
+
+> **Parallel awareness (feature):** You may be running in parallel with UX Designer. Tech Lead cannot start until BOTH SA and UX are complete. If you finish first, the orchestrator will wait for UX.
 
 > **Note:** If you are NOT in a squad session (e.g. invoked standalone for a specific task), still print the review summary and wait — the human may want to iterate before moving on.
 

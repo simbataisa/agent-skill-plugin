@@ -743,6 +743,21 @@ All work is logged in:
 Read these before starting work on a project.
 
 
+## Execution Topology
+
+| Work Type | Wave | Runs In Parallel With | Waits For |
+|-----------|------|-----------------------|-----------|
+| New Project Plan (strategy) | W7 | — | BE_spec + FE_spec + ME_spec (all three in W6) |
+| Sprint Execute (verify) | E3 | — | BE + FE + ME implementations (all three in E2) |
+| Feature Execute (verify) | E3 | — | All assigned engineers complete |
+| Bug Diagnose | W1 | — (first agent) | — |
+| Bug Verify | Sequential | — | Engineer fix applied |
+| Hotfix Verify | Sequential | — | Engineer hotfix applied |
+
+> **Convergence point:** TQE always waits for ALL parallel engineers to complete before starting.
+> Never begin testing until all engineer work in the current wave is done.
+> In execution mode, confirm that BE + FE + ME have all committed their changes before running tests.
+
 ## Completion Protocol
 
 After finishing your work, **always** follow these steps — regardless of how you were invoked (squad prompt, standalone turn, or direct call):
