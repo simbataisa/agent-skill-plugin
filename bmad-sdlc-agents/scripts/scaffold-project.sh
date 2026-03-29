@@ -66,6 +66,7 @@ fi
 # ============================================================
 echo -e "${BLUE}Creating directories...${NC}"
 mkdir -p ".bmad/handoffs"
+mkdir -p ".bmad/signals"
 mkdir -p "docs/architecture/adr"
 mkdir -p "docs/analysis"
 mkdir -p "docs/stories"
@@ -75,6 +76,7 @@ mkdir -p "tests/fixtures"
 
 echo "  ✓ .bmad/"
 echo "  ✓ .bmad/handoffs/"
+echo "  ✓ .bmad/signals/ (autonomous orchestration sentinels)"
 echo "  ✓ docs/architecture/adr"
 echo "  ✓ docs/analysis/"
 echo "  ✓ docs/stories/"
@@ -511,17 +513,17 @@ fi
 # ============================================================
 echo -e "${BLUE}Generating BMAD context auto-load instruction file...${NC}"
 
+# Generic BMAD block — NO tool-specific command syntax here.
+# Tool-specific agent invocation instructions live in each tool's AGENT_TABLE below.
 BMAD_CONTEXT_BLOCK="## Active Methodology: BMAD SDLC
 
 This project uses the **BMAD (Breakthrough Method of Agile AI-Driven Development)** methodology.
 BMAD agents are the authoritative source of truth for all analysis, design, and implementation work.
 
-**When multiple skills or agents are installed:**
-- Always prefer BMAD agents invoked via slash commands (\`/business-analyst\`, \`/solution-architect\`, etc.)
+**Agent priority:**
+- BMAD agents are the authoritative source for all deliverables — prefer BMAD agents over generic AI suggestions
 - BMAD artifacts belong **only** in the paths defined in \`.bmad/PROJECT-CONTEXT.md\` (Artifacts Index section)
 - Do NOT use non-BMAD skills (e.g. superpowers, personas, generic planners) for this project's deliverables
-- Use \`/handoff\` to log agent transitions — this creates a numbered child file in \`.bmad/handoffs/\`
-- Use \`/bmad-status\` to check project phase and artifact status
 
 ## BMAD Project Context
 
@@ -535,10 +537,8 @@ At the start of every conversation, read these files to understand this project:
 
 Apply all conventions from \`.bmad/team-conventions.md\` when writing or reviewing code."
 
-case "$DETECTED_TOOL" in
-    claude)
-        INSTRUCTION_FILE="CLAUDE.md"
-        AGENT_TABLE="
+# Reusable agent table for Claude Code / Cowork (both use /slash-command syntax)
+CLAUDE_AGENT_TABLE="
 ## Available BMAD Agents (slash commands)
 
 | Command | Role |
@@ -552,14 +552,42 @@ case "$DETECTED_TOOL" in
 | \`/tester-qe\` | Test strategy, quality gates |
 | \`/backend-engineer\` | APIs, services, data layers |
 | \`/frontend-engineer\` | React/TypeScript, components, a11y |
-| \`/mobile-engineer\` | iOS/Android, native architecture |"
+| \`/mobile-engineer\` | iOS/Android, native architecture |
 
+## BMAD Commands
+
+| Command | Role |
+|---------|------|
+| \`/bmad-status\` | Show project phase & artifact status |
+| \`/handoff\` | Log an agent handoff |
+| \`/new-story\` | Create a new user story |
+| \`/new-adr\` | Record an architecture decision |
+| \`/new-epic\` | Plan a full 4-phase epic |
+| \`/sprint-plan\` | Generate a capacity-matched sprint |"
+
+# Reusable agent table for tools without native slash commands (Cursor, Windsurf, Copilot, Gemini)
+RULE_BASED_AGENT_NOTE="
+## Using BMAD Agents
+
+BMAD agents are installed as AI rules/context files. Reference the agent by name in your prompt
+(e.g. \"act as the Business Analyst\", \"use the Tech Lead agent to plan this sprint\").
+Each agent auto-detects its current task from the project context files in \`.bmad/\`.
+
+For BMAD commands (\`/bmad-status\`, \`/handoff\`, etc.), describe the action in plain language
+(e.g. \"run a project status check\" or \"log a handoff from Tech Lead to Backend Engineer\").
+
+Available agents: business-analyst | product-owner | solution-architect | enterprise-architect |
+ux-designer | tech-lead | tester-qe | backend-engineer | frontend-engineer | mobile-engineer"
+
+case "$DETECTED_TOOL" in
+    claude)
+        INSTRUCTION_FILE="CLAUDE.md"
         if [[ -f "$INSTRUCTION_FILE" ]]; then
             # Append to existing CLAUDE.md
             {
                 echo ""
                 echo "$BMAD_CONTEXT_BLOCK"
-                echo "$AGENT_TABLE"
+                echo "$CLAUDE_AGENT_TABLE"
             } >> "$INSTRUCTION_FILE"
             echo "  ✓ Appended to existing $INSTRUCTION_FILE"
         else
@@ -567,7 +595,7 @@ case "$DETECTED_TOOL" in
                 echo "# $PROJECT_NAME"
                 echo ""
                 echo "$BMAD_CONTEXT_BLOCK"
-                echo "$AGENT_TABLE"
+                echo "$CLAUDE_AGENT_TABLE"
             } > "$INSTRUCTION_FILE"
             echo "  ✓ Created $INSTRUCTION_FILE"
         fi
@@ -694,6 +722,7 @@ Skills activate by description match. You can also invoke commands with / prefix
             echo "---"
             echo ""
             echo "$BMAD_CONTEXT_BLOCK"
+            echo "$RULE_BASED_AGENT_NOTE"
         } > "$INSTRUCTION_FILE"
         echo "  ✓ Created $INSTRUCTION_FILE"
         ;;
@@ -704,21 +733,26 @@ Skills activate by description match. You can also invoke commands with / prefix
             {
                 echo ""
                 echo "$BMAD_CONTEXT_BLOCK"
+                echo "$RULE_BASED_AGENT_NOTE"
             } >> "$INSTRUCTION_FILE"
             echo "  ✓ Appended to existing $INSTRUCTION_FILE"
         else
-            echo "$BMAD_CONTEXT_BLOCK" > "$INSTRUCTION_FILE"
+            {
+                echo "$BMAD_CONTEXT_BLOCK"
+                echo "$RULE_BASED_AGENT_NOTE"
+            } > "$INSTRUCTION_FILE"
             echo "  ✓ Created $INSTRUCTION_FILE"
         fi
         ;;
 
     cowork)
-        # Cowork reads CLAUDE.md when present
+        # Cowork reads CLAUDE.md when present and uses the same /slash-command syntax as Claude Code
         INSTRUCTION_FILE="CLAUDE.md"
         if [[ -f "$INSTRUCTION_FILE" ]]; then
             {
                 echo ""
                 echo "$BMAD_CONTEXT_BLOCK"
+                echo "$CLAUDE_AGENT_TABLE"
             } >> "$INSTRUCTION_FILE"
             echo "  ✓ Appended to existing $INSTRUCTION_FILE"
         else
@@ -726,25 +760,61 @@ Skills activate by description match. You can also invoke commands with / prefix
                 echo "# $PROJECT_NAME"
                 echo ""
                 echo "$BMAD_CONTEXT_BLOCK"
+                echo "$CLAUDE_AGENT_TABLE"
             } > "$INSTRUCTION_FILE"
             echo "  ✓ Created $INSTRUCTION_FILE"
         fi
         ;;
 
     none)
-        # Create all instruction files so the user can commit whichever they need
+        # No tool detected — create all instruction files so the user can commit whichever they need.
+        # Each file gets tool-appropriate content (correct agent invocation syntax per tool).
         echo "  Creating all tool instruction files (no tool detected)..."
-        mkdir -p ".cursor/rules" ".github"
+        mkdir -p ".cursor/rules" ".github" ".kiro/steering"
 
-        # CLAUDE.md
+        # CLAUDE.md — Claude Code and Cowork (/slash-command syntax)
         {
             echo "# $PROJECT_NAME"
             echo ""
             echo "$BMAD_CONTEXT_BLOCK"
+            echo "$CLAUDE_AGENT_TABLE"
         } > "CLAUDE.md"
-        echo "  ✓ CLAUDE.md"
+        echo "  ✓ CLAUDE.md (Claude Code / Cowork)"
 
-        # .cursor/rules/001-project-context.mdc
+        # AGENTS.md — Codex CLI (\$skill syntax) and Kiro (description-match)
+        CODEX_AGENT_TABLE="
+## Available BMAD Agents (Codex skills)
+
+| Skill (\$ invoke) | Role |
+|-------------------|------|
+| \`\$business-analyst\` | Discovery, stakeholder analysis, project brief |
+| \`\$product-owner\` | PRD, backlog, user stories |
+| \`\$solution-architect\` | System design, APIs, ADRs |
+| \`\$enterprise-architect\` | Cloud infra, compliance, CI/CD |
+| \`\$ux-designer\` | Wireframes, design system, accessibility |
+| \`\$tech-lead\` | Orchestration, code review, risk |
+| \`\$tester-qe\` | Test strategy, quality gates |
+| \`\$backend-engineer\` | APIs, services, data layers |
+| \`\$frontend-engineer\` | React/TypeScript, components, a11y |
+| \`\$mobile-engineer\` | iOS/Android, native architecture |
+
+## Available BMAD Commands
+
+| Command | Role |
+|---------|------|
+| \`/bmad-status\` | Show project phase & artifact status |
+| \`/handoff\` | Log an agent handoff |
+| \`/new-story\` | Create a new user story |
+| \`/new-adr\` | Record an architecture decision |"
+        {
+            echo "# $PROJECT_NAME"
+            echo ""
+            echo "$BMAD_CONTEXT_BLOCK"
+            echo "$CODEX_AGENT_TABLE"
+        } > "AGENTS.md"
+        echo "  ✓ AGENTS.md (Codex CLI / Kiro / OpenCode)"
+
+        # .cursor/rules/001-project-context.mdc — Cursor (rule-based invocation)
         {
             echo "---"
             echo "description: BMAD project context — load at the start of every conversation"
@@ -752,24 +822,43 @@ Skills activate by description match. You can also invoke commands with / prefix
             echo "---"
             echo ""
             echo "$BMAD_CONTEXT_BLOCK"
+            echo "$RULE_BASED_AGENT_NOTE"
         } > ".cursor/rules/001-project-context.mdc"
-        echo "  ✓ .cursor/rules/001-project-context.mdc"
+        echo "  ✓ .cursor/rules/001-project-context.mdc (Cursor)"
 
-        # .windsurfrules
-        echo "$BMAD_CONTEXT_BLOCK" > ".windsurfrules"
-        echo "  ✓ .windsurfrules"
+        # .windsurfrules — Windsurf (rule-based invocation)
+        {
+            echo "$BMAD_CONTEXT_BLOCK"
+            echo "$RULE_BASED_AGENT_NOTE"
+        } > ".windsurfrules"
+        echo "  ✓ .windsurfrules (Windsurf)"
 
-        # .github/copilot-instructions.md
-        echo "$BMAD_CONTEXT_BLOCK" > ".github/copilot-instructions.md"
-        echo "  ✓ .github/copilot-instructions.md"
+        # .github/copilot-instructions.md — GitHub Copilot (rule-based invocation)
+        {
+            echo "$BMAD_CONTEXT_BLOCK"
+            echo "$RULE_BASED_AGENT_NOTE"
+        } > ".github/copilot-instructions.md"
+        echo "  ✓ .github/copilot-instructions.md (GitHub Copilot)"
 
-        # GEMINI.md
-        echo "$BMAD_CONTEXT_BLOCK" > "GEMINI.md"
-        echo "  ✓ GEMINI.md"
+        # GEMINI.md — Gemini CLI (rule-based invocation)
+        {
+            echo "# $PROJECT_NAME"
+            echo ""
+            echo "$BMAD_CONTEXT_BLOCK"
+            echo "$RULE_BASED_AGENT_NOTE"
+        } > "GEMINI.md"
+        echo "  ✓ GEMINI.md (Gemini CLI)"
 
-        # AGENTS.md (OpenCode + Codex CLI)
-        echo "$BMAD_CONTEXT_BLOCK" > "AGENTS.md"
-        echo "  ✓ AGENTS.md"
+        # .kiro/steering/ — Kiro auto-included steering file
+        {
+            echo "---"
+            echo "description: BMAD project context — auto-loaded at session start"
+            echo "inclusion: auto"
+            echo "---"
+            echo ""
+            echo "$BMAD_CONTEXT_BLOCK"
+        } > ".kiro/steering/bmad-project-context.md"
+        echo "  ✓ .kiro/steering/bmad-project-context.md (Kiro)"
         ;;
 esac
 
@@ -825,6 +914,7 @@ echo "  • .bmad/team-conventions.md    — coding standards"
 echo "  • .bmad/domain-glossary.md     — domain terminology"
 echo "  • .bmad/handoff-log.md         — agent handoff tracking"
 echo "  • .bmad/eval/bmad-agent-eval-dashboard.html — productivity evaluation dashboard"
+echo "  • .bmad/signals/               — autonomous orchestration sentinel files (E2-be-done, E2-fe-done, etc.)"
 echo "  • docs/analysis/               — BA feature impact & requirements analyses"
 echo "  • docs/                        — documentation structure"
 if [[ "$DETECTED_TOOL" != "none" ]]; then
@@ -839,7 +929,7 @@ case "$DETECTED_TOOL" in
     kiro)          echo "  • AGENTS.md + .kiro/steering/  — auto-loads .bmad/ context on session start" ;;
     cursor)        echo "  • .cursor/rules/001-project-context.mdc — auto-loads .bmad/ context" ;;
     windsurf)      echo "  • .windsurfrules               — auto-loads .bmad/ context on session start" ;;
-    none)          echo "  • CLAUDE.md / AGENTS.md / .windsurfrules / .cursor/rules/ / GEMINI.md — all tool instruction files" ;;
+    none)          echo "  • CLAUDE.md (Claude/Cowork) / AGENTS.md (Codex/Kiro) / .cursor/rules/ (Cursor) / .windsurfrules (Windsurf) / .github/copilot-instructions.md / GEMINI.md — each with correct tool syntax" ;;
 esac
 echo ""
 echo -e "${GREEN}Next steps:${NC}"

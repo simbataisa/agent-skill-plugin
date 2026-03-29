@@ -1,25 +1,9 @@
 """MCP server for draw.io diagram operations."""
 
-import re
-import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from mcp.server.fastmcp import FastMCP
-from .diagram_core import (
-    create_empty_diagram,
-    parse_diagram,
-    add_vertex,
-    add_edge,
-    remove_element,
-    update_element,
-    list_elements,
-    get_element,
-    auto_layout,
-    validate_diagram,
-    to_xml,
-    mermaid_to_drawio,
-    plantuml_to_drawio,
-)
+from . import diagram_core
 from .style_maps import SHAPE_STYLES, COLOR_PALETTE, EDGE_STYLES
 
 # Initialize MCP server
@@ -49,7 +33,7 @@ def _save_diagram(diagram: Any, filepath: Path) -> None:
         filepath: Path to save to
     """
     filepath.parent.mkdir(parents=True, exist_ok=True)
-    xml_content = to_xml(diagram)
+    xml_content = diagram_core.to_xml(diagram)
     filepath.write_text(xml_content, encoding="utf-8")
 
 
@@ -67,8 +51,8 @@ def create_diagram(name: str = "Untitled") -> Dict[str, Any]:
         Dictionary with diagram info and XML content
     """
     try:
-        diagram = create_empty_diagram(name)
-        xml_content = to_xml(diagram)
+        diagram = diagram_core.create_empty_diagram(name)
+        xml_content = diagram_core.to_xml(diagram)
         return {
             "success": True,
             "name": name,
@@ -115,7 +99,7 @@ def add_node(
         if not filepath.exists():
             return {"success": False, "error": f"Diagram file not found: {filepath}"}
 
-        diagram = parse_diagram(filepath)
+        diagram = diagram_core.parse_diagram(filepath)
 
         # Validate shape and color
         if shape not in SHAPE_STYLES:
@@ -129,7 +113,7 @@ def add_node(
                 "error": f"Unknown color: {color}. Available: {', '.join(COLOR_PALETTE.keys())}",
             }
 
-        add_vertex(diagram, node_id, label, x, y, width, height, shape, color, parent)
+        diagram_core.add_vertex(diagram, node_id, label, x, y, width, height, shape, color, parent)
         _save_diagram(diagram, filepath)
 
         return {
@@ -177,7 +161,7 @@ def add_connection(
         if not filepath.exists():
             return {"success": False, "error": f"Diagram file not found: {filepath}"}
 
-        diagram = parse_diagram(filepath)
+        diagram = diagram_core.parse_diagram(filepath)
 
         # Validate style
         if style not in EDGE_STYLES:
@@ -186,7 +170,7 @@ def add_connection(
                 "error": f"Unknown edge style: {style}. Available: {', '.join(EDGE_STYLES.keys())}",
             }
 
-        add_edge(diagram, connection_id, source, target, label, style, parent)
+        diagram_core.add_edge(diagram, connection_id, source, target, label, style, parent)
         _save_diagram(diagram, filepath)
 
         return {
@@ -220,9 +204,9 @@ def remove_element(diagram_path: str, element_id: str) -> Dict[str, Any]:
         if not filepath.exists():
             return {"success": False, "error": f"Diagram file not found: {filepath}"}
 
-        diagram = parse_diagram(filepath)
+        diagram = diagram_core.parse_diagram(filepath)
 
-        if remove_element(diagram, element_id):
+        if diagram_core.remove_element(diagram, element_id):
             _save_diagram(diagram, filepath)
             return {"success": True, "removed_id": element_id}
         else:
@@ -263,9 +247,9 @@ def update_element(
         if not filepath.exists():
             return {"success": False, "error": f"Diagram file not found: {filepath}"}
 
-        diagram = parse_diagram(filepath)
+        diagram = diagram_core.parse_diagram(filepath)
 
-        if update_element(diagram, element_id, label, style, x, y, width, height):
+        if diagram_core.update_element(diagram, element_id, label, style, x, y, width, height):
             _save_diagram(diagram, filepath)
             return {
                 "success": True,
@@ -301,8 +285,8 @@ def list_elements(diagram_path: str) -> Dict[str, Any]:
         if not filepath.exists():
             return {"success": False, "error": f"Diagram file not found: {filepath}"}
 
-        diagram = parse_diagram(filepath)
-        elements = list_elements(diagram)
+        diagram = diagram_core.parse_diagram(filepath)
+        elements = diagram_core.list_elements(diagram)
 
         return {
             "success": True,
@@ -330,8 +314,8 @@ def read_diagram(diagram_path: str) -> Dict[str, Any]:
         if not filepath.exists():
             return {"success": False, "error": f"Diagram file not found: {filepath}"}
 
-        diagram = parse_diagram(filepath)
-        elements = list_elements(diagram)
+        diagram = diagram_core.parse_diagram(filepath)
+        elements = diagram_core.list_elements(diagram)
 
         vertices = [e for e in elements if e["type"] == "vertex"]
         edges = [e for e in elements if e["type"] == "edge"]
@@ -365,8 +349,8 @@ def validate_diagram(diagram_path: str) -> Dict[str, Any]:
         if not filepath.exists():
             return {"success": False, "error": f"Diagram file not found: {filepath}"}
 
-        diagram = parse_diagram(filepath)
-        issues = validate_diagram(diagram)
+        diagram = diagram_core.parse_diagram(filepath)
+        issues = diagram_core.validate_diagram(diagram)
 
         return {
             "success": True,
@@ -396,7 +380,7 @@ def auto_layout(diagram_path: str, layout: str = "tree") -> Dict[str, Any]:
         if not filepath.exists():
             return {"success": False, "error": f"Diagram file not found: {filepath}"}
 
-        diagram = parse_diagram(filepath)
+        diagram = diagram_core.parse_diagram(filepath)
 
         if layout not in ("tree", "grid", "lr"):
             return {
@@ -404,14 +388,14 @@ def auto_layout(diagram_path: str, layout: str = "tree") -> Dict[str, Any]:
                 "error": f"Unknown layout: {layout}. Available: tree, grid, lr",
             }
 
-        auto_layout(diagram, layout)
+        diagram_core.auto_layout(diagram, layout)
         _save_diagram(diagram, filepath)
 
         return {
             "success": True,
             "diagram_path": str(filepath),
             "layout_applied": layout,
-            "element_count": len(list_elements(diagram)),
+            "element_count": len(diagram_core.list_elements(diagram)),
         }
     except Exception as e:
         return {"success": False, "error": f"Unexpected error: {str(e)}"}
@@ -431,11 +415,11 @@ def import_mermaid(mermaid_text: str, output_path: str) -> Dict[str, Any]:
         Dictionary with operation result
     """
     try:
-        diagram = mermaid_to_drawio(mermaid_text)
+        diagram = diagram_core.mermaid_to_drawio(mermaid_text)
         filepath = _ensure_drawio_path(output_path)
         _save_diagram(diagram, filepath)
 
-        elements = list_elements(diagram)
+        elements = diagram_core.list_elements(diagram)
         return {
             "success": True,
             "output_path": str(filepath),
@@ -461,11 +445,11 @@ def import_plantuml(plantuml_text: str, output_path: str) -> Dict[str, Any]:
         Dictionary with operation result
     """
     try:
-        diagram = plantuml_to_drawio(plantuml_text)
+        diagram = diagram_core.plantuml_to_drawio(plantuml_text)
         filepath = _ensure_drawio_path(output_path)
         _save_diagram(diagram, filepath)
 
-        elements = list_elements(diagram)
+        elements = diagram_core.list_elements(diagram)
         return {
             "success": True,
             "output_path": str(filepath),
@@ -494,8 +478,8 @@ def export_svg(diagram_path: str, output_path: str) -> Dict[str, Any]:
         if not filepath.exists():
             return {"success": False, "error": f"Diagram file not found: {filepath}"}
 
-        diagram = parse_diagram(filepath)
-        elements = list_elements(diagram)
+        diagram = diagram_core.parse_diagram(filepath)
+        elements = diagram_core.list_elements(diagram)
 
         # Build SVG from elements
         svg_parts = [
@@ -604,7 +588,7 @@ def generate_diagram(
         Dictionary with operation result
     """
     try:
-        diagram = create_empty_diagram(f"Generated - {diagram_type}")
+        diagram = diagram_core.create_empty_diagram(f"Generated - {diagram_type}")
 
         # Simple NLP: extract nouns as nodes, verbs as edges
         words = description.split()
@@ -623,11 +607,11 @@ def generate_diagram(
             y = 100
             shape = "rounded" if "user" in noun.lower() else "rectangle"
             color = "green" if "database" in noun.lower() else "blue"
-            add_vertex(diagram, f"node_{i}", noun, x, y, shape=shape, color=color)
+            diagram_core.add_vertex(diagram, f"node_{i}", noun, x, y, shape=shape, color=color)
 
         # Add simple linear connections
         for i in range(len(nouns) - 1):
-            add_edge(
+            diagram_core.add_edge(
                 diagram,
                 f"edge_{i}",
                 f"node_{i}",
@@ -639,7 +623,7 @@ def generate_diagram(
         filepath = _ensure_drawio_path(output_path)
         _save_diagram(diagram, filepath)
 
-        elements = list_elements(diagram)
+        elements = diagram_core.list_elements(diagram)
         return {
             "success": True,
             "output_path": str(filepath),

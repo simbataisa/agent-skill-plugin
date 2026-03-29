@@ -93,7 +93,9 @@ drawio-mcp-server
 
 ### `create_diagram`
 
-Create a new empty .drawio diagram.
+Create an in-memory empty .drawio diagram preview.
+
+This tool does not write a file. Use it to preview the XML structure and cell count before creating or modifying on-disk diagrams with the other tools.
 
 **Parameters:**
 - `name` (string, optional): Name of the diagram (default: "Untitled")
@@ -357,7 +359,9 @@ import_plantuml(plantuml_text="""
 
 ### `export_svg`
 
-Export a diagram to SVG format.
+Export a diagram to a simplified SVG preview.
+
+Current limitation: exported SVGs render nodes as simple rectangles and connectors as straight lines. This is intended as a lightweight preview, not a pixel-faithful draw.io renderer.
 
 **Parameters:**
 - `diagram_path` (string): Path to .drawio file
@@ -375,7 +379,9 @@ export_svg(diagram_path="app.drawio", output_path="app.svg")
 
 ### `generate_diagram`
 
-Generate a complete diagram from a natural language description.
+Generate a basic starter diagram from a natural language description.
+
+Current limitation: generation uses a lightweight heuristic to infer a few nodes and linear connections. Treat the output as a starting point to review and refine, not a final architecture diagram.
 
 **Parameters:**
 - `description` (string): Natural language description of the diagram
