@@ -160,22 +160,29 @@ Agents are organized into **waves** — all agents in the same wave run simultan
 | W4   | Tech Lead                          | SA + UX (both must complete)             |
 | W5   | Tester & QE                        | TL → `[feature]-plan.md`                 |
 
-**How to spawn parallel waves:** In Claude Code, use the Agent tool to launch multiple sub-agents in a single message. In Cursor/Windsurf, open parallel composer windows. The key rule: **never start the next wave until ALL agents in the current wave have printed their ✅ summary.** Each agent knows its topology — if it finishes before a parallel peer, it reports completion and notes which peer to wait for.
+**How to spawn parallel waves:** In Claude Code, use the `Agent` tool to launch multiple sub-agents in a single message. In Cursor/Windsurf, open parallel composer windows. The key rule: **never start the next wave until ALL agents in the current wave have printed their ✅ summary.** Each agent knows its topology — if it finishes before a parallel peer, it reports completion and notes which peer to wait for.
 
 ### 🤖 Autonomous Orchestration (Claude Code)
 
-In **Claude Code**, the Tech Lead acts as a fully autonomous orchestrator — spawning engineers, monitoring their progress, and triggering TQE with zero human intervention. This is powered by Claude Code's native **`Task` tool** (sub-agent spawning) combined with a lightweight **sentinel file protocol** on the shared file system.
+In **Claude Code**, the Tech Lead acts as a fully autonomous orchestrator — spawning engineers, monitoring their progress, and triggering TQE with zero human intervention. This is powered by Claude Code's native **`Agent` tool** (sub-agent spawning) combined with a lightweight **sentinel file protocol** on the shared file system.
+
+> **⚠️ TL must be the main thread.** Claude Code's `Agent` tool can only be called from the **main session thread** — subagents cannot spawn other subagents. To make TL the root orchestrator, start your session with:
+> ```bash
+> claude --agent tech-lead
+> ```
+
+#### Path A — Subagent Orchestration (Stable)
 
 **How it works:**
 
-| Step | What TL Does                                   | Mechanism                       |
-| ---- | ---------------------------------------------- | ------------------------------- |
-| 1    | Produces `sprint-N-kickoff.md`                 | Normal artifact                 |
-| 2    | Clears stale signals, creates `.bmad/signals/` | `bash` tool                     |
-| 3    | Spawns BE ∥ FE ∥ ME simultaneously             | `Task` tool (3 parallel calls)  |
-| 4    | Waits for all three to finish                  | Polls `.bmad/signals/E2-*-done` |
-| 5    | Writes `E3-tqe-invoke` sentinel                | `bash` tool                     |
-| 6    | Spawns TQE                                     | `Task` tool                     |
+| Step | What TL Does                                   | Mechanism                        |
+| ---- | ---------------------------------------------- | -------------------------------- |
+| 1    | Produces `sprint-N-kickoff.md`                 | Normal artifact                  |
+| 2    | Clears stale signals, creates `.bmad/signals/` | `bash` tool                      |
+| 3    | Spawns BE ∥ FE ∥ ME simultaneously             | `Agent` tool (3 parallel calls)  |
+| 4    | Waits for all three to finish                  | Polls `.bmad/signals/E2-*-done`  |
+| 5    | Writes `E3-tqe-invoke` sentinel                | `bash` tool                      |
+| 6    | Spawns TQE                                     | `Agent` tool                     |
 
 **Sentinel files** (written to `.bmad/signals/`):
 
@@ -187,6 +194,17 @@ In **Claude Code**, the Tech Lead acts as a fully autonomous orchestrator — sp
 | `E3-tqe-invoke` | Tech Lead         | All E2 done; TQE may proceed immediately |
 
 **TQE fast-path:** When TQE detects `.bmad/signals/E3-tqe-invoke`, it skips its E2 completion check (Step 0 in its Autonomous Task Detection) and proceeds directly to testing — no re-verification of engineer outputs needed.
+
+#### Path B — Agent Teams (Experimental)
+
+For full peer-to-peer coordination between BE, FE, and ME (e.g. resolving cross-service dependencies in real time), enable Agent Teams:
+
+```bash
+export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
+claude --agent tech-lead
+```
+
+TL becomes the **team lead**; BE/FE/ME become **teammates** with a shared task list and mailbox. Engineers can message each other directly — without routing through TL. The sentinel file protocol still applies as the E2→E3 completion gate. Requires Claude Code v2.1.32+.
 
 **Other AI tools:** Kiro, Codex CLI, Cursor, and Windsurf do not support sub-agent spawning. In those environments the wave structure is **human-orchestrated** — the `🚀` suggestion lines in each agent's Completion Protocol guide you to spawn the next wave manually. The sentinel files still work the same way; you just write them yourself (or check for them) rather than having TL do it automatically.
 

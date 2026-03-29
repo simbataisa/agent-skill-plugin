@@ -912,9 +912,20 @@ Read these before starting work on a project.
 > - All engineers read the shared doc independently — there are NO inter-engineer dependencies.
 > - When ALL three engineers complete → invoke `/tester-qe` (Wave E3/W7).
 
-### 🤖 Autonomous Orchestration (Claude Code — Task tool)
+### 🤖 Autonomous Orchestration (Claude Code — Agent tool)
 
-When running inside **Claude Code** with the `Task` tool available, you are the fully autonomous orchestrator. After producing the kickoff doc, execute these steps without waiting for human input:
+When running inside **Claude Code**, you are the fully autonomous orchestrator — spawning BE, FE, and ME engineers concurrently, monitoring their completion via sentinel files, then triggering TQE with zero human intervention.
+
+> **⚠️ Critical prerequisite — TL must be the main thread.**
+> Claude Code's `Agent` tool can only be called from the **main session thread**. Subagents cannot spawn other subagents. To make TL the main thread, start your session with:
+> ```bash
+> claude --agent tech-lead
+> ```
+> This starts Claude Code with Tech Lead as the root session, which enables it to spawn BE/FE/ME as background subagents via the `Agent` tool.
+
+#### Path A — Subagent Orchestration (Stable, Recommended)
+
+Use this path when starting with `claude --agent tech-lead`. After producing the kickoff doc, execute these steps without waiting for human input:
 
 **Step A — Clear stale signals and create signals directory:**
 ```bash
@@ -922,11 +933,11 @@ mkdir -p .bmad/signals
 rm -f .bmad/signals/E2-be-done .bmad/signals/E2-fe-done .bmad/signals/E2-me-done .bmad/signals/E3-tqe-invoke
 ```
 
-**Step B — Spawn E2 engineers in parallel using the Task tool:**
-Issue three simultaneous `Task` tool calls, each passing the kickoff doc path as context:
-- **Task 1:** invoke `/backend-engineer` with context: path to `docs/architecture/sprint-N-kickoff.md`
-- **Task 2:** invoke `/frontend-engineer` with context: path to `docs/architecture/sprint-N-kickoff.md`
-- **Task 3:** invoke `/mobile-engineer` with context: path to `docs/architecture/sprint-N-kickoff.md` *(skip if no mobile stories in the kickoff)*
+**Step B — Spawn E2 engineers in parallel using the Agent tool:**
+Issue three simultaneous `Agent` tool calls, each passing the kickoff doc path as context:
+- **Agent 1:** invoke `/backend-engineer` with context: path to `docs/architecture/sprint-N-kickoff.md`
+- **Agent 2:** invoke `/frontend-engineer` with context: path to `docs/architecture/sprint-N-kickoff.md`
+- **Agent 3:** invoke `/mobile-engineer` with context: path to `docs/architecture/sprint-N-kickoff.md` *(skip if no mobile stories in the kickoff)*
 
 Each engineer will write `.bmad/signals/E2-[role]-done` upon completing their work.
 
@@ -944,10 +955,23 @@ done
 ```bash
 touch .bmad/signals/E3-tqe-invoke
 ```
-Then invoke `/tester-qe` with context: path to `docs/architecture/sprint-N-kickoff.md`.
+Then invoke `/tester-qe` via the `Agent` tool with context: path to `docs/architecture/sprint-N-kickoff.md`.
 TQE detects the `E3-tqe-invoke` sentinel and proceeds immediately — no E2 re-verification needed.
 
-> **Other AI tools (Kiro, Codex, Cursor, Windsurf):** These tools do not support the `Task` tool for sub-agent spawning. In those environments, the 🚀 suggestion lines in the Completion Protocol guide the human to manually spawn each engineer in parallel. The sentinel file pattern still works identically — engineers write their signals, and the human confirms all are present before invoking TQE.
+#### Path B — Agent Teams (Experimental, Full Peer Coordination)
+
+Agent Teams is an experimental Claude Code capability that allows BE, FE, and ME to communicate directly with each other (not just report back to TL). To enable:
+
+```bash
+export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
+claude --agent tech-lead
+```
+
+In this mode, TL acts as the **team lead** and BE/FE/ME are **teammates** with a shared task list and mailbox. Engineers can send messages to each other to resolve cross-service dependencies in real time — without waiting for TL to mediate. The sentinel file protocol is still valid as a completion signal; Agent Teams adds peer messaging on top of it.
+
+> **Note:** Agent Teams requires Claude Code v2.1.32+. It has known limitations — see the [Claude Code docs](https://code.claude.com/docs/en/agent-teams) before relying on it in production workflows.
+
+> **Other AI tools (Kiro, Codex, Cursor, Windsurf):** These tools do not support the `Agent` tool for sub-agent spawning. In those environments, the 🚀 suggestion lines in the Completion Protocol guide the human to manually spawn each engineer in parallel. The sentinel file pattern still works identically — engineers write their signals, and the human confirms all are present before invoking TQE.
 
 ## Completion Protocol
 
@@ -973,7 +997,7 @@ Print this block exactly, filling in the bracketed fields:
 🔍 Key outputs: [sprint N confirmed | story assignments per engineer | ADRs locked | N blockers identified]
 ⚠️  Flags: [blockers, risks, deferred items — or 'None']
 🚀 [If Execute Mode — Claude Code] Proceeding with autonomous orchestration:
-   Task tool → spawn /backend-engineer ∥ /frontend-engineer ∥ /mobile-engineer in parallel
+   Agent tool → spawn /backend-engineer ∥ /frontend-engineer ∥ /mobile-engineer in parallel
    Monitor .bmad/signals/E2-[role]-done sentinels → when all present, touch E3-tqe-invoke → spawn /tester-qe
 🚀 [If Execute Mode — Other tools] Manually spawn engineers in parallel:
    → /backend-engineer  ∥  /frontend-engineer  ∥  /mobile-engineer
@@ -996,7 +1020,7 @@ Apply the feedback, re-run affected quality gate items, re-save the artifact, an
 ### Step 7 — On 'next'
 
 Your work is accepted.
-- **Claude Code:** Proceed immediately with Autonomous Orchestration (Steps A–D in the Execution Topology section above) — spawn BE ∥ FE ∥ ME via Task tool, monitor sentinels, then spawn TQE.
+- **Claude Code:** Proceed immediately with Autonomous Orchestration (Path A or B in the Execution Topology section above) — spawn BE ∥ FE ∥ ME via `Agent` tool, monitor `.bmad/signals/E2-*-done` sentinels, then spawn TQE. Requires `claude --agent tech-lead` as the session entry point.
 - **Other tools:** The human will spawn the engineers in parallel. Point them to `docs/architecture/sprint-N-kickoff.md`.
 
 **Kickoff doc is the bridge:** Every engineer reads the kickoff file directly — no additional copy-paste or manual handoff needed. Each agent auto-detects its assigned stories via the sprint kickoff.
