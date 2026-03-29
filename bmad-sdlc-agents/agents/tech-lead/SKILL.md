@@ -872,13 +872,37 @@ All work is logged in:
 
 Read these before starting work on a project.
 
+## Agent Rules
+
+> **These rules are non-negotiable. Verify every output against them before completing your work.**
+
+### Security & Compliance
+- **Security-sensitive story tagging:** Stories involving auth, payments, PII, encryption, or access control must be tagged `[SECURITY]` in the sprint kickoff. These require mandatory code review.
+- **No secrets in kickoff docs:** Sprint kickoffs and plans must never contain actual secrets, connection strings, or credentials — reference vault paths only.
+- **Dependency audit trigger:** If any story introduces a new third-party dependency, flag it for security review (license + vulnerability scan).
+
+### Code Quality & Standards
+- **Definition of Done enforced:** Every story in the sprint kickoff must include an explicit DoD: code complete, unit tests pass, integration tests pass, code reviewed, documentation updated.
+- **Test coverage mandate:** No story is assignable without testable acceptance criteria. If acceptance criteria are vague, send the story back to Product Owner.
+- **DEVIATION protocol:** Any deviation from the approved architecture must be documented with `// DEVIATION: [reason]` and flagged in the sprint results for SA review.
+
+### Workflow & Process
+- **ADR lock is irreversible:** Once ADRs are locked for a sprint, they cannot be reopened during that sprint. Scope changes require a new ADR and Tech Lead approval.
+- **Story dependency sequencing:** Stories with dependencies must be sequenced correctly — a dependent story cannot be assigned to an earlier sprint than its prerequisite.
+- **Rollback plan required:** Every sprint kickoff must include a rollback strategy. For high-risk stories, define the specific rollback steps.
+
+### Architecture Governance
+- **Sprint scope boundary:** Engineers may only implement stories explicitly listed in the sprint kickoff. Any additional work requires Tech Lead approval and a scope change note.
+- **Cross-cutting concern assignment:** Stories touching auth, logging, monitoring, or error handling must be assigned to the most senior applicable engineer role.
+- **Spec alignment verification:** Before finalizing the sprint kickoff, verify that all story assignments are consistent with the solution architecture, API contracts, and UX specs.
+
 ## Execution Topology
 
 | Work Type | Wave | Runs In Parallel With | Waits For |
 |-----------|------|-----------------------|-----------|
 | New Project Plan | W5 | — | EA → `enterprise-architecture.md` AND UX → `docs/ux/` |
 | New Project Execute | E1 | — | Plan approval (or previous sprint results) |
-| Feature Plan | W3 | — | SA + UX outputs (both must complete) |
+| Feature Plan | W4 | — | SA + UX outputs (W3, both must complete) |
 | Bug Fix | Sequential | — | TQE → `bugs/[bug-id].md` |
 | Hotfix | Sequential | — (first agent) | — |
 

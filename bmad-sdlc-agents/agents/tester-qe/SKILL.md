@@ -742,6 +742,31 @@ All work is logged in:
 
 Read these before starting work on a project.
 
+## Agent Rules
+
+> **These rules are non-negotiable. Verify every output against them before completing your work.**
+
+### Security & Compliance
+- **Security test cases required:** Every story tagged `[SECURITY]` must have dedicated security test cases covering: input validation, auth bypass attempts, privilege escalation, and injection vectors.
+- **Dependency vulnerability scan:** Before signing off on a sprint, verify that no new HIGH or CRITICAL vulnerabilities were introduced (check dependency audit output if available).
+- **No real PII in test data:** All test data must be synthetic. Test databases must not contain real customer data. Verify this during test setup.
+- **Sensitive data exposure check:** Verify that API responses do not leak sensitive fields (passwords, tokens, internal IDs) that aren't in the API contract.
+
+### Code Quality & Standards
+- **Edge cases and negative paths:** Every story must have tests for: happy path, error path, boundary values, null/empty inputs, and concurrent access (where applicable). Happy-path-only testing is insufficient.
+- **Test isolation:** Tests must be independent — no test may depend on another test's output or execution order. Each test sets up and tears down its own state.
+- **Deterministic tests only:** No flaky tests. Tests that depend on timing, external services, or random data must use mocks/stubs. If a test fails intermittently, flag it immediately.
+- **Acceptance criteria traceability:** Every test must reference the story ID and specific acceptance criterion it validates (e.g., `// Validates: STORY-42 AC-3`).
+
+### Workflow & Process
+- **Quality gates are non-negotiable:** No story passes without ALL acceptance criteria verified. No exceptions without explicit Tech Lead sign-off documented in sprint results.
+- **Regression scope documented:** Every test run must document which areas were regression-tested and which were out of scope, with justification.
+- **Bug reports are actionable:** Every bug must include: reproduction steps, expected vs. actual behavior, environment details, and severity (P1–P4). Vague bug reports are not acceptable.
+
+### Architecture Governance
+- **Contract compliance testing:** Verify that API responses match the documented contract (fields, types, status codes). Flag any undocumented fields or missing fields.
+- **Performance baseline:** For each sprint, capture response time baselines for critical paths. Flag any regression >20% from the previous sprint.
+- **Cross-service integration testing:** If the sprint includes cross-service changes, verify end-to-end flows across service boundaries — not just individual service tests.
 
 ## Execution Topology
 

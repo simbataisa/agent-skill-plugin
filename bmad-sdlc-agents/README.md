@@ -96,8 +96,8 @@ Every agent's Completion Protocol includes a `🚀` line in the review summary p
 
 | Agent | 🚀 Suggests |
 |---|---|
-| Business Analyst | `/product-owner` — transform brief into PRD and backlog |
-| Product Owner | `/solution-architect` (new project) or `/tech-lead` (feature/backlog) |
+| Business Analyst | `/product-owner` (new project) or `/solution-architect` ∥ `/ux-designer` (feature) or `/tech-lead` (backlog) |
+| Product Owner | `/solution-architect` (new project) or `/business-analyst` (feature/backlog — for impact analysis) |
 | Solution Architect | `/enterprise-architect` — infra, compliance, CI/CD design |
 | Enterprise Architect | `/ux-designer` — wireframes, design system, accessibility |
 | UX Designer | `/tech-lead` — sprint plan and implementation kickoff |
@@ -109,6 +109,19 @@ Every agent's Completion Protocol includes a `🚀` line in the review summary p
 | Tester-QE (failures) | Return to the failing engineer for fixes |
 
 You never need to remember the agent sequence — each agent hands you off to the next one.
+
+### 📏 Agent Rules (Inline Guardrails)
+
+Every agent embeds a `## Agent Rules` section with non-negotiable guardrails across four categories:
+
+| Category | What It Covers | Example |
+|----------|---------------|---------|
+| **Security & Compliance** | Data handling, secrets management, PII protection, auth patterns, audit trails | BE: "Parameterized queries only — zero tolerance for SQL injection" |
+| **Code Quality & Standards** | Testing requirements, documentation, naming, error handling, coverage | TQE: "Every test must reference the story ID and acceptance criterion it validates" |
+| **Workflow & Process** | Approval gates, scope control, deviation protocols, rollback procedures | TL: "ADR lock is irreversible per sprint — scope changes require a new ADR" |
+| **Architecture Governance** | ADR enforcement, tech radar compliance, API contract alignment, service boundaries | SA: "All technologies must be on the technology radar — unlisted tech requires an ADR" |
+
+Rules are role-specific — engineers get secure coding rules, architects get governance rules, testers get coverage rules, etc. Every agent verifies its outputs against its rules before completing the Completion Protocol.
 
 ### ⚡ Parallel Execution Waves
 
@@ -139,9 +152,10 @@ Agents are organized into **waves** — all agents in the same wave run simultan
 | Wave | Agents | Depends On |
 |------|--------|------------|
 | W1 | Product Owner | — |
-| W2 | Solution Architect ∥ UX Designer | PO → `docs/stories/[feature]/` |
-| W3 | Tech Lead | SA + UX (both must complete) |
-| W4 | Tester & QE | TL → `[feature]-plan.md` |
+| W2 | Business Analyst (impact analysis) | PO → `docs/stories/[feature]/` |
+| W3 | Solution Architect ∥ UX Designer | BA → `docs/analysis/[feature]-impact.md` |
+| W4 | Tech Lead | SA + UX (both must complete) |
+| W5 | Tester & QE | TL → `[feature]-plan.md` |
 
 **How to spawn parallel waves:** In Claude Code, use the Agent tool to launch multiple sub-agents in a single message. In Cursor/Windsurf, open parallel composer windows. The key rule: **never start the next wave until ALL agents in the current wave have printed their ✅ summary.** Each agent knows its topology — if it finishes before a parallel peer, it reports completion and notes which peer to wait for.
 
@@ -1368,7 +1382,7 @@ Write and run tests. Flag unmet criteria. Save to docs/testing/sprint-N+1-result
 
 #### ✨ Feature Request / Enhancement
 
-Use when adding a new capability to an existing project. Skips BA and EA (project context already exists). Only runs architecture agents if the feature touches service boundaries or infrastructure.
+Use when adding a new capability to an existing project. Skips EA (project context already exists). BA runs impact analysis after PO defines scope. Architecture agents run if the feature touches service boundaries or infrastructure.
 
 **Prompt A — Plan (5 agents, no code):**
 ```
@@ -1391,29 +1405,39 @@ Read docs/prd.md and existing docs/stories/. Define the feature scope: write new
 stories with clear acceptance criteria. Identify any existing stories affected.
 Save stories to docs/stories/[feature-name]/ and update docs/prd.md.
 
-## Wave 2 ∥ — Solution Architect + UX Designer (parallel)
-**Spawn both agents simultaneously — both read PO's feature stories independently.**
+## Wave 2 — Business Analyst (impact analysis)
+Read docs/stories/[feature-name]/ and existing docs/. Analyze:
+- Stakeholder impact — who is affected and what are their concerns
+- Affected systems and services — what existing functionality changes
+- Data flow changes — new data paths, storage, or processing
+- Regulatory/compliance implications
+- Risks, constraints, and dependencies on external systems
+- Success metrics for the feature
+Save to docs/analysis/[feature-name]-impact.md.
+
+## Wave 3 ∥ — Solution Architect + UX Designer (parallel)
+**Spawn both agents simultaneously — both read PO's stories and BA's impact analysis independently.**
 [Skip UX if no UI impact. Skip SA if no architecture impact.]
 
 ### Solution Architect
-Read the new feature stories in docs/stories/[feature-name]/ and docs/architecture/.
+Read the new feature stories in docs/stories/[feature-name]/, BA's impact analysis in docs/analysis/, and docs/architecture/.
 Assess architectural impact: new endpoints, data model changes, service boundary
 changes, third-party integrations. Create or update ADRs in docs/architecture/adr/.
 Update docs/architecture/solution-architecture.md if needed.
 
 ### UX Designer
-Read docs/stories/[feature-name]/ and docs/ux/. Design wireframes and user flows for
+Read docs/stories/[feature-name]/, BA's impact analysis, and docs/ux/. Design wireframes and user flows for
 new or updated screens. Save to docs/ux/[feature-name]/.
 
-## Wave 3 — Tech Lead
-**Wait for BOTH Solution Architect and UX Designer to complete.**
+## Wave 4 — Tech Lead
+**Wait for BOTH Solution Architect and UX Designer (W3) to complete.**
 Read docs/stories/[feature-name]/, all updated ADRs, and docs/ux/[feature-name]/ if
 present. Break down stories by engineer role (backend / frontend / mobile). Estimate
 effort. Identify dependencies. Save the feature execution plan to
 docs/architecture/[feature-name]-plan.md — this file must list every story with its
 assigned engineer role, referenced spec, and any ADRs to follow.
 
-## Wave 4 — Tester & QE
+## Wave 5 — Tester & QE
 Read docs/stories/[feature-name]/ and the acceptance criteria within each story.
 Write test cases: unit, integration, regression impact on existing features.
 Update docs/testing/test-strategy.md with the feature's test section.
@@ -1569,11 +1593,11 @@ Save results to docs/testing/hotfixes/[date]-[issue]-verified.md.
 
 Use for known stories already in the backlog, dependency upgrades, refactors, or maintenance tasks that don't need full architecture review.
 
-**Prompt A — Refine (2 agents, no code):**
+**Prompt A — Refine (3 agents, no code):**
 ```
 # BMAD Squad: Backlog Refinement
 
-Two agents will refine and plan this work item. Each must follow its built-in
+Three agents will refine and plan this work item. Each must follow its built-in
 Completion Protocol: print the ✅ review summary and wait for my reply.
 
 Work item: [paste story, tech debt description, or chore here]
@@ -1586,9 +1610,15 @@ refactor-auth-middleware). Clarify scope: write or refine the story with unambig
 acceptance criteria and explicit out-of-scope boundaries.
 Save refined story to docs/stories/[story-id].md.
 
-## Agent 2 — Tech Lead
-Read the refined story saved by the Product Owner — scan docs/stories/ for the most
-recent .md file created in this session. Also read relevant source files.
+## Agent 2 — Business Analyst (requirements clarification)
+Read the refined story saved by Product Owner — scan docs/stories/ for the most recent
+.md file. Analyze requirements clarity, stakeholder impact, risks, and dependencies.
+Verify acceptance criteria are unambiguous. Flag any regulatory implications.
+Save to docs/analysis/[story-id]-analysis.md.
+
+## Agent 3 — Tech Lead
+Read the refined story saved by the Product Owner and the analysis saved by BA —
+scan docs/stories/ and docs/analysis/ for the most recent files. Also read relevant source files.
 Produce a technical breakdown: affected files, implementation approach, estimated
 effort, dependencies, risks. Identify the engineer role needed (backend / frontend / mobile).
 Flag any ADR implications. Save to docs/architecture/[story-id]-notes.md.
@@ -1835,22 +1865,26 @@ Skips BA and EA (project context already exists). Architecture agents run only i
 flowchart TD
     START([✨ Feature Request]) --> PO
 
-    subgraph PLAN["📋 Plan Phase — 4 Waves"]
+    subgraph PLAN["📋 Plan Phase — 5 Waves"]
         subgraph W1["W1"]
             PO["Product Owner\n📄 stories/feature-name/"]
         end
-        subgraph W2["W2 ∥ parallel"]
+        subgraph W2["W2"]
+            BA["Business Analyst\n📄 analysis/feature-impact.md"]
+        end
+        subgraph W3["W3 ∥ parallel"]
             SA["Solution Architect\n📄 ADRs updated"]
             UX["UX Designer\n📄 docs/ux/feature-name/"]
         end
-        subgraph W3["W3"]
+        subgraph W4["W4"]
             TL_PLAN["Tech Lead\n📄 feature-name-plan.md"]
         end
-        subgraph W4["W4"]
+        subgraph W5["W5"]
             TQE_STRAT["Tester & QE\n📄 test-strategy.md"]
         end
 
-        PO --> SA & UX
+        PO --> BA
+        BA --> SA & UX
         SA & UX --> TL_PLAN --> TQE_STRAT
     end
 
@@ -1955,11 +1989,12 @@ Lightweight two-agent refinement then direct execution. No architecture review n
 flowchart TD
     START([📋 Backlog Item\nTech Debt / Chore]) --> PO
 
-    subgraph REFINE["📋 Refine (Prompt A — 2 agents)"]
+    subgraph REFINE["📋 Refine (Prompt A — 3 agents)"]
         PO["Product Owner\nClarify Scope + Acceptance Criteria\n📄 docs/stories/story-id.md"]
+        BA["Business Analyst\nRequirements + Impact Analysis\n📄 docs/analysis/story-id-analysis.md"]
         TL["Tech Lead\nTechnical Breakdown + Effort\n📄 docs/architecture/story-id-notes.md"]
 
-        PO --> TL
+        PO --> BA --> TL
     end
 
     TL --> ENG_Q
@@ -2070,4 +2105,4 @@ To contribute an agent or template, see the contribution guidelines in `CONTRIBU
 ---
 
 **Last updated:** 2026-03-27
-**BMAD Version:** 2.2 (Parallel Execution Waves + Agent Intelligence + Mermaid Workflow Diagrams)
+**BMAD Version:** 2.3 (Agent Rules + Parallel Execution Waves + Agent Intelligence + Mermaid Workflow Diagrams)

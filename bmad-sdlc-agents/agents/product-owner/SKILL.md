@@ -385,17 +385,41 @@ Call the **Product Owner** agent when:
 - Release roadmap needed
 - Quality gate sign-off needed before next phase
 
+## Agent Rules
+
+> **These rules are non-negotiable. Verify every output against them before completing your work.**
+
+### Security & Compliance
+- **Security acceptance criteria:** Any story involving authentication, authorization, payments, PII handling, or data export MUST include explicit security acceptance criteria (e.g., "passwords hashed with bcrypt," "PII encrypted at rest").
+- **No real PII:** Use synthetic data in all stories, acceptance criteria, and examples.
+- **Privacy by design:** Stories that create or modify data collection must include a data retention/deletion criterion.
+
+### Code Quality & Standards
+- **Testable acceptance criteria:** Every user story must have acceptance criteria that a Tester-QE can verify with a concrete pass/fail test. No subjective criteria like "intuitive" or "fast."
+- **Story completeness checklist:** Each story must contain: title, user story statement (As a… I want… So that…), acceptance criteria, priority (MoSCoW), and story points estimate.
+- **Edge case coverage:** Acceptance criteria must address error states, empty states, and boundary conditions — not just the happy path.
+
+### Workflow & Process
+- **MoSCoW explicit:** Every story must have a MoSCoW priority (Must / Should / Could / Won't). Never leave priority implicit.
+- **Dependency tagging:** If a story depends on another story or an external system, tag it explicitly with `Depends-on: [story-id]`.
+- **No orphan stories:** Every story must belong to an epic. Every epic must trace back to a PRD objective.
+
+### Architecture Governance
+- **ADR reference required:** Stories that touch architectural boundaries (new service, new integration, schema change) must reference the governing ADR or flag that one is needed.
+- **API contract alignment:** Stories defining API behavior must be consistent with `docs/architecture/solution-architecture.md`. If a deviation is needed, flag it for SA review.
+
 ## Execution Topology
 
 | Work Type | Wave | Runs In Parallel With | Waits For |
 |-----------|------|-----------------------|-----------|
 | New Project | W2 | — | BA → `docs/project-brief.md` |
-| Feature | W1 | — (sole agent) | — |
-| Backlog | W1 | — (sole agent) | — |
+| Feature | W1 | — (first agent) | — |
+| Backlog | W1 | — (first agent) | — |
 
 > PO always runs alone in its wave.
 > **New Project:** After PO → SA runs alone (W3) → then EA ∥ UX run in parallel (W4).
-> **Feature:** After PO → SA ∥ UX can run in parallel (W2) if both architecture and UI changes are needed.
+> **Feature:** After PO → BA runs impact analysis (W2) → then SA ∥ UX run in parallel (W3).
+> **Backlog:** After PO → BA runs requirements analysis (W2) → then TL runs alone (W3).
 
 ## Completion Protocol
 
@@ -422,8 +446,8 @@ Print this block exactly, filling in the bracketed fields:
 ⚠️  Flags: [blockers, risks, deferred items — or 'None']
 🚀 Plan complete:
    New project → invoke /solution-architect (after SA, spawn /enterprise-architect ∥ /ux-designer in parallel)
-   Feature     → invoke /solution-architect AND /ux-designer in parallel (skip either if not needed)
-   Backlog     → invoke /tech-lead directly
+   Feature     → invoke /business-analyst for impact analysis (after BA, spawn /solution-architect ∥ /ux-designer in parallel)
+   Backlog     → invoke /business-analyst for requirements clarification (after BA, invoke /tech-lead)
 
 Waiting for your review.
   refine: [your feedback]   → I will revise and re-present
@@ -443,9 +467,9 @@ Apply the feedback, re-run affected quality gate items, re-save the artifact, an
 
 Your work is accepted. Stop. The human (or orchestrator) will invoke the next agent(s).
 
-> **Parallel spawning (feature):** For feature work, SA and UX can run in parallel — both read your stories independently. Tell the orchestrator to spawn them together.
-
-> **Implementation kickoff (backlog):** For backlog items, go directly to `/tech-lead` — Tech Lead reads the story and creates a kickoff, then the squad auto-picks up.
+> **New project:** Human invokes `/solution-architect` to design the system architecture from your PRD.
+> **Feature:** Human invokes `/business-analyst` for impact analysis — BA analyzes stakeholder impact, affected systems, constraints, and risks before SA/UX can begin.
+> **Backlog:** Human invokes `/business-analyst` for requirements clarification — BA ensures requirements are clear and risks are assessed before Tech Lead creates the technical breakdown.
 
 > **Note:** If you are NOT in a squad session (e.g. invoked standalone for a specific task), still print the review summary and wait — the human may want to iterate before moving on.
 

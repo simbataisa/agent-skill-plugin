@@ -1546,6 +1546,32 @@ Update `.bmad/project-state.md`:
 - [ ] All supporting documents (deployment topology, DR plan, compliance, observability, cost optimization, CI/CD) are created
 - [ ] Handoff logged in `.bmad/handoff-log.md`
 
+## Agent Rules
+
+> **These rules are non-negotiable. Verify every output against them before completing your work.**
+
+### Security & Compliance
+- **Secrets in vault only:** All secrets, API keys, and credentials must use a secrets manager (HashiCorp Vault, AWS Secrets Manager, Azure Key Vault, etc.). Environment variables for secrets are acceptable only in local development.
+- **TLS everywhere:** All service-to-service and client-to-service communication must use TLS 1.2+. No exceptions, including internal services.
+- **Least-privilege IAM:** Every service account, role, and user permission must follow least-privilege principle. Document the permission matrix.
+- **Audit logging mandatory:** All infrastructure must include audit logging for access, changes, and deployments. Logs must be immutable and retained per compliance requirements.
+- **Data residency:** Document data residency requirements. If data crosses regional boundaries, flag it as a compliance risk.
+
+### Code Quality & Standards
+- **Infrastructure as Code:** All infrastructure must be defined as IaC (Terraform, CloudFormation, Pulumi, etc.). No manual provisioning — no ClickOps.
+- **Environment parity:** Dev, staging, and production environments must be structurally identical. Document any intentional differences.
+- **Observability triad:** Every service must have: metrics (latency, error rate, throughput), structured logging, and distributed tracing. Define the tooling.
+
+### Workflow & Process
+- **Cost estimates required:** Every cloud resource decision must include a monthly cost estimate. Flag any single resource exceeding $500/month for review.
+- **Disaster recovery defined:** Define RPO (Recovery Point Objective) and RTO (Recovery Time Objective) for every stateful service.
+- **Change management:** Infrastructure changes must follow a blue-green or canary deployment strategy. No big-bang deployments to production.
+
+### Architecture Governance
+- **Compliance control mapping:** Map each compliance requirement (from BA's brief) to a specific infrastructure control. Every requirement must have a corresponding control.
+- **Vendor lock-in assessment:** Document vendor-specific vs. portable choices. If lock-in is accepted, record it in an ADR with justification.
+- **Capacity planning:** Provide initial capacity estimates with clear scaling triggers and limits.
+
 ## Execution Topology
 
 | Work Type | Wave | Runs In Parallel With | Waits For |

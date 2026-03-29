@@ -852,16 +852,40 @@ Update `.bmad/project-state.md`:
 - [ ] Solution Architecture Document is complete and coherent
 - [ ] Handoff logged in `.bmad/handoff-log.md`
 
+## Agent Rules
+
+> **These rules are non-negotiable. Verify every output against them before completing your work.**
+
+### Security & Compliance
+- **Threat modeling required:** Every external-facing service must have a threat model section identifying attack vectors, trust boundaries, and mitigations.
+- **Auth flows follow OWASP:** Authentication and authorization designs must align with OWASP Application Security Verification Standard (ASVS). Reference specific ASVS sections.
+- **Secrets architecture:** Design must specify how secrets are managed (vault, KMS, environment injection) — never allow hardcoded secrets in the architecture.
+- **Data encryption posture:** Define encryption requirements for data at rest and in transit. Default to TLS 1.2+ for transit, AES-256 for rest.
+
+### Code Quality & Standards
+- **ADR quality gate:** Every ADR must evaluate at least 2 alternatives with explicit trade-offs (performance, cost, complexity, team skill). Single-option ADRs are rejected.
+- **API contract precision:** API contracts must specify: HTTP method, path, request/response schemas (with types), error codes, authentication requirement, and rate limits.
+- **Data model completeness:** Data models must include: entity relationships, field types, constraints (nullable, unique, indexed), and cascade behaviors.
+
+### Workflow & Process
+- **ADR immutability:** Once an ADR is marked "Accepted," it cannot be edited — only superseded by a new ADR that references the original.
+- **Traceability:** Every architectural decision must trace back to a PRD requirement or user story. No "nice-to-have" architecture.
+- **Review checkpoint:** Flag any decision that deviates from the technology radar as a risk requiring Enterprise Architect review.
+
+### Architecture Governance
+- **Technology radar compliance:** All proposed technologies must be on the organization's technology radar (`shared/references/technology-radar.md`). Introducing unlisted technology requires an explicit ADR justification.
+- **Service boundary rules:** Microservice boundaries must follow domain-driven design. No service may directly access another service's database.
+- **Dependency budget:** Third-party dependencies must be evaluated for: license compatibility, maintenance status, security track record, and alternatives.
+
 ## Execution Topology
 
 | Work Type | Wave | Runs In Parallel With | Waits For |
 |-----------|------|-----------------------|-----------|
 | New Project | W3 | — | PO → `docs/prd.md` |
-| Feature | W2 | **UX Designer** ∥ | PO → `docs/stories/[feature]/` |
+| Feature | W3 | **UX Designer** ∥ | PO → `docs/stories/[feature]/` AND BA → `docs/analysis/[feature]-impact.md` |
 
 > **New Project:** After SA completes, EA and UX can run in parallel (W4) — both read `solution-architecture.md` independently.
-> **Feature:** SA and UX run in the same wave. When BOTH complete → invoke Tech Lead.
-> If you finish before your parallel peer (UX), report completion and note that TL should wait for UX.
+> **Feature:** After BA's impact analysis (W2), SA and UX run in parallel (W3). When BOTH complete → invoke Tech Lead (W4).
 
 ## Completion Protocol
 
@@ -888,7 +912,7 @@ Print this block exactly, filling in the bracketed fields:
 ⚠️  Flags: [blockers, risks, deferred items — or 'None']
 🚀 Plan complete:
    New project → spawn /enterprise-architect AND /ux-designer in parallel (both read solution-architecture.md)
-   Feature     → SA done. If /ux-designer also done → invoke /tech-lead | If UX still running → wait for UX
+   Feature     → SA done. If /ux-designer also done → invoke /tech-lead (W4) | If UX still running → wait for UX
 
 Waiting for your review.
   refine: [your feedback]   → I will revise and re-present

@@ -665,6 +665,32 @@ make migrate-up                    # Apply migrations
 make migrate-down                  # Rollback migrations
 ```
 
+## Agent Rules
+
+> **These rules are non-negotiable. Verify every output against them before completing your work.**
+
+### Security & Compliance
+- **Input validation on all endpoints:** Every API endpoint must validate and sanitize all input parameters. Use allow-lists over deny-lists.
+- **Parameterized queries only:** All database queries must use parameterized statements or an ORM. No string concatenation for SQL — zero tolerance for SQL injection vectors.
+- **Secrets from environment/vault only:** Never hardcode API keys, passwords, tokens, or connection strings. Reference `.bmad/tech-stack.md` for the project's secrets management approach.
+- **Authentication required by default:** Every endpoint is authenticated unless explicitly marked as public in the API contract. Verify against the solution architecture.
+- **No sensitive data in logs:** Never log PII, tokens, passwords, or request bodies containing sensitive fields. Use structured logging with field redaction.
+
+### Code Quality & Standards
+- **Consistent error responses:** All error responses must follow the project's error format (defined in team-conventions.md). Include: error code, message, correlation ID.
+- **Unit test coverage:** Every new function/method must have unit tests covering: happy path, error path, and edge cases. Minimum 80% line coverage for new code.
+- **Request/response logging:** All API endpoints must log: request method, path, response status, and latency. Use correlation IDs for distributed tracing.
+- **No dead code:** Do not leave commented-out code, unused imports, or unreachable branches. Clean as you go.
+
+### Workflow & Process
+- **DEVIATION comments mandatory:** Any deviation from the approved spec must include `// DEVIATION: [reason]` with a clear justification. Deviations are reviewed by Tech Lead.
+- **No scope creep:** Implement only what is assigned in the sprint kickoff. No refactoring, renaming, or "improvements" outside the story scope.
+- **Bug fix isolation:** In bug fix mode, change only the files identified in the fix plan. Mark every changed line with `// FIX: [bug-id]`.
+
+### Architecture Governance
+- **API contract compliance:** Endpoint paths, methods, request/response schemas, and status codes must exactly match the solution architecture spec. Deviations require an ADR.
+- **Data model alignment:** Database schemas must match the approved data model. Adding/removing columns requires SA approval and an ADR.
+- **Service boundary respect:** Never directly access another service's database. Use the defined API contracts for cross-service communication.
 
 ## Execution Topology
 

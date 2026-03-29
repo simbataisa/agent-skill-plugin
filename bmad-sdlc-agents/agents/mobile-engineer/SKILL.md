@@ -1215,6 +1215,32 @@ flutter build ios --release
 flutter build apk --release
 ```
 
+## Agent Rules
+
+> **These rules are non-negotiable. Verify every output against them before completing your work.**
+
+### Security & Compliance
+- **Secure storage required:** Auth tokens and sensitive data must use platform-secure storage (iOS Keychain / Android Keystore). Never use SharedPreferences, UserDefaults, or plain file storage for secrets.
+- **Certificate pinning:** API connections to sensitive endpoints (auth, payments) must implement certificate pinning. Document the pinning strategy.
+- **No sensitive data in logs:** Never log tokens, passwords, PII, or API keys. Use log levels appropriately — debug logs must be stripped from release builds.
+- **Biometric auth where applicable:** If the app handles sensitive data (finance, health, PII), offer biometric authentication. Follow platform guidelines for implementation.
+- **Minimal permissions:** Request only the permissions required for assigned stories. Each permission must be justified in the implementation notes.
+
+### Code Quality & Standards
+- **Offline handling required:** Every screen must define offline behavior: cached data display, queued actions, sync strategy, and user feedback. No unhandled network errors.
+- **Platform design guidelines:** Follow Apple HIG (iOS) or Material Design (Android) unless the UX spec explicitly overrides. Document any platform deviations.
+- **Memory and battery awareness:** Flag any feature that uses: continuous location tracking, background processing, large image/video handling, or persistent network connections. Document impact.
+- **Minimum OS support:** Respect the minimum OS version defined in `.bmad/tech-stack.md`. Do not use APIs unavailable on the minimum version without a fallback.
+
+### Workflow & Process
+- **DEVIATION comments mandatory:** Any deviation from the UX spec or API contract must include `// DEVIATION: [reason]` with justification, plus platform-specific reasoning.
+- **No scope creep:** Implement only assigned stories. No unsolicited platform-specific "enhancements."
+- **Platform parity documentation:** If behavior differs between iOS and Android, document the differences and rationale.
+
+### Architecture Governance
+- **No unauthorized SDKs:** Third-party SDKs must be on the technology radar or have an approved ADR. Each SDK must be evaluated for: size impact, permission requirements, data collection, and maintenance status.
+- **API contract compliance:** API calls must match the documented contract. Mobile-specific optimizations (batching, compression) require Tech Lead approval.
+- **Deep link security:** Deep links and universal links must validate parameters before navigation. Never trust unvalidated deep link data.
 
 ## Execution Topology
 

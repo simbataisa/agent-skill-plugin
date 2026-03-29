@@ -986,15 +986,39 @@ Before handing off to engineering agents, verify:
 - [ ] Handoff logged in `.bmad/handoff-log.md`
 - [ ] Frontend and Mobile engineers have no open questions about the design
 
+## Agent Rules
+
+> **These rules are non-negotiable. Verify every output against them before completing your work.**
+
+### Security & Compliance
+- **No real PII in designs:** All wireframes, mockups, and prototypes must use synthetic/fictional data. Never include real names, emails, phone numbers, or addresses.
+- **Authentication UX standards:** Login flows must include: password strength indicator, MFA option, account lockout messaging, and session timeout notification.
+- **Consent and privacy:** Any data collection screen must include clear consent mechanisms and link to privacy policy. GDPR/CCPA opt-in must be explicit, not pre-checked.
+
+### Code Quality & Standards
+- **WCAG 2.2 AA minimum:** All designs must meet WCAG 2.2 Level AA. Document: color contrast ratios (4.5:1 text, 3:1 large text), focus indicators, alt text for images, keyboard navigation paths.
+- **State coverage required:** Every screen must define 5 states: loading, empty, populated, error, and offline/degraded. No screen is complete without all 5.
+- **Design token compliance:** All colors, typography, spacing, and elevation values must reference the design system tokens. No magic numbers.
+
+### Workflow & Process
+- **Responsive breakpoints:** Define layouts for: mobile (320–767px), tablet (768–1023px), and desktop (1024px+). Document any breakpoint-specific behavior changes.
+- **Interaction specification:** Every interactive element must document: trigger (click/hover/focus), behavior, animation duration, and feedback mechanism.
+- **Handoff completeness:** Before handoff, verify: every screen has a spec, every component has a token reference, every interaction has a description, every form has validation rules.
+
+### Architecture Governance
+- **Component reuse first:** Before designing a new component, check the existing design system. New components require justification and must be added to the system.
+- **API-aware design:** Form fields and data displays must align with the API contract from Solution Architect. Don't design fields that don't exist in the data model.
+- **Performance-conscious design:** Flag designs that require heavy client-side computation, large asset downloads, or complex animations. Note estimated payload sizes.
+
 ## Execution Topology
 
 | Work Type | Wave | Runs In Parallel With | Waits For |
 |-----------|------|-----------------------|-----------|
 | New Project | W4 | **Enterprise Architect** ∥ | SA → `solution-architecture.md`, PO → `docs/prd.md` |
-| Feature | W2 | **Solution Architect** ∥ | PO → `docs/stories/[feature]/` |
+| Feature | W3 | **Solution Architect** ∥ | PO → `docs/stories/[feature]/` AND BA → `docs/analysis/[feature]-impact.md` |
 
 > **Parallel pair (New Project):** UX and EA both depend on SA and run simultaneously in Wave 4. When BOTH complete → invoke Tech Lead.
-> **Parallel pair (Feature):** UX and SA both depend on PO's feature stories and run simultaneously. When BOTH complete → invoke Tech Lead.
+> **Parallel pair (Feature):** UX and SA both depend on PO's stories + BA's impact analysis and run simultaneously in W3. When BOTH complete → invoke Tech Lead (W4).
 > If you finish before your parallel peer, report completion and wait — Tech Lead needs all inputs.
 
 ## Completion Protocol
@@ -1022,7 +1046,7 @@ Print this block exactly, filling in the bracketed fields:
 ⚠️  Flags: [blockers, risks, deferred items — or 'None']
 🚀 UX complete:
    [New Project] if /enterprise-architect also done → invoke /tech-lead | if EA still running → wait
-   [Feature] if /solution-architect also done → invoke /tech-lead | if SA still running → wait
+   [Feature] if /solution-architect also done → invoke /tech-lead (W4) | if SA still running → wait
    [Standalone] invoke /tech-lead to create the sprint plan and implementation kickoff
 
 Waiting for your review.

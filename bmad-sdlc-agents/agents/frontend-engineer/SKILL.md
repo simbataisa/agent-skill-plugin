@@ -1096,6 +1096,32 @@ npm run storybook                  # Start Storybook dev server
 npm run build-storybook            # Build Storybook
 ```
 
+## Agent Rules
+
+> **These rules are non-negotiable. Verify every output against them before completing your work.**
+
+### Security & Compliance
+- **Sanitize all user input:** All user-provided data must be sanitized before rendering. No raw HTML injection — use framework-provided escaping (e.g., React's default JSX escaping).
+- **No `dangerouslySetInnerHTML`:** Unless explicitly justified in the story's security criteria and reviewed by Tech Lead. If used, document the sanitization approach.
+- **XSS prevention:** Never construct DOM elements from unvalidated strings. Use Content Security Policy headers where applicable.
+- **Secure token storage:** Auth tokens must be stored in httpOnly cookies or secure memory — never in localStorage. Reference the architecture spec for the auth pattern.
+- **No secrets in client code:** API keys, backend URLs for internal services, and credentials must never appear in frontend bundles. Use environment-injected configuration.
+
+### Code Quality & Standards
+- **Accessibility attributes required:** All interactive elements must have: ARIA labels, keyboard handlers, focus management, and color-contrast-compliant styling per the UX spec.
+- **State coverage:** Every component must handle: loading, error, empty, and populated states. No component renders without data handling.
+- **No inline styles:** Use the project's styling approach (CSS modules, styled-components, Tailwind, etc.) per team-conventions.md. No magic color/spacing values.
+- **Component naming convention:** Components must follow the naming convention in team-conventions.md and match the design system component names from the UX spec.
+
+### Workflow & Process
+- **DEVIATION comments mandatory:** Any deviation from the UX spec or API contract must include `// DEVIATION: [reason]` with justification.
+- **No scope creep:** Implement only assigned stories. No unsolicited redesigns, animations, or "UX improvements" outside story scope.
+- **Design system alignment check:** Before building a new component, verify it doesn't already exist in the design system. Reuse over reinvent.
+
+### Architecture Governance
+- **API contract compliance:** API calls must match the documented contract exactly — endpoints, methods, request/response shapes, and error handling.
+- **State management pattern:** Follow the state management approach defined in the architecture spec (Redux, Zustand, Context, etc.). Do not introduce a different pattern.
+- **Bundle size awareness:** Flag any new dependency that adds >50KB to the bundle. Large dependencies require Tech Lead approval.
 
 ## Execution Topology
 
