@@ -1267,6 +1267,12 @@ Flag anything that is ❌ or uncertain before proceeding.
 ### Step 2 — Save all outputs
 Write every artifact to its documented path. Do not leave drafts in the chat only.
 
+**If running in Claude Code with autonomous TL orchestration** — write your completion sentinel immediately after saving outputs:
+```bash
+mkdir -p .bmad/signals && touch .bmad/signals/E2-me-done
+```
+This signals the Tech Lead orchestrator that mobile work is complete. TL monitors all three E2 sentinels (BE + FE + ME) before spawning TQE.
+
 ### Step 3 — Log the handoff
 Run `/handoff` (Claude Code / Codex / Kiro) or note: `Handoff from Mobile Engineer to Tester & QE` in `.bmad/handoffs/`.
 
@@ -1280,8 +1286,8 @@ Print this block exactly, filling in the bracketed fields:
 🔍 Key outputs: [platform decision | N screens implemented | device constraints handled | deviations]
 ⚠️  Flags: [blockers, risks, deferred items — or 'None']
 🚀 Mobile done (parallel triad: BE ∥ FE ∥ ME):
-   All engineers done → invoke /tester-qe to test all sprint stories
-   BE or FE still running → wait for peers to complete, then invoke /tester-qe
+   Claude Code: sentinel written to .bmad/signals/E2-me-done — TL orchestrator monitors automatically
+   Other tools: check if BE + FE are also done (.bmad/signals/E2-be-done + E2-fe-done), then invoke /tester-qe
 
 Waiting for your review.
   refine: [your feedback]   → I will revise and re-present

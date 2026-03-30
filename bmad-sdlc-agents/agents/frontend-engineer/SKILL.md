@@ -1148,6 +1148,12 @@ Flag anything that is ❌ or uncertain before proceeding.
 ### Step 2 — Save all outputs
 Write every artifact to its documented path. Do not leave drafts in the chat only.
 
+**If running in Claude Code with autonomous TL orchestration** — write your completion sentinel immediately after saving outputs:
+```bash
+mkdir -p .bmad/signals && touch .bmad/signals/E2-fe-done
+```
+This signals the Tech Lead orchestrator that frontend work is complete. TL monitors all three E2 sentinels (BE + FE + ME) before spawning TQE.
+
 ### Step 3 — Log the handoff
 Run `/handoff` (Claude Code / Codex / Kiro) or note: `Handoff from Frontend Engineer to Mobile Engineer` in `.bmad/handoffs/`.
 
@@ -1161,8 +1167,8 @@ Print this block exactly, filling in the bracketed fields:
 🔍 Key outputs: [N components built | state management pattern | API wiring | accessibility notes | deviations]
 ⚠️  Flags: [blockers, risks, deferred items — or 'None']
 🚀 Frontend done (parallel triad: BE ∥ FE ∥ ME):
-   All engineers done → invoke /tester-qe for sprint testing
-   BE or ME still running → wait for peers to complete, then invoke /tester-qe
+   Claude Code: sentinel written to .bmad/signals/E2-fe-done — TL orchestrator monitors automatically
+   Other tools: check if BE + ME are also done (.bmad/signals/E2-be-done + E2-me-done), then invoke /tester-qe
 
 Waiting for your review.
   refine: [your feedback]   → I will revise and re-present

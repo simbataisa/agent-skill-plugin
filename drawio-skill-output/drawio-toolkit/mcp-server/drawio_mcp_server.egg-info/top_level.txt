@@ -1,1 +1,0 @@
-drawio_mcp_server
