@@ -29,7 +29,10 @@ Install the global layer once across all tools, then scaffold `.bmad/` context f
 
 **Install once.** Available in all projects.
 
-- **`agents/`** – 10 specialized agent skills (as markdown files)
+- **`agents/`** – 10 specialized agent skills, each in its own folder
+  - `<agent-name>/SKILL.md` – Core skill body (≤500 lines; loads on invocation)
+  - `<agent-name>/references/` – Deep-dive guides, patterns, and worked examples (loaded on demand)
+  - `<agent-name>/templates/` – Output templates for deliverables (loaded on demand)
 - **`shared/`** – Company-wide context, references, and templates
   - `BMAD-SHARED-CONTEXT.md` – Organization context, principles, standards
   - `references/technology-radar.md` – Technology choices, maturity tiers
@@ -63,6 +66,18 @@ When an agent runs, it loads context in this order (later overrides earlier):
 5. User prompt (immediate task)
 
 This creates project-aware agents that respect global conventions while adapting to project specifics.
+
+### 📂 Progressive Disclosure (Three-Level Loading)
+
+Each agent skill uses a three-level loading strategy to keep context windows lean:
+
+| Level | What | When loaded |
+|---|---|---|
+| **1 — Metadata** | YAML frontmatter (`name`, `description`, `allowed-tools`) | Always — used by the tool for skill discovery |
+| **2 — Skill body** | `SKILL.md` (≤500 lines) | On invocation — quick mode detection, responsibilities, completion protocol |
+| **3 — Reference files** | `references/*.md` and `templates/*.md` | On demand — agent reads the relevant file only when working on that task area |
+
+This means a Tech Lead doing code review loads `templates/code-review-checklist.md` without also loading the risk assessment or debt registry templates. Agents are instructed to `Read` the appropriate reference file before starting each deliverable.
 
 ---
 
@@ -278,7 +293,8 @@ Agent behaviour is not identical across all AI coding tools. This matrix shows w
 
 | Capability | Claude Code | Kiro | Codex CLI | Gemini CLI |
 |---|---|---|---|---|
-| **Init file** | `CLAUDE.md` | `.kiro/steering/` | `AGENTS.md` | `GEMINI.md` |
+| **Init file** | `CLAUDE.md` | `.kiro/steering/` | `AGENTS.md` | `GEMINI.md` (project) |
+| **Skills directory** | `~/.claude/skills/` | `~/.kiro/skills/` | `~/.codex/skills/` | `~/.gemini/skills/` |
 | **Model** | Claude Sonnet / Opus | Claude (via Amazon Bedrock) | GPT-4o | Gemini 2.x |
 | **Parallel subagent spawning** (Agent tool) | ✅ Full | ✅ Full | ❌ Not available | ❌ Not available |
 | **Session hooks** (PreToolUse / PostToolUse / Stop) | ✅ Full | ✅ Full | ❌ Not available | ❌ Not available |
@@ -295,7 +311,7 @@ Agent behaviour is not identical across all AI coding tools. This matrix shows w
 - **Claude Code** — Full BMAD pipeline including autonomous chaining, parallel engineers, hooks, and Yolo harness. Recommended for the complete experience.
 - **Kiro** — Equivalent to Claude Code in nearly all respects. Path A and B both available. Yolo harness works. Only minor differences in slash command syntax (`@` vs `/`).
 - **Codex CLI** — Artifacts and quality gates work well. Autonomous chaining and sentinel writes are unreliable after the ✅ block. Engineers run sequentially (not in parallel). No hooks/harness. Each agent's Completion Protocol includes a `### 🔧 On Codex CLI / Gemini CLI` section with a simplified close procedure tailored to these constraints.
-- **Gemini CLI** — Similar limitations to Codex. Output formatting often deviates from spec (content is correct, structure varies). The `### 🔧 On Codex CLI / Gemini CLI` simplified protocol applies here too.
+- **Gemini CLI** — Similar limitations to Codex. Output formatting often deviates from spec (content is correct, structure varies). The `### 🔧 On Codex CLI / Gemini CLI` simplified protocol applies here too. Skills install to `~/.gemini/skills/<agent-name>/` using the same folder-per-skill convention as Claude Code and Kiro.
 
 ---
 
@@ -409,7 +425,9 @@ This project uses the BMAD SDLC framework. At the start of each session, read:
 Always apply the conventions in `team-conventions.md` when generating code.
 ```
 
-### Gemini CLI — `GEMINI.md`
+### Gemini CLI — `~/.gemini/skills/` + project `GEMINI.md`
+
+Global skills install to `~/.gemini/skills/<agent-name>/SKILL.md` (same folder-per-skill convention as Claude Code). Project-level wiring uses a `GEMINI.md` at the project root:
 
 ```markdown
 ## BMAD Project Context
@@ -706,7 +724,10 @@ Address agents by role: "Acting as the Product Owner, …"
 
 ```bash
 bash scripts/install-global.sh
-# → Agents + global rules → ~/.gemini/GEMINI.md
+# → ~/.gemini/skills/<agent-name>/SKILL.md   (one folder per agent)
+# → ~/.gemini/skills/<agent-name>/references/ (deep-dive guides)
+# → ~/.gemini/skills/<agent-name>/templates/  (output templates)
+# → ~/.gemini/BMAD-SHARED-CONTEXT.md
 ```
 
 **Project Install (per project, run from project root)**
@@ -776,7 +797,7 @@ conventions-file: .aider.conventions.md
 | Cursor         | `~/.cursor/rules/`                  | `.cursor/rules/`                  |
 | Windsurf       | `~/.windsurf/rules/`                | `.windsurfrules`                  |
 | GitHub Copilot | `~/.github/copilot-instructions.md` | `.github/copilot-instructions.md` |
-| Gemini CLI     | `~/.gemini/GEMINI.md`               | `GEMINI.md`                       |
+| Gemini CLI     | `~/.gemini/skills/`                 | `GEMINI.md`                       |
 | OpenCode       | `~/.opencode/instructions.md`       | `AGENTS.md`                       |
 | Aider          | `~/.aider.conventions.md`           | `.aider.conf.yml`                 |
 
@@ -1882,16 +1903,41 @@ Save results to docs/testing/[story-id]-results.md.
 ```
 bmad-sdlc-agents/
 ├── agents/                                 # Global: 10 agent skills
-│   ├── business-analyst/SKILL.md
-│   ├── product-owner/SKILL.md
-│   ├── solution-architect/SKILL.md
-│   ├── enterprise-architect/SKILL.md
-│   ├── ux-designer/SKILL.md
-│   ├── tech-lead/SKILL.md
-│   ├── tester-qe/SKILL.md
-│   ├── backend-engineer/SKILL.md
-│   ├── frontend-engineer/SKILL.md
-│   └── mobile-engineer/SKILL.md
+│   ├── business-analyst/
+│   │   ├── SKILL.md                        # Core skill body (≤500 lines)
+│   │   ├── references/                     # Deep-dive guides (loaded on demand)
+│   │   └── templates/                      # Output templates (loaded on demand)
+│   ├── product-owner/
+│   │   ├── SKILL.md
+│   │   ├── references/
+│   │   └── templates/
+│   ├── solution-architect/
+│   │   ├── SKILL.md
+│   │   └── references/
+│   ├── enterprise-architect/
+│   │   ├── SKILL.md
+│   │   └── references/
+│   ├── ux-designer/
+│   │   ├── SKILL.md
+│   │   ├── references/
+│   │   └── templates/
+│   ├── tech-lead/
+│   │   ├── SKILL.md
+│   │   ├── references/
+│   │   └── templates/
+│   ├── tester-qe/
+│   │   ├── SKILL.md
+│   │   ├── references/
+│   │   └── templates/
+│   ├── backend-engineer/
+│   │   ├── SKILL.md
+│   │   └── references/
+│   ├── frontend-engineer/
+│   │   ├── SKILL.md
+│   │   └── references/
+│   └── mobile-engineer/
+│       ├── SKILL.md
+│       └── references/
 │
 ├── shared/                                 # Global: resources for all projects
 │   ├── BMAD-SHARED-CONTEXT.md
@@ -1919,9 +1965,9 @@ bmad-sdlc-agents/
 │       └── ux/
 │
 └── scripts/
-    ├── install-global.sh                   # Copy agents/ + shared/ to tool directories
-    ├── scaffold-project.sh                 # Create .bmad/ + project symlinks
-    └── update.sh                           # Update global + all projects
+    ├── install-global.sh                   # Deploy agents/ + shared/ to all detected tools
+    ├── scaffold-project.sh                 # Create .bmad/ + project wiring files
+    └── update.sh                           # Update global install + all projects
 ```
 
 ---
