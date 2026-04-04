@@ -231,6 +231,12 @@ if [[ -d "$HOME/.claude" ]] || command -v claude &> /dev/null; then
             else
                 mkdir -p "$CLAUDE_SKILLS/$agent_name"
                 cp "$agent_dir/SKILL.md" "$CLAUDE_SKILLS/$agent_name/SKILL.md"
+                if [[ -d "$agent_dir/references" ]]; then
+                    cp -r "$agent_dir/references" "$CLAUDE_SKILLS/$agent_name/"
+                fi
+                if [[ -d "$agent_dir/templates" ]]; then
+                    cp -r "$agent_dir/templates" "$CLAUDE_SKILLS/$agent_name/"
+                fi
                 echo "  ✓ Installed skill: $agent_name"
             fi
         fi
@@ -310,6 +316,12 @@ if [[ -d "$HOME/.skills" ]]; then
             else
                 mkdir -p "$COWORK_SKILLS/$agent_name"
                 cp "$agent_dir/SKILL.md" "$COWORK_SKILLS/$agent_name/SKILL.md"
+                if [[ -d "$agent_dir/references" ]]; then
+                    cp -r "$agent_dir/references" "$COWORK_SKILLS/$agent_name/"
+                fi
+                if [[ -d "$agent_dir/templates" ]]; then
+                    cp -r "$agent_dir/templates" "$COWORK_SKILLS/$agent_name/"
+                fi
                 echo "  ✓ Installed skill: $agent_name"
             fi
         fi
@@ -582,32 +594,69 @@ fi
 # ============================================================
 if [[ -d "$HOME/.gemini" ]] || command -v gemini &> /dev/null; then
     echo -e "${GREEN}✓ Gemini CLI${NC} found"
+    GEMINI_SKILLS="$HOME/.gemini/skills"
     GEMINI_INSTRUCTIONS="$HOME/.gemini/GEMINI.md"
 
-    if [[ "$DRY_RUN" == true ]]; then
-        echo "  [DRY] create with shared context + all agents -> $GEMINI_INSTRUCTIONS"
-    else
-        mkdir -p "$(dirname "$GEMINI_INSTRUCTIONS")"
-        {
-            cat "$SHARED_CONTEXT"
-            for agent_dir in "$AGENTS_DIR"/*; do
-                if [[ -d "$agent_dir" ]]; then
-                    echo ""
-                    cat "$agent_dir/SKILL.md"
-                fi
-            done
-            if [[ -d "$RULES_DIR/gemini/global" ]]; then
-                for rule_file in "$RULES_DIR/gemini/global"/*.md; do
-                    if [[ -f "$rule_file" ]]; then
-                        echo ""
-                        cat "$rule_file"
-                    fi
-                done
-            fi
-        } > "$GEMINI_INSTRUCTIONS"
+    if [[ "$DRY_RUN" == false ]]; then
+        mkdir -p "$GEMINI_SKILLS"
     fi
 
-    echo "  Install path: $GEMINI_INSTRUCTIONS"
+    # Remove legacy flat GEMINI.md if it exists (replaced by skills/ folder approach)
+    if [[ "$DRY_RUN" == false ]] && [[ -f "$GEMINI_INSTRUCTIONS" ]]; then
+        rm -f "$GEMINI_INSTRUCTIONS"
+        echo "  ✓ Removed legacy GEMINI.md (replaced by skills/ folders)"
+    fi
+
+    # Remove legacy bmad-* prefixed skill folders
+    if [[ "$DRY_RUN" == false ]]; then
+        for legacy in "$GEMINI_SKILLS"/bmad-*/; do
+            if [[ -d "$legacy" ]]; then
+                rm -rf "$legacy"
+                echo "  ✓ Removed legacy skill folder: $(basename "$legacy")"
+            fi
+        done
+    fi
+
+    # Copy shared context to ~/.gemini/
+    copy_file "$SHARED_CONTEXT" "$HOME/.gemini/BMAD-SHARED-CONTEXT.md"
+
+    # Copy all agents to ~/.gemini/skills/<agent-name>/SKILL.md (folder-based, same as Claude Code)
+    for agent_dir in "$AGENTS_DIR"/*; do
+        if [[ -d "$agent_dir" ]]; then
+            agent_name="$(basename "$agent_dir")"
+            if [[ "$DRY_RUN" == true ]]; then
+                echo "  [DRY] mkdir + cp $agent_dir/SKILL.md -> $GEMINI_SKILLS/$agent_name/SKILL.md"
+            else
+                mkdir -p "$GEMINI_SKILLS/$agent_name"
+                cp "$agent_dir/SKILL.md" "$GEMINI_SKILLS/$agent_name/SKILL.md"
+                if [[ -d "$agent_dir/references" ]]; then
+                    cp -r "$agent_dir/references" "$GEMINI_SKILLS/$agent_name/"
+                fi
+                if [[ -d "$agent_dir/templates" ]]; then
+                    cp -r "$agent_dir/templates" "$GEMINI_SKILLS/$agent_name/"
+                fi
+                echo "  ✓ Installed skill: $agent_name"
+            fi
+        fi
+    done
+
+    # Copy Gemini-specific global rules into GEMINI.md if present
+    if [[ -d "$RULES_DIR/gemini/global" ]]; then
+        if [[ "$DRY_RUN" == true ]]; then
+            echo "  [DRY] write gemini global rules -> $GEMINI_INSTRUCTIONS"
+        else
+            {
+                for rule_file in "$RULES_DIR/gemini/global"/*.md; do
+                    if [[ -f "$rule_file" ]]; then
+                        cat "$rule_file"
+                        echo ""
+                    fi
+                done
+            } > "$GEMINI_INSTRUCTIONS"
+        fi
+    fi
+
+    echo "  Skills: $GEMINI_SKILLS/"
     INSTALLED_TOOLS+=("Gemini CLI")
     echo ""
 fi

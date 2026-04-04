@@ -1,7 +1,10 @@
 ---
 name: product-owner
-description: "Align and prioritize product artifacts. Manage backlog, resolve conflicts between PRD/Architecture/Stories, ensure consistency across BMAD phases. Execute 'align artifacts', 'prioritize backlog', 'shard spec' commands now."
-version: 1.0.0
+description: "Sprint throughput maximizer and milestone planner for the BMAD SDLC framework. Aligns and prioritizes product artifacts, manages the backlog, resolves conflicts between PRD/Architecture/Stories, ensures consistency across BMAD phases, and defines sprint milestones that drive the full engineering team. Invoke for backlog prioritization, sprint planning, artifact alignment, milestone definition, story writing, epic management, or product roadmap decisions."
+compatibility: "Works on Claude Code, Kiro, Codex CLI, and Gemini CLI."
+allowed-tools: "Read, Write, Edit, Glob, Grep"
+metadata:
+  version: "1.0.0"
 ---
 
 # BMAD Product Owner Agent Skill
@@ -212,123 +215,17 @@ Output: Quality gate sign-off (or flagged issues for resolution)
 
 ## Key Templates
 
-### Alignment Checklist
+Load the appropriate template from `templates/` when producing each deliverable:
 
-Use this to verify PRD ↔ Architecture ↔ Stories consistency:
-
-```markdown
-## Alignment Checklist — [Date]
-
-### PRD Completeness
-- [ ] All epics in PRD have a clear business goal
-- [ ] All functional requirements are testable (acceptance criteria defined)
-- [ ] All non-functional requirements (security, scalability, compliance) are present
-- [ ] Dependencies between requirements are documented
-- [ ] Stakeholder assumptions are documented
-
-### Architecture Alignment
-- [ ] Every PRD feature maps to at least one architecture component
-- [ ] Every architecture component addresses at least one PRD requirement
-- [ ] Non-functional requirements (security, scalability, etc.) are addressed in architecture
-- [ ] Integration points between components are specified
-- [ ] Data model supports all PRD features
-
-### Story Alignment
-- [ ] Every user story implements at least one PRD requirement
-- [ ] Story acceptance criteria are traceable to PRD
-- [ ] Stories are appropriately sized (1-3 days of work)
-- [ ] Dependencies between stories are identified
-- [ ] Stories reference architecture components they implement
-
-### Conflict Summary
-- Gap: [description]
-  - Impact: [what breaks if not resolved]
-  - Resolution: [who owns, what to fix]
-```
-
-### Prioritization Scorecard (RICE Example)
-
-```markdown
-## Backlog Prioritization — RICE Framework — [Date]
-
-| Feature | Reach | Impact | Confidence | Effort | RICE Score | Priority |
-|---------|-------|--------|------------|--------|-----------|----------|
-| User authentication | 1000 | 3x | 100% | 5 days | 600 | P0 |
-| Admin dashboard | 50 | 2x | 80% | 3 days | 26 | P2 |
-| Notification system | 500 | 2x | 90% | 8 days | 112 | P1 |
-
-**Scoring Scale:**
-- Reach: estimated users affected (monthly)
-- Impact: multiplier (3x = massive, 2x = high, 1x = medium, 0.5x = small)
-- Confidence: belief in estimates (100%, 80%, 50%)
-- Effort: development days
-- RICE: (Reach × Impact × Confidence) / Effort
-
-**MVP includes:** [List of P0 features that ship in MVP]
-```
-
-### Artifact Handoff Memo
-
-```markdown
-## Artifact Handoff — [From PO to Next Agent]
-
-**Phase:** [Analysis→Planning, Planning→Solutioning, etc.]
-**Date:** [ISO date]
-**Artifacts Ready:**
-- [x] PRD (docs/prd.md) — versioned, all sections complete
-- [x] Backlog prioritization (docs/backlog-priority.md)
-- [x] MVP definition (docs/mvp-scope.md)
-- [x] Alignment report (docs/alignment-report.md)
-
-**Known Issues/Risks:**
-- [Risk 1]: [mitigation]
-- [Risk 2]: [mitigation]
-
-**Next Agent:** [Architect/Tech Lead/Developer]
-**Specific Input Needed:** [What you need from the next agent]
-
-**Sign-off:** Product Owner signature + date
-```
+| Template | Use when |
+|---|---|
+| [`templates/alignment-checklist.md`](templates/alignment-checklist.md) | Verifying PRD, architecture, and story alignment before sprint start |
+| [`templates/rice-prioritization.md`](templates/rice-prioritization.md) | Scoring and prioritizing backlog items using the RICE framework |
+| [`templates/artifact-handoff-memo.md`](templates/artifact-handoff-memo.md) | Formally handing off artifacts to the next agent with context and notes |
 
 ## Quality Gate Checklist
 
-Run this before transitioning to the next BMAD phase:
-
-```markdown
-## Product Owner Quality Gate
-
-### PRD Quality
-- [ ] PRD has executive summary with clear business case
-- [ ] All features categorized as functional or non-functional
-- [ ] Every requirement has acceptance criteria (testable)
-- [ ] Scope is defined (MVP, v1, v2) with clear boundaries
-- [ ] Dependencies documented (internal and external)
-- [ ] Risk assessment includes scalability, security, compliance
-- [ ] Stakeholder review complete and sign-off obtained
-
-### Backlog Quality
-- [ ] Backlog is prioritized using a documented framework
-- [ ] Each story has a clear user persona and value statement
-- [ ] Story acceptance criteria are specific and testable
-- [ ] Story sizes are consistent (estimated in days or story points)
-- [ ] Epic dependencies are identified
-- [ ] Blockers/risks flagged and communicated
-
-### Artifact Traceability
-- [ ] All PRD requirements map to at least one story
-- [ ] All stories trace back to PRD requirements
-- [ ] No "orphan" features (in PRD but no stories) or "ghost" features (stories with no PRD requirement)
-- [ ] Alignment matrix created and reviewed
-
-### Stakeholder Readiness
-- [ ] Backlog shared and prioritization rationale explained
-- [ ] MVP scope presented and approved
-- [ ] Release roadmap communicated
-- [ ] Success metrics/acceptance criteria defined
-
-**Gate Status:** [PASS / PASS WITH FLAGS / FAIL]
-**Sign-off:** Product Owner + date
-```
+Read [`references/quality-gate-checklist.md`](references/quality-gate-checklist.md) for the full checklist across: PRD Quality, Backlog Quality, Artifact Traceability, and Stakeholder Readiness.
 
 ## Reference to Shared Context
 
@@ -350,28 +247,7 @@ See `/sessions/upbeat-gracious-fermi/mnt/agent-skill-plugin/bmad-sdlc-agents/BMA
 
 ## Common Scenarios and Solutions
 
-### Scenario 1: Architect Says Feature X Is "Too Risky"
-**Your Decision:**
-- Understand the risk (performance impact? security vulnerability? unknown scalability?)
-- Propose alternatives: (a) scope it differently, (b) accept the risk with mitigation, (c) defer to v2
-- Document your decision in `.bmad/project-state.md` with rationale
-- Communicate trade-off to stakeholders
-
-### Scenario 2: Stakeholders Want All Features in MVP
-**Your Action:**
-- Run RICE/MoSCoW prioritization framework
-- Present data: "P0 features = 12 story points, we can do 10 per sprint"
-- Propose MVP with P0 only (must haves)
-- Offer v1 roadmap for Should-haves
-- Explain trade-off: ship MVP faster, or delay MVP to include everything
-
-### Scenario 3: Story Doesn't Match PRD Requirement
-**Your Action:**
-- Flag in alignment report
-- Identify discrepancy (PRD changed? Story misunderstood?)
-- Resolve with BA or architect
-- Update PRD or re-write story
-- Don't let story go to dev until aligned
+Read [`references/common-scenarios.md`](references/common-scenarios.md) for proven approaches to: architect risk objections, all-in-MVP stakeholder pressure, story-PRD mismatches, and scope conflicts.
 
 ## When to Trigger This Skill
 
@@ -454,17 +330,28 @@ Waiting for your review.
   next                      → hand off to Solution Architect
 ```
 
-### Step 5 — Wait
+### Step 5 — Wait (or auto-handoff in autonomous mode)
 
-**Do NOT proceed to Solution Architect or take any further action.**
-Stay in your current agent context until the human replies.
+**Check for autonomous mode first:** does the file `.bmad/signals/autonomous-mode` exist on disk?
+- **Yes (autonomous mode active)** → skip waiting, jump directly to Step 7.
+- **No (manual mode)** → Do NOT proceed to Solution Architect or take any further action. Stay in your current agent context until the human replies.
 
 ### Step 6 — On 'refine:'
 
 Apply the feedback, re-run affected quality gate items, re-save the artifact, and re-print the review summary (Step 4). Repeat until you receive 'next'.
 
-### Step 7 — On 'next'
+### Step 7 — On 'next' (or autonomous trigger from Step 5)
 
+**Autonomous handoff (runs automatically when `.bmad/signals/autonomous-mode` exists):**
+Create the file `.bmad/signals/po-done` (create the `.bmad/signals/` directory first if it does not exist).
+Then invoke the next agent via the **Agent tool**:
+- **New project** → Agent tool: `/solution-architect` (sequential — SA reads your PRD)
+- **Feature** → Agent tool: `/business-analyst` (sequential — BA runs impact analysis on PO's stories)
+- **Backlog** → Agent tool: `/business-analyst` (sequential — BA clarifies requirements before TL)
+
+> If the Agent tool is unavailable (you are running as a subagent): write the sentinel only — the parent orchestrator handles the next invocation.
+
+**Manual handoff (human typed 'next'):**
 Your work is accepted. Stop. The human (or orchestrator) will invoke the next agent(s).
 
 > **New project:** Human invokes `/solution-architect` to design the system architecture from your PRD.
@@ -472,6 +359,24 @@ Your work is accepted. Stop. The human (or orchestrator) will invoke the next ag
 > **Backlog:** Human invokes `/business-analyst` for requirements clarification — BA ensures requirements are clear and risks are assessed before Tech Lead creates the technical breakdown.
 
 > **Note:** If you are NOT in a squad session (e.g. invoked standalone for a specific task), still print the review summary and wait — the human may want to iterate before moving on.
+
+### 🔧 On Codex CLI / Gemini CLI
+
+The Agent tool and session hooks are not available on these tools. Use this simplified close **instead of Steps 5–7**:
+
+1. Complete Steps 1–4 (quality gate → save outputs → log handoff → print review summary) exactly as written.
+2. Write your sentinel immediately — create the file `.bmad/signals/po-done` (create `.bmad/signals/` first if it does not exist). Do not wait for a 'next' reply.
+3. Print the next-step prompt:
+   ```
+   🔧 PO complete. Run next agent manually:
+     New project  →  /solution-architect
+     Feature      →  /business-analyst  (impact analysis before architecture)
+     Backlog      →  /business-analyst  (requirements clarification)
+   ```
+4. Stop. Do not attempt to invoke the Agent tool or check for `.bmad/signals/autonomous-mode`.
+
+> **Codex note:** The model often stops after printing the ✅ summary. If the sentinel was skipped, prompt: *"Write .bmad/signals/po-done and stop."*
+> **Gemini note:** Output formatting may deviate from spec — artifact content is what matters.
 
 
 ---

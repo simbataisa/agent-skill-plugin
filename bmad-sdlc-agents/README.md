@@ -159,6 +159,95 @@ Agents are organized into **waves** — all agents in the same wave run simultan
 
 **How to spawn parallel waves:** In Claude Code, use the Agent tool to launch multiple sub-agents in a single message. In Cursor/Windsurf, open parallel composer windows. The key rule: **never start the next wave until ALL agents in the current wave have printed their ✅ summary.** Each agent knows its topology — if it finishes before a parallel peer, it reports completion and notes which peer to wait for.
 
+### 🤖 Autonomous Orchestration (Claude Code)
+
+In Claude Code, Tech Lead can fully orchestrate the sprint execution pipeline without any manual intervention.
+
+> **⚠️ Critical prerequisite:** The Agent tool can only be used from the **main thread**. Sub-agents cannot spawn further sub-agents. You must start the session with `claude --agent tech-lead` so Tech Lead IS the main thread.
+
+**Two modes are available:**
+
+#### Path A — Subagent Mode (Stable, recommended)
+
+Launch with: `claude --agent tech-lead`
+
+| Step | What Happens |
+|------|-------------|
+| A — Spawn engineers | TL uses Agent tool to launch BE ∥ FE ∥ ME in parallel, all reading `sprint-N-kickoff.md` |
+| B — Monitor ready signals | TL polls `.bmad/signals/` for `E2-[role]-ready` files written by engineers |
+| C — Worktree code review | For each ready signal: `git worktree add` → run TL Code Review Checklist → `git worktree remove` → write done or rework signal |
+| D — Converge | When all three `E2-[role]-done` signals exist → TL invokes TQE via Agent tool |
+
+#### Path B — Agent Teams Mode (Experimental)
+
+Launch with: `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 claude --agent tech-lead`
+
+Requires Claude Code v2.1.32+. Enables peer-to-peer messaging between BE/FE/ME for interface coordination. The sentinel file protocol is identical to Path A.
+
+#### Sentinel File Protocol
+
+All inter-agent coordination uses files in `.bmad/signals/`. No direct agent-to-agent messaging is required.
+
+**Planning phase sentinels (written by each agent, triggers the next):**
+
+| File | Written By | Meaning |
+|------|-----------|---------|
+| `.bmad/signals/ba-done` | Business Analyst | BA artifacts complete; PO can proceed |
+| `.bmad/signals/po-done` | Product Owner | PRD complete; SA can proceed |
+| `.bmad/signals/sa-done` | Solution Architect | Architecture complete; EA/UX can proceed |
+| `.bmad/signals/ea-done` | Enterprise Architect | Infra/compliance design complete |
+| `.bmad/signals/ux-done` | UX Designer | UX specs complete |
+| `.bmad/signals/tl-plan-done` | Tech Lead | Sprint kickoff complete; engineers can proceed |
+
+**Execution phase sentinels (two-phase TL verification protocol):**
+
+| File | Written By | Meaning |
+|------|-----------|---------|
+| `.bmad/signals/E2-be-ready` | Backend Engineer | Implementation complete, awaiting TL code review. Content = branch name |
+| `.bmad/signals/E2-fe-ready` | Frontend Engineer | Implementation complete, awaiting TL code review. Content = branch name |
+| `.bmad/signals/E2-me-ready` | Mobile Engineer | Implementation complete, awaiting TL code review. Content = branch name |
+| `.bmad/signals/E2-be-done` | **Tech Lead only** | TL has reviewed BE branch via worktree and approved |
+| `.bmad/signals/E2-fe-done` | **Tech Lead only** | TL has reviewed FE branch via worktree and approved |
+| `.bmad/signals/E2-me-done` | **Tech Lead only** | TL has reviewed ME branch via worktree and approved |
+| `.bmad/signals/E2-be-rework` | **Tech Lead only** | BE review failed; content = path to review notes in `docs/reviews/` |
+| `.bmad/signals/E2-fe-rework` | **Tech Lead only** | FE review failed; content = path to review notes in `docs/reviews/` |
+| `.bmad/signals/E2-me-rework` | **Tech Lead only** | ME review failed; content = path to review notes in `docs/reviews/` |
+
+> **Engineers never write `E2-*-done`.** The done signal is the Tech Lead's approval stamp — it is only created after a real code review via git worktree. Claiming completion without verification is dishonesty, not efficiency.
+
+**Autonomous mode sentinel:**
+
+| File | Written By | Meaning |
+|------|-----------|---------|
+| `.bmad/signals/autonomous-mode` | `scripts/yolo.sh` / `scripts/yolo.ps1` | All planning agents skip the human-review wait step and auto-invoke the next agent |
+
+Enable with: `bash scripts/yolo.sh on` (Linux/macOS) or `.\scripts\yolo.ps1 on` (Windows)
+
+### 🛠️ Tool Capability Matrix
+
+Agent behaviour is not identical across all AI coding tools. This matrix shows what works where so you can set the right expectations for your team.
+
+| Capability | Claude Code | Kiro | Codex CLI | Gemini CLI |
+|---|---|---|---|---|
+| **Init file** | `CLAUDE.md` | `.kiro/steering/` | `AGENTS.md` | `GEMINI.md` |
+| **Model** | Claude Sonnet / Opus | Claude (via Amazon Bedrock) | GPT-4o | Gemini 2.x |
+| **Parallel subagent spawning** (Agent tool) | ✅ Full | ✅ Full | ❌ Not available | ❌ Not available |
+| **Session hooks** (PreToolUse / PostToolUse / Stop) | ✅ Full | ✅ Full | ❌ Not available | ❌ Not available |
+| **Yolo harness** | ✅ Full | ✅ Full | ❌ Not available | ❌ Not available |
+| **Sentinel file protocol** | ✅ Reliable | ✅ Reliable | ⚠️ Partial — model may skip sentinel writes after ✅ block | ⚠️ Partial — inconsistent file-check compliance |
+| **Autonomous sentinel chaining** | ✅ Reliable | ✅ Reliable | ⚠️ Unreliable | ⚠️ Unreliable |
+| **Slash commands** | ✅ `/agent-name` | ✅ `@agent-name` | ✅ `/agent-name` | ⚠️ Varies by version |
+| **Protocol step compliance** | ✅ High — follows multi-step protocols faithfully | ✅ High | ⚠️ Medium — tends to stop after ✅ summary; skips later steps | ⚠️ Medium — reformats output; compresses multi-branch logic |
+| **Wave E2 parallelism** (BE ∥ FE ∥ ME) | ✅ True parallel | ✅ True parallel | ❌ Sequential only | ❌ Sequential only |
+| **Git worktree TL review** | ✅ Full | ✅ Full | ✅ Full (tool-independent) | ✅ Full (tool-independent) |
+
+**Practical impact by tool:**
+
+- **Claude Code** — Full BMAD pipeline including autonomous chaining, parallel engineers, hooks, and Yolo harness. Recommended for the complete experience.
+- **Kiro** — Equivalent to Claude Code in nearly all respects. Path A and B both available. Yolo harness works. Only minor differences in slash command syntax (`@` vs `/`).
+- **Codex CLI** — Artifacts and quality gates work well. Autonomous chaining and sentinel writes are unreliable after the ✅ block. Engineers run sequentially (not in parallel). No hooks/harness. Each agent's Completion Protocol includes a `### 🔧 On Codex CLI / Gemini CLI` section with a simplified close procedure tailored to these constraints.
+- **Gemini CLI** — Similar limitations to Codex. Output formatting often deviates from spec (content is correct, structure varies). The `### 🔧 On Codex CLI / Gemini CLI` simplified protocol applies here too.
+
 ---
 
 ## Quick Start (3 Steps)

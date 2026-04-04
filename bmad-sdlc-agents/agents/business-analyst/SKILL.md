@@ -1,7 +1,10 @@
 ---
 name: business-analyst
-description: "Explore problem space, elicit requirements, conduct stakeholder analysis. Execute 'create project brief', 'elicit requirements', 'gap analysis', 'business rules' commands. Transform problem understanding into structured requirements and draft PRD."
-version: 1.0.0
+description: "First agent in the BMAD SDLC cycle. Explores the problem space, elicits requirements, conducts stakeholder analysis, documents business processes, identifies gaps, and transforms business needs into structured requirements and a Project Brief. Invoke for requirement elicitation, stakeholder interviews, gap analysis, business rules documentation, business process mapping, or creating a project brief before architecture begins."
+compatibility: "Works on Claude Code, Kiro, Codex CLI, and Gemini CLI."
+allowed-tools: "Read, Write, Edit, Glob, Grep"
+metadata:
+  version: "1.0.0"
 ---
 
 # BMAD Business Analyst Agent Skill
@@ -281,220 +284,14 @@ Output: Project Brief (docs/project-brief.md), signed off and ready for PRD crea
 
 ## Key Templates
 
-### Interview Framework
+Load the appropriate template from `templates/` when producing each deliverable:
 
-Use this to structure stakeholder interviews:
-
-```markdown
-## Stakeholder Interview Guide — [Stakeholder Name/Role]
-
-### Opening
-- Thank them for their time
-- Explain purpose: understand their needs and concerns
-- Promise confidentiality (if needed)
-- Time box: [30 min, 1 hour, etc.]
-
-### Background Questions
-1. What is your role and what do you own?
-2. How does your area use the current system?
-3. What are your top 3 business priorities for this year?
-
-### Pain Point Questions
-4. What's broken or inefficient about the current process?
-5. How much time/money is wasted due to these issues?
-6. What prevents you from reaching your goals?
-7. What do users complain about most?
-
-### Requirement Questions
-8. If you could design the ideal solution, what would it look like?
-9. What capabilities are non-negotiable (must-haves)?
-10. What would be nice to have but not critical (nice-to-haves)?
-
-### Constraint Questions
-11. What constraints do we need to respect (compliance, budget, timeline)?
-12. What integrations are critical (other systems, vendors, third parties)?
-13. How many users? What are the scale requirements?
-
-### Success Questions
-14. How will you measure success of this project?
-15. What would failure look like?
-16. What concerns do you have about this solution?
-
-### Closing
-17. Who else should we talk to?
-18. What did I miss?
-- Thank them, confirm next steps
-- Offer to share findings back to them
-
-**Interview Date:** [Date]
-**Interviewer:** [Name]
-**Key Findings:**
-- [Finding 1]: [implication]
-- [Finding 2]: [implication]
-```
-
-### Project Brief Template
-
-```markdown
-# Project Brief — [Project Name]
-
-**Date:** [ISO date]
-**Sponsor:** [Executive sponsor name]
-**Analyst:** [Your name]
-
-## Executive Summary
-[1-paragraph overview: what problem are we solving, why does it matter, what's the business impact]
-
-## Problem Statement
-[2-3 sentences: the specific business problem, measured in business terms]
-**Business Impact:** [How big is this problem? Revenue impact? Compliance risk? Customer satisfaction impact?]
-
-## Stakeholder Analysis
-| Stakeholder | Role | Power | Interest | Needs | Concerns |
-|-------------|------|-------|----------|-------|----------|
-| VP Sales | Executive | High | High | Quick ROI | Budget overrun |
-| Field Rep | User | Low | High | Mobile access | Job displacement |
-| IT Security | Gate-keeper | High | Medium | Compliance | Data exposure |
-
-## Current State Assessment
-### How It Works Today
-[Describe current process, systems, workflows]
-
-### Pain Points
-- [Pain 1]: [impact on business/user]
-- [Pain 2]: [impact on business/user]
-- [Pain 3]: [impact on business/user]
-
-### Current Capacity/Constraints
-- [Capacity 1]: [description]
-- [Constraint 1]: [description]
-
-## Desired Future State
-### Vision
-[2-3 sentences: what should be different? What capabilities should exist?]
-
-### Key Capabilities Needed
-1. [Capability 1]: [description, why needed, user/business value]
-2. [Capability 2]: [description, why needed, user/business value]
-3. [Capability 3]: [description, why needed, user/business value]
-
-## Requirements Summary
-
-### Functional Requirements
-[Group by user role or process]
-- Users must be able to [action]
-- System must [behavior]
-- System must integrate with [external system]
-
-### Non-Functional Requirements
-- **Performance:** [e.g., 99.9% uptime, <2s response time]
-- **Security:** [e.g., SOC 2 compliance, encryption at rest]
-- **Scalability:** [e.g., 10,000 concurrent users]
-- **Compliance:** [e.g., GDPR, HIPAA, SOX]
-- **Integration:** [e.g., REST API, Salesforce connector]
-
-## Gap Analysis
-| Current Capability | Gap | Impact | Priority |
-|-------------------|-----|--------|----------|
-| Manual order entry | No mobile | Field reps inefficient | P0 |
-| Single data store | No APIs | Can't integrate with CRM | P0 |
-| No audit trail | Compliance gap | Risk regulatory violation | P1 |
-
-## Feasibility Assessment
-### Technical Feasibility: [GREEN / YELLOW / RED]
-- [Technology 1] is standard and available
-- [Risk 1]: [mitigation]
-
-### Timeline Feasibility: [GREEN / YELLOW / RED]
-- Estimated effort: [weeks/months]
-- Required go-live: [date]
-- Feasibility: [assessment]
-
-### Budget Feasibility: [GREEN / YELLOW / RED]
-- Estimated cost: [range]
-- Available budget: [amount]
-- Feasibility: [assessment]
-
-### Organizational Feasibility: [GREEN / YELLOW / RED]
-- Skills needed: [list]
-- Current team capability: [assessment]
-- Gaps: [list]
-
-### Overall Risk Level: [LOW / MEDIUM / HIGH]
-**Top Risks:**
-1. [Risk 1]: [mitigation plan]
-2. [Risk 2]: [mitigation plan]
-
-## Assumptions
-- [Assumption 1]: [why we believe it]
-- [Assumption 2]: [why we believe it]
-
-## Unknowns (Research Needed)
-- [Unknown 1]: [why it matters, who will research]
-- [Unknown 2]: [why it matters, who will research]
-
-## Success Criteria
-- [Metric 1]: [target value, measurement method]
-- [Metric 2]: [target value, measurement method]
-- [Metric 3]: [target value, measurement method]
-
-## Next Steps
-1. [Sponsor approval of this brief]
-2. [Any additional research needed]
-3. [Handoff to Product Owner to create PRD]
-
-**Status:** [READY FOR SIGN-OFF / IN REVIEW / APPROVED]
-**Sponsor Sign-Off:** [Name and date]
-```
-
-### Use Case Template
-
-```markdown
-## Use Case: [Use Case Name]
-
-**Primary Actor:** [User role, e.g., "Customer Service Rep"]
-**Scope:** [System or subsystem]
-**Level:** [User goal, Subfunction, Task]
-**Preconditions:** [What must be true before the use case starts?]
-**Success Postcondition:** [What's true when the use case succeeds?]
-**Failure Postcondition:** [What's true if the use case fails?]
-
-### Main Success Flow
-1. Actor [does something]
-2. System [responds with something]
-3. Actor [does something else]
-...
-N. System [achieves goal]
-
-### Alternative Flows
-**A2.1: [Condition], e.g., "Customer is not in database"**
-- 2.1a. System [alternative behavior]
-- 2.1b. System [resolves or branches back to main flow]
-
-**A5.1: [Condition], e.g., "Payment fails"**
-- 5.1a. System [alternative behavior]
-
-### Exception Flows
-**E1: [Exception], e.g., "System timeout"**
-- 1a. System [recovery action or fail]
-```
-
-### Requirements Matrix Template
-
-```markdown
-## Requirements Matrix
-
-| ID | Requirement | Type | Source | Priority | Acceptance Criteria | Status |
-|----|-------------|------|--------|----------|-------------------|--------|
-| REQ-001 | Support mobile login | Functional | Sales stakeholder | P0 | Works on iOS and Android | Captured |
-| REQ-002 | SOC 2 compliance | Non-Functional | Legal | P0 | Third-party audit, pass | Captured |
-| REQ-003 | <2s page load | Non-Functional | User feedback | P1 | 95th percentile <2s | Captured |
-
-**Legend:**
-- Type: Functional, Non-Functional, Constraint
-- Priority: P0 (must-have), P1 (should-have), P2 (nice-to-have)
-- Status: Captured, Validated, Approved, Implemented, Verified
-```
+| Template | Use when |
+|---|---|
+| [`templates/stakeholder-interview.md`](templates/stakeholder-interview.md) | Conducting structured stakeholder discovery interviews |
+| [`templates/project-brief.md`](templates/project-brief.md) | Producing the final project brief for PO/SA handoff |
+| [`templates/use-case.md`](templates/use-case.md) | Documenting individual use cases with flows and exceptions |
+| [`templates/requirements-matrix.md`](templates/requirements-matrix.md) | Tracking functional and non-functional requirements with priority |
 
 ## Reference to Shared Context
 
@@ -516,90 +313,11 @@ See `/sessions/upbeat-gracious-fermi/mnt/agent-skill-plugin/bmad-sdlc-agents/BMA
 
 ## Common Scenarios and Solutions
 
-### Scenario 1: Stakeholders Disagree on Requirements
-**Your Action:**
-- Document both perspectives in the brief with rationale
-- Identify the conflict explicitly: "Sales needs X, Operations says it breaks Y"
-- Flag for decision authority to resolve (usually sponsor or executive)
-- Don't suppress conflicts; surface them and let decision-maker decide
-
-### Scenario 2: Hidden Non-Functional Requirements Emerge Late
-**Your Action:**
-- Conduct a dedicated non-functional requirements interview with IT, Security, Ops
-- Ask specifically: scalability needs? Compliance? Performance SLAs? Integration requirements?
-- Document them in the brief's non-functional requirements section
-- Flag impact on timeline/budget if these are discovery gaps
-
-### Scenario 3: Stakeholders Want Everything; No Prioritization Possible
-**Your Action:**
-- Use MoSCoW or RICE framework to force prioritization
-- Document rationale: "Must-have = business goal, Nice-to-have = enhancement"
-- Separate MVP vs. future releases in the brief
-- Pass prioritized requirements to Product Owner for final rank
-
-### Scenario 4: You Discover a Major Technical Risk (e.g., "This Architecture Won't Scale")
-**Your Action:**
-- Document risk in feasibility assessment with severity
-- Recommend technical research spike before full commitment
-- Propose alternative approaches or risk mitigation
-- Don't suppress the risk; escalate it and propose contingency
+Read [`references/common-scenarios.md`](references/common-scenarios.md) for proven approaches to: stakeholder disagreements, late-emerging NFRs, scope control when priorities are unclear, and surfacing major technical risks discovered during analysis.
 
 ## Quality Gate Checklist
 
-Before handing off to Product Owner, verify:
-
-```markdown
-## Business Analyst Quality Gate
-
-### Problem Understanding
-- [ ] Problem statement is specific and measurable
-- [ ] Business drivers/impact documented
-- [ ] Current-state process is understood and documented
-- [ ] Pain points are quantified (time, cost, or impact)
-- [ ] Stakeholder validation obtained on problem definition
-
-### Stakeholder Analysis
-- [ ] All key stakeholders identified (users, operators, executives, gatekeepers)
-- [ ] Power/Interest matrix completed
-- [ ] Stakeholder success criteria documented
-- [ ] Conflicts identified and flagged
-- [ ] Engagement strategy defined
-
-### Requirements Completeness
-- [ ] Functional requirements specific and testable
-- [ ] Non-functional requirements documented (security, scalability, compliance, performance)
-- [ ] Constraints identified (timeline, budget, technology, skills)
-- [ ] Integration requirements captured
-- [ ] Regulatory/compliance requirements captured
-- [ ] Traceability: each requirement traces to stakeholder need
-
-### Gap Analysis
-- [ ] Current capabilities assessed
-- [ ] Future capabilities defined
-- [ ] Gaps identified (features, data, integration, process, skills)
-- [ ] Gap impact assessed
-- [ ] Gap solutions proposed
-- [ ] Effort estimates for gap closure provided
-
-### Feasibility & Risk
-- [ ] Technical feasibility assessed
-- [ ] Timeline feasibility assessed
-- [ ] Budget feasibility assessed
-- [ ] Organizational feasibility assessed
-- [ ] Top risks identified with mitigation plans
-- [ ] Unknowns and assumptions listed
-- [ ] Go/No-Go recommendation clear
-
-### Artifact Quality
-- [ ] Project Brief complete and well-organized
-- [ ] All sections filled in (no placeholders)
-- [ ] Supporting documents attached (use cases, process maps, interview notes)
-- [ ] Brief reviewed and approved by stakeholders/sponsor
-- [ ] Brief is handoff-ready (clear and complete for Product Owner)
-
-**Gate Status:** [PASS / PASS WITH FLAGS / FAIL]
-**Sign-off:** Business Analyst + date
-```
+Read [`references/quality-gate-checklist.md`](references/quality-gate-checklist.md) for the full checklist across: Problem Understanding, Stakeholder Analysis, Requirements Completeness, Gap Analysis, Feasibility & Risk, and Artifact Quality.
 
 ## When to Trigger This Skill
 
@@ -684,17 +402,28 @@ Waiting for your review.
   next                      → hand off to next agent
 ```
 
-### Step 5 — Wait
+### Step 5 — Wait (or auto-handoff in autonomous mode)
 
-**Do NOT proceed to Product Owner or take any further action.**
-Stay in your current agent context until the human replies.
+**Check for autonomous mode first:** does the file `.bmad/signals/autonomous-mode` exist on disk?
+- **Yes (autonomous mode active)** → skip waiting, jump directly to Step 7.
+- **No (manual mode)** → Do NOT proceed to Product Owner or take any further action. Stay in your current agent context until the human replies.
 
 ### Step 6 — On 'refine:'
 
 Apply the feedback, re-run affected quality gate items, re-save the artifact, and re-print the review summary (Step 4). Repeat until you receive 'next'.
 
-### Step 7 — On 'next'
+### Step 7 — On 'next' (or autonomous trigger from Step 5)
 
+**Autonomous handoff (runs automatically when `.bmad/signals/autonomous-mode` exists):**
+Create the file `.bmad/signals/ba-done` (create the `.bmad/signals/` directory first if it does not exist).
+Then invoke the next agent(s) via the **Agent tool**:
+- **New project** → Agent tool: `/product-owner` (sequential — PO reads your project brief)
+- **Feature** → Agent tool: `/solution-architect` ∥ `/ux-designer` in parallel (two simultaneous Agent tool calls — both read your impact analysis)
+- **Backlog** → Agent tool: `/tech-lead` (sequential — TL reads your analysis alongside PO's story)
+
+> If the Agent tool is unavailable (you are running as a subagent): write the sentinel only — the parent orchestrator handles the next invocation.
+
+**Manual handoff (human typed 'next'):**
 Your work is accepted. Stop. The human (or orchestrator) will invoke the next agent(s).
 
 > **New project:** Human invokes `/product-owner` to create PRD and backlog from your brief.
@@ -702,6 +431,24 @@ Your work is accepted. Stop. The human (or orchestrator) will invoke the next ag
 > **Backlog:** Human invokes `/tech-lead` — TL reads your `docs/analysis/[story-id]-analysis.md` alongside PO's refined story.
 
 > **Note:** If you are NOT in a squad session (e.g. invoked standalone for a specific task), still print the review summary and wait — the human may want to iterate before moving on.
+
+### 🔧 On Codex CLI / Gemini CLI
+
+The Agent tool (parallel subagent spawning) and session hooks are not available on these tools. Use this simplified close **instead of Steps 5–7**:
+
+1. Complete Steps 1–4 (quality gate → save outputs → log handoff → print review summary) exactly as written.
+2. Write your sentinel immediately after printing the summary — create the file `.bmad/signals/ba-done` (create the `.bmad/signals/` directory first if it does not exist). Do not wait for a 'next' reply.
+3. Print the next-step prompt so the human can copy and run it:
+   ```
+   🔧 BA complete. Run next agent manually:
+     New project  →  /product-owner
+     Feature      →  /solution-architect  (then  /ux-designer  — run sequentially, not in parallel)
+     Backlog      →  /tech-lead
+   ```
+4. Stop. Do not attempt to invoke the Agent tool or check for `.bmad/signals/autonomous-mode`.
+
+> **Codex note:** The model often stops after printing the ✅ summary. If the sentinel was skipped, prompt: *"Write .bmad/signals/ba-done and stop."*
+> **Gemini note:** Output formatting may deviate from the specified block — the artifact content is what matters.
 
 
 ---

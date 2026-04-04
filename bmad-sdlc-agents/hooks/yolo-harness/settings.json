@@ -1,0 +1,66 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(*)",
+      "Read(*)",
+      "Write(*)",
+      "Edit(*)",
+      "MultiEdit(*)",
+      "Glob(*)",
+      "Grep(*)",
+      "Task(*)",
+      "Agent(*)",
+      "WebFetch(*)",
+      "WebSearch(*)"
+    ],
+    "deny": [
+      "Bash(git push --force*)",
+      "Bash(git push -f *)",
+      "Bash(git push -f)",
+      "Bash(*--no-verify*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c '[ -f \".claude/hooks/yolo/pre-bash-guard.sh\" ] && bash \".claude/hooks/yolo/pre-bash-guard.sh\" \"$CLAUDE_TOOL_INPUT_COMMAND\" || exit 0'"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c '[ -f \".claude/hooks/yolo/pre-write-checkpoint.sh\" ] && bash \".claude/hooks/yolo/pre-write-checkpoint.sh\" \"$CLAUDE_TOOL_INPUT_PATH\" || exit 0'"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c '[ -f \".claude/hooks/yolo/post-write-log.sh\" ] && bash \".claude/hooks/yolo/post-write-log.sh\" \"$CLAUDE_TOOL_INPUT_PATH\" || exit 0'"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c '[ -f \".claude/hooks/yolo/session-wrap-up.sh\" ] && bash \".claude/hooks/yolo/session-wrap-up.sh\" || exit 0'"
+          }
+        ]
+      }
+    ]
+  }
+}
