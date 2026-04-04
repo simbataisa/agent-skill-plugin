@@ -8,24 +8,25 @@ Install the global layer once across all tools, then scaffold `.bmad/` context f
 
 ## Agent Team
 
-| Agent | Skill File | BMAD Phase | Role |
-|-------|-----------|-----------|------|
-| **Business Analyst** | `agents/business-analyst/SKILL.md` | Analysis | Problem exploration, stakeholder analysis, project brief |
-| **Product Owner** | `agents/product-owner/SKILL.md` | Planning | PRD, backlog prioritization, artifact alignment |
-| **Solution Architect** | `agents/solution-architect/SKILL.md` | Solutioning | Service decomposition, API contracts, data models, ADRs |
-| **Enterprise Architect** | `agents/enterprise-architect/SKILL.md` | Solutioning | Cloud infra, compliance, observability, CI/CD, FinOps |
-| **UX/UI Designer** | `agents/ux-designer/SKILL.md` | Solutioning | Personas, journeys, wireframes, design system, a11y |
-| **Tech Lead** | `agents/tech-lead/SKILL.md` | All Phases | Orchestration, code review, risk, release readiness |
-| **Tester & QE** | `agents/tester-qe/SKILL.md` | All Phases | Test strategy, quality gates, security testing |
-| **Backend Engineer** | `agents/backend-engineer/SKILL.md` | Implementation | APIs, data layers, event-driven services |
-| **Frontend Engineer** | `agents/frontend-engineer/SKILL.md` | Implementation | React/TypeScript, state management, a11y |
-| **Mobile Engineer** | `agents/mobile-engineer/SKILL.md` | Implementation | iOS/Android, native APIs, mobile architecture |
+| Agent                    | Skill File                             | BMAD Phase     | Role                                                     |
+| ------------------------ | -------------------------------------- | -------------- | -------------------------------------------------------- |
+| **Business Analyst**     | `agents/business-analyst/SKILL.md`     | Analysis       | Problem exploration, stakeholder analysis, project brief |
+| **Product Owner**        | `agents/product-owner/SKILL.md`        | Planning       | PRD, backlog prioritization, artifact alignment          |
+| **Solution Architect**   | `agents/solution-architect/SKILL.md`   | Solutioning    | Service decomposition, API contracts, data models, ADRs  |
+| **Enterprise Architect** | `agents/enterprise-architect/SKILL.md` | Solutioning    | Cloud infra, compliance, observability, CI/CD, FinOps    |
+| **UX/UI Designer**       | `agents/ux-designer/SKILL.md`          | Solutioning    | Personas, journeys, wireframes, design system, a11y      |
+| **Tech Lead**            | `agents/tech-lead/SKILL.md`            | All Phases     | Orchestration, code review, risk, release readiness      |
+| **Tester & QE**          | `agents/tester-qe/SKILL.md`            | All Phases     | Test strategy, quality gates, security testing           |
+| **Backend Engineer**     | `agents/backend-engineer/SKILL.md`     | Implementation | APIs, data layers, event-driven services                 |
+| **Frontend Engineer**    | `agents/frontend-engineer/SKILL.md`    | Implementation | React/TypeScript, state management, a11y                 |
+| **Mobile Engineer**      | `agents/mobile-engineer/SKILL.md`      | Implementation | iOS/Android, native APIs, mobile architecture            |
 
 ---
 
 ## Two-Layer Architecture
 
 ### Global Layer
+
 **Install once.** Available in all projects.
 
 - **`agents/`** – 10 specialized agent skills (as markdown files)
@@ -35,6 +36,7 @@ Install the global layer once across all tools, then scaffold `.bmad/` context f
   - `templates/` – PRD, ADR, story, test strategy, project brief, handoff log templates
 
 ### Project Layer
+
 **Copy per project.** Checked into each project's git repo.
 
 - **`.bmad/`** – Project-specific context files
@@ -51,6 +53,7 @@ Install the global layer once across all tools, then scaffold `.bmad/` context f
   - `ux/` – Personas, journeys, wireframes, design specs
 
 ### Agent Context Loading Order
+
 When an agent runs, it loads context in this order (later overrides earlier):
 
 1. `shared/BMAD-SHARED-CONTEXT.md` (baseline)
@@ -71,12 +74,12 @@ Each agent skill embeds three layers of autonomous intelligence that eliminate m
 
 Before loading any project context, every agent runs a 2-second binary check to determine its operating mode:
 
-| Signal File | Mode |
-|---|---|
+| Signal File                                    | Mode                                                    |
+| ---------------------------------------------- | ------------------------------------------------------- |
 | `docs/architecture/sprint-N-kickoff.md` exists | 🔨 **Execute Mode** — sprint implementation in progress |
-| `docs/testing/bugs/*-fix-plan.md` exists | 🔨 **Execute Mode** — bug fix in progress |
-| `docs/testing/hotfixes/*.md` exists | 🔨 **Execute Mode** — hotfix in progress |
-| None of the above | 📋 **Plan Mode** — creating or refining artifacts |
+| `docs/testing/bugs/*-fix-plan.md` exists       | 🔨 **Execute Mode** — bug fix in progress               |
+| `docs/testing/hotfixes/*.md` exists            | 🔨 **Execute Mode** — hotfix in progress                |
+| None of the above                              | 📋 **Plan Mode** — creating or refining artifacts       |
 
 **Why it matters:** Execute Mode agents skip `docs/prd.md` and the full planning artifact tree — loading only 2–3 targeted files (tech-stack, conventions, kickoff doc). This prevents context overload and dramatically speeds up sprint execution.
 
@@ -94,19 +97,19 @@ Each agent announces what it detected and what it will do — or reports `Blocke
 
 Every agent's Completion Protocol includes a `🚀` line in the review summary pointing to the next agent in the chain:
 
-| Agent | 🚀 Suggests |
-|---|---|
-| Business Analyst | `/product-owner` (new project) or `/solution-architect` ∥ `/ux-designer` (feature) or `/tech-lead` (backlog) |
-| Product Owner | `/solution-architect` (new project) or `/business-analyst` (feature/backlog — for impact analysis) |
-| Solution Architect | `/enterprise-architect` — infra, compliance, CI/CD design |
-| Enterprise Architect | `/ux-designer` — wireframes, design system, accessibility |
-| UX Designer | `/tech-lead` — sprint plan and implementation kickoff |
-| Tech Lead (Plan Mode) | Execute Prompt B (squad) or individual engineer commands |
-| Backend Engineer | `/frontend-engineer` then `/tester-qe` |
-| Frontend Engineer | `/mobile-engineer` (if in scope) or `/tester-qe` |
-| Mobile Engineer | `/tester-qe` — full sprint testing |
-| Tester-QE (all pass) | `/tech-lead` — release sign-off or next sprint kickoff |
-| Tester-QE (failures) | Return to the failing engineer for fixes |
+| Agent                 | 🚀 Suggests                                                                                                  |
+| --------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Business Analyst      | `/product-owner` (new project) or `/solution-architect` ∥ `/ux-designer` (feature) or `/tech-lead` (backlog) |
+| Product Owner         | `/solution-architect` (new project) or `/business-analyst` (feature/backlog — for impact analysis)           |
+| Solution Architect    | `/enterprise-architect` — infra, compliance, CI/CD design                                                    |
+| Enterprise Architect  | `/ux-designer` — wireframes, design system, accessibility                                                    |
+| UX Designer           | `/tech-lead` — sprint plan and implementation kickoff                                                        |
+| Tech Lead (Plan Mode) | Execute Prompt B (squad) or individual engineer commands                                                     |
+| Backend Engineer      | `/frontend-engineer` then `/tester-qe`                                                                       |
+| Frontend Engineer     | `/mobile-engineer` (if in scope) or `/tester-qe`                                                             |
+| Mobile Engineer       | `/tester-qe` — full sprint testing                                                                           |
+| Tester-QE (all pass)  | `/tech-lead` — release sign-off or next sprint kickoff                                                       |
+| Tester-QE (failures)  | Return to the failing engineer for fixes                                                                     |
 
 You never need to remember the agent sequence — each agent hands you off to the next one.
 
@@ -114,12 +117,12 @@ You never need to remember the agent sequence — each agent hands you off to th
 
 Every agent embeds a `## Agent Rules` section with non-negotiable guardrails across four categories:
 
-| Category | What It Covers | Example |
-|----------|---------------|---------|
-| **Security & Compliance** | Data handling, secrets management, PII protection, auth patterns, audit trails | BE: "Parameterized queries only — zero tolerance for SQL injection" |
-| **Code Quality & Standards** | Testing requirements, documentation, naming, error handling, coverage | TQE: "Every test must reference the story ID and acceptance criterion it validates" |
-| **Workflow & Process** | Approval gates, scope control, deviation protocols, rollback procedures | TL: "ADR lock is irreversible per sprint — scope changes require a new ADR" |
-| **Architecture Governance** | ADR enforcement, tech radar compliance, API contract alignment, service boundaries | SA: "All technologies must be on the technology radar — unlisted tech requires an ADR" |
+| Category                     | What It Covers                                                                     | Example                                                                                |
+| ---------------------------- | ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| **Security & Compliance**    | Data handling, secrets management, PII protection, auth patterns, audit trails     | BE: "Parameterized queries only — zero tolerance for SQL injection"                    |
+| **Code Quality & Standards** | Testing requirements, documentation, naming, error handling, coverage              | TQE: "Every test must reference the story ID and acceptance criterion it validates"    |
+| **Workflow & Process**       | Approval gates, scope control, deviation protocols, rollback procedures            | TL: "ADR lock is irreversible per sprint — scope changes require a new ADR"            |
+| **Architecture Governance**  | ADR enforcement, tech radar compliance, API contract alignment, service boundaries | SA: "All technologies must be on the technology radar — unlisted tech requires an ADR" |
 
 Rules are role-specific — engineers get secure coding rules, architects get governance rules, testers get coverage rules, etc. Every agent verifies its outputs against its rules before completing the Completion Protocol.
 
@@ -129,35 +132,81 @@ Agents are organized into **waves** — all agents in the same wave run simultan
 
 **New Project — Plan Phase:**
 
-| Wave | Agents | Depends On |
-|------|--------|------------|
-| W1 | Business Analyst | — |
-| W2 | Product Owner | BA → `docs/project-brief.md` |
-| W3 | Solution Architect | PO → `docs/prd.md` |
-| W4 | Enterprise Architect ∥ UX Designer | SA → `solution-architecture.md` |
-| W5 | Tech Lead | EA + UX (both must complete) |
-| W6 | Backend Eng ∥ Frontend Eng ∥ Mobile Eng (spec only) | TL → `sprint-plan.md` |
-| W7 | Tester & QE (strategy only) | All three specs from W6 |
+| Wave | Agents                                              | Depends On                      |
+| ---- | --------------------------------------------------- | ------------------------------- |
+| W1   | Business Analyst                                    | —                               |
+| W2   | Product Owner                                       | BA → `docs/project-brief.md`    |
+| W3   | Solution Architect                                  | PO → `docs/prd.md`              |
+| W4   | Enterprise Architect ∥ UX Designer                  | SA → `solution-architecture.md` |
+| W5   | Tech Lead                                           | EA + UX (both must complete)    |
+| W6   | Backend Eng ∥ Frontend Eng ∥ Mobile Eng (spec only) | TL → `sprint-plan.md`           |
+| W7   | Tester & QE (strategy only)                         | All three specs from W6         |
 
 **Sprint Execution:**
 
-| Wave | Agents | Depends On |
-|------|--------|------------|
-| E1 | Tech Lead (kickoff) | Plan approval or previous sprint results |
-| E2 | Backend Eng ∥ Frontend Eng ∥ Mobile Eng | TL → `sprint-N-kickoff.md` |
-| E3 | Tester & QE | All three engineers from E2 |
+| Wave | Agents                                  | Depends On                               |
+| ---- | --------------------------------------- | ---------------------------------------- |
+| E1   | Tech Lead (kickoff)                     | Plan approval or previous sprint results |
+| E2   | Backend Eng ∥ Frontend Eng ∥ Mobile Eng | TL → `sprint-N-kickoff.md`               |
+| E3   | Tester & QE                             | All three engineers from E2              |
 
 **Feature — Plan Phase:**
 
-| Wave | Agents | Depends On |
-|------|--------|------------|
-| W1 | Product Owner | — |
-| W2 | Business Analyst (impact analysis) | PO → `docs/stories/[feature]/` |
-| W3 | Solution Architect ∥ UX Designer | BA → `docs/analysis/[feature]-impact.md` |
-| W4 | Tech Lead | SA + UX (both must complete) |
-| W5 | Tester & QE | TL → `[feature]-plan.md` |
+| Wave | Agents                             | Depends On                               |
+| ---- | ---------------------------------- | ---------------------------------------- |
+| W1   | Product Owner                      | —                                        |
+| W2   | Business Analyst (impact analysis) | PO → `docs/stories/[feature]/`           |
+| W3   | Solution Architect ∥ UX Designer   | BA → `docs/analysis/[feature]-impact.md` |
+| W4   | Tech Lead                          | SA + UX (both must complete)             |
+| W5   | Tester & QE                        | TL → `[feature]-plan.md`                 |
 
-**How to spawn parallel waves:** In Claude Code, use the Agent tool to launch multiple sub-agents in a single message. In Cursor/Windsurf, open parallel composer windows. The key rule: **never start the next wave until ALL agents in the current wave have printed their ✅ summary.** Each agent knows its topology — if it finishes before a parallel peer, it reports completion and notes which peer to wait for.
+**How to spawn parallel waves:** In Claude Code, use the `Agent` tool to launch multiple sub-agents in a single message. In Cursor/Windsurf, open parallel composer windows. The key rule: **never start the next wave until ALL agents in the current wave have printed their ✅ summary.** Each agent knows its topology — if it finishes before a parallel peer, it reports completion and notes which peer to wait for.
+
+### 🤖 Autonomous Orchestration (Claude Code)
+
+In **Claude Code**, the Tech Lead acts as a fully autonomous orchestrator — spawning engineers, monitoring their progress, and triggering TQE with zero human intervention. This is powered by Claude Code's native **`Agent` tool** (sub-agent spawning) combined with a lightweight **sentinel file protocol** on the shared file system.
+
+> **⚠️ TL must be the main thread.** Claude Code's `Agent` tool can only be called from the **main session thread** — subagents cannot spawn other subagents. To make TL the root orchestrator, start your session with:
+> ```bash
+> claude --agent tech-lead
+> ```
+
+#### Path A — Subagent Orchestration (Stable)
+
+**How it works:**
+
+| Step | What TL Does                                   | Mechanism                        |
+| ---- | ---------------------------------------------- | -------------------------------- |
+| 1    | Produces `sprint-N-kickoff.md`                 | Normal artifact                  |
+| 2    | Clears stale signals, creates `.bmad/signals/` | `bash` tool                      |
+| 3    | Spawns BE ∥ FE ∥ ME simultaneously             | `Agent` tool (3 parallel calls)  |
+| 4    | Waits for all three to finish                  | Polls `.bmad/signals/E2-*-done`  |
+| 5    | Writes `E3-tqe-invoke` sentinel                | `bash` tool                      |
+| 6    | Spawns TQE                                     | `Agent` tool                     |
+
+**Sentinel files** (written to `.bmad/signals/`):
+
+| File            | Written By        | Means                                    |
+| --------------- | ----------------- | ---------------------------------------- |
+| `E2-be-done`    | Backend Engineer  | BE implementation complete               |
+| `E2-fe-done`    | Frontend Engineer | FE implementation complete               |
+| `E2-me-done`    | Mobile Engineer   | ME implementation complete               |
+| `E3-tqe-invoke` | Tech Lead         | All E2 done; TQE may proceed immediately |
+
+**TQE fast-path:** When TQE detects `.bmad/signals/E3-tqe-invoke`, it skips its E2 completion check (Step 0 in its Autonomous Task Detection) and proceeds directly to testing — no re-verification of engineer outputs needed.
+
+#### Path B — Agent Teams (Experimental)
+
+For full peer-to-peer coordination between BE, FE, and ME (e.g. resolving cross-service dependencies in real time), enable Agent Teams:
+
+```bash
+export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
+claude --agent tech-lead
+```
+
+TL becomes the **team lead**; BE/FE/ME become **teammates** with a shared task list and mailbox. Engineers can message each other directly — without routing through TL. The sentinel file protocol still applies as the E2→E3 completion gate. Requires Claude Code v2.1.32+.
+
+**Other AI tools:** Kiro, Codex CLI, Cursor, and Windsurf do not support sub-agent spawning. In those environments the wave structure is **human-orchestrated** — the `🚀` suggestion lines in each agent's Completion Protocol guide you to spawn the next wave manually. The sentinel files still work the same way; you just write them yourself (or check for them) rather than having TL do it automatically.
 
 ### 🤖 Autonomous Orchestration (Claude Code)
 
@@ -253,18 +302,23 @@ Agent behaviour is not identical across all AI coding tools. This matrix shows w
 ## Quick Start (3 Steps)
 
 ### Step 1: Install Global Layer
+
 ```bash
 bash scripts/install-global.sh
 ```
+
 Copies all agent skills, commands, hooks, and shared resources to tool-specific global directories. Runs once per machine.
 
 ### Step 2: Scaffold New Project
+
 ```bash
 bash /path/to/bmad-sdlc-agents/scripts/scaffold-project.sh "My Project Name"
 ```
+
 Creates `.bmad/` context files, installs project-level agents, and generates a tool-specific instruction file (e.g. `CLAUDE.md`) that tells your AI tool to auto-load `.bmad/` at the start of every session.
 
 ### Step 3: Fill Project Context
+
 Edit `.bmad/PROJECT-CONTEXT.md` and `.bmad/tech-stack.md` with your project details. The instruction file and all agents will pick these up automatically on the next session.
 
 ---
@@ -288,18 +342,18 @@ At the start of every conversation, read these files to understand this project:
 
 ## Available BMAD Agents (slash commands)
 
-| Command | Role |
-|---------|------|
-| `/business-analyst` | Discovery, stakeholder analysis, project brief |
-| `/product-owner` | PRD, backlog, user stories |
-| `/solution-architect` | System design, APIs, ADRs |
-| `/enterprise-architect` | Cloud infra, compliance, CI/CD |
-| `/ux-designer` | Wireframes, design system, accessibility |
-| `/tech-lead` | Orchestration, code review, risk |
-| `/tester-qe` | Test strategy, quality gates |
-| `/backend-engineer` | APIs, services, data layers |
-| `/frontend-engineer` | React/TypeScript, components, a11y |
-| `/mobile-engineer` | iOS/Android, native architecture |
+| Command                 | Role                                           |
+| ----------------------- | ---------------------------------------------- |
+| `/business-analyst`     | Discovery, stakeholder analysis, project brief |
+| `/product-owner`        | PRD, backlog, user stories                     |
+| `/solution-architect`   | System design, APIs, ADRs                      |
+| `/enterprise-architect` | Cloud infra, compliance, CI/CD                 |
+| `/ux-designer`          | Wireframes, design system, accessibility       |
+| `/tech-lead`            | Orchestration, code review, risk               |
+| `/tester-qe`            | Test strategy, quality gates                   |
+| `/backend-engineer`     | APIs, services, data layers                    |
+| `/frontend-engineer`    | React/TypeScript, components, a11y             |
+| `/mobile-engineer`      | iOS/Android, native architecture               |
 ```
 
 ### Cursor — `.cursor/rules/001-project-context.mdc`
@@ -404,18 +458,18 @@ At the start of every conversation, read these files:
 
 ## Available BMAD Agents (skills)
 
-| Skill ($ invoke) | Role |
-|-------------------|------|
-| `$business-analyst` | Discovery, stakeholder analysis, project brief |
-| `$product-owner` | PRD, backlog, user stories |
-| `$solution-architect` | System design, APIs, ADRs |
-| `$enterprise-architect` | Cloud infra, compliance, CI/CD |
-| `$ux-designer` | Wireframes, design system, accessibility |
-| `$tech-lead` | Orchestration, code review, risk |
-| `$tester-qe` | Test strategy, quality gates |
-| `$backend-engineer` | APIs, services, data layers |
-| `$frontend-engineer` | React/TypeScript, components, a11y |
-| `$mobile-engineer` | iOS/Android, native architecture |
+| Skill ($ invoke)        | Role                                           |
+| ----------------------- | ---------------------------------------------- |
+| `$business-analyst`     | Discovery, stakeholder analysis, project brief |
+| `$product-owner`        | PRD, backlog, user stories                     |
+| `$solution-architect`   | System design, APIs, ADRs                      |
+| `$enterprise-architect` | Cloud infra, compliance, CI/CD                 |
+| `$ux-designer`          | Wireframes, design system, accessibility       |
+| `$tech-lead`            | Orchestration, code review, risk               |
+| `$tester-qe`            | Test strategy, quality gates                   |
+| `$backend-engineer`     | APIs, services, data layers                    |
+| `$frontend-engineer`    | React/TypeScript, components, a11y             |
+| `$mobile-engineer`      | iOS/Android, native architecture               |
 
 Apply all conventions from `team-conventions.md` when writing or reviewing code.
 ```
@@ -453,6 +507,7 @@ Apply all conventions from `team-conventions.md` when writing or reviewing code.
 ```
 
 Then reference it in `.aider.conf.yml`:
+
 ```yaml
 conventions-file: .aider.conventions.md
 ```
@@ -464,6 +519,7 @@ conventions-file: .aider.conventions.md
 ### Claude Code (Local CLI)
 
 **Global Install (once)**
+
 ```bash
 bash scripts/install-global.sh
 # → Agents → ~/.claude/skills/          (slash commands: /business-analyst, etc.)
@@ -472,6 +528,7 @@ bash scripts/install-global.sh
 ```
 
 **Project Install (per project, run from project root)**
+
 ```bash
 bash /path/to/bmad-sdlc-agents/scripts/scaffold-project.sh "My Project"
 # → .bmad/                 project context files (commit to git)
@@ -482,6 +539,7 @@ bash /path/to/bmad-sdlc-agents/scripts/scaffold-project.sh "My Project"
 ```
 
 After scaffolding, open your project in Claude Code and use slash commands directly — all context is pre-loaded:
+
 ```
 /business-analyst   /product-owner      /solution-architect
 /enterprise-architect  /ux-designer     /tech-lead
@@ -496,6 +554,7 @@ After scaffolding, open your project in Claude Code and use slash commands direc
 ### Codex CLI (OpenAI)
 
 **Global Install (once)**
+
 ```bash
 bash scripts/install-global.sh
 # → Skills → ~/.codex/skills/<agent>/SKILL.md  (invoke: $business-analyst, etc.)
@@ -503,6 +562,7 @@ bash scripts/install-global.sh
 ```
 
 **Project Install (per project, run from project root)**
+
 ```bash
 bash /path/to/bmad-sdlc-agents/scripts/scaffold-project.sh "My Project"
 # → .bmad/                 project context files (commit to git)
@@ -512,6 +572,7 @@ bash /path/to/bmad-sdlc-agents/scripts/scaffold-project.sh "My Project"
 ```
 
 After scaffolding, open your project in Codex CLI and invoke agents with `$` prefix, commands with `/`:
+
 ```
 $business-analyst   $product-owner      $solution-architect
 $enterprise-architect  $ux-designer     $tech-lead
@@ -526,6 +587,7 @@ $tester-qe          $backend-engineer   $frontend-engineer   $mobile-engineer
 ### Kiro (AWS)
 
 **Global Install (once)**
+
 ```bash
 bash scripts/install-global.sh
 # → Skills → ~/.kiro/skills/<agent>/SKILL.md    (activate by description match)
@@ -534,6 +596,7 @@ bash scripts/install-global.sh
 ```
 
 **Project Install (per project, run from project root)**
+
 ```bash
 bash /path/to/bmad-sdlc-agents/scripts/scaffold-project.sh "My Project"
 # → .bmad/                  project context files (commit to git)
@@ -543,6 +606,7 @@ bash /path/to/bmad-sdlc-agents/scripts/scaffold-project.sh "My Project"
 ```
 
 After scaffolding, open your project in Kiro. Skills activate by description match. Commands are available as slash commands:
+
 ```
 /bmad-status        /new-story          /new-adr
 /handoff            /new-epic           /sprint-plan
@@ -554,12 +618,14 @@ After scaffolding, open your project in Kiro. Skills activate by description mat
 ### Cowork (Claude Desktop)
 
 **Global Install (once)**
+
 ```bash
 bash scripts/install-global.sh
 # → Agents → ~/.skills/skills/  (auto-discoverable by description)
 ```
 
 **Project Install (per project, run from project root)**
+
 ```bash
 bash /path/to/bmad-sdlc-agents/scripts/scaffold-project.sh "My Project"
 # → .bmad/      project context files (commit to git)
@@ -573,12 +639,14 @@ Agents detect `.bmad/` automatically. No additional config needed.
 ### Cursor
 
 **Global Install (once)**
+
 ```bash
 bash scripts/install-global.sh
 # → Agents + global rules → ~/.cursor/rules/
 ```
 
 **Project Install (per project, run from project root)**
+
 ```bash
 bash /path/to/bmad-sdlc-agents/scripts/scaffold-project.sh "My Project"
 # → .bmad/                                    project context files (commit to git)
@@ -593,12 +661,14 @@ Address agents by role in your prompt: "Acting as the Solution Architect, …"
 ### Windsurf
 
 **Global Install (once)**
+
 ```bash
 bash scripts/install-global.sh
 # → Agents + global rules → ~/.windsurf/rules/
 ```
 
 **Project Install (per project, run from project root)**
+
 ```bash
 bash /path/to/bmad-sdlc-agents/scripts/scaffold-project.sh "My Project"
 # → .bmad/           project context files (commit to git)
@@ -612,12 +682,14 @@ Address agents by role in your prompt: "Acting as the Backend Engineer, …"
 ### GitHub Copilot
 
 **Global Install (once)**
+
 ```bash
 bash scripts/install-global.sh
 # → Agents → ~/.github/copilot-instructions.md
 ```
 
 **Project Install (per project, run from project root)**
+
 ```bash
 bash /path/to/bmad-sdlc-agents/scripts/scaffold-project.sh "My Project"
 # → .bmad/                               project context files (commit to git)
@@ -631,12 +703,14 @@ Address agents by role: "Acting as the Product Owner, …"
 ### Gemini CLI
 
 **Global Install (once)**
+
 ```bash
 bash scripts/install-global.sh
 # → Agents + global rules → ~/.gemini/GEMINI.md
 ```
 
 **Project Install (per project, run from project root)**
+
 ```bash
 bash /path/to/bmad-sdlc-agents/scripts/scaffold-project.sh "My Project"
 # → .bmad/       project context files (commit to git)
@@ -650,12 +724,14 @@ Address agents by role: "Acting as the Enterprise Architect, …"
 ### OpenCode
 
 **Global Install (once)**
+
 ```bash
 bash scripts/install-global.sh
 # → Agents + global rules → ~/.opencode/instructions.md
 ```
 
 **Project Install (per project, run from project root)**
+
 ```bash
 bash /path/to/bmad-sdlc-agents/scripts/scaffold-project.sh "My Project"
 # → .bmad/      project context files (commit to git)
@@ -669,12 +745,14 @@ Address agents by role: "Acting as the Tech Lead, …"
 ### Aider
 
 **Global Install (once)**
+
 ```bash
 bash scripts/install-global.sh
 # → Agents + global conventions → ~/.aider.conventions.md
 ```
 
 **Project Install (per project, run from project root)**
+
 ```bash
 bash /path/to/bmad-sdlc-agents/scripts/scaffold-project.sh "My Project"
 # → .bmad/                    project context files (commit to git)
@@ -682,6 +760,7 @@ bash /path/to/bmad-sdlc-agents/scripts/scaffold-project.sh "My Project"
 ```
 
 Reference in `.aider.conf.yml`:
+
 ```yaml
 conventions-file: .aider.conventions.md
 ```
@@ -690,16 +769,16 @@ conventions-file: .aider.conventions.md
 
 ## Tool Install Paths Reference
 
-| Tool | Global Path | Project Path |
-|------|-------------|--------------|
-| Claude Code | `~/.claude/skills/` | `.claude/skills/` |
-| Cowork | `~/.skills/skills/` | `.bmad/` (auto-detected) |
-| Cursor | `~/.cursor/rules/` | `.cursor/rules/` |
-| Windsurf | `~/.windsurf/rules/` | `.windsurfrules` |
+| Tool           | Global Path                         | Project Path                      |
+| -------------- | ----------------------------------- | --------------------------------- |
+| Claude Code    | `~/.claude/skills/`                 | `.claude/skills/`                 |
+| Cowork         | `~/.skills/skills/`                 | `.bmad/` (auto-detected)          |
+| Cursor         | `~/.cursor/rules/`                  | `.cursor/rules/`                  |
+| Windsurf       | `~/.windsurf/rules/`                | `.windsurfrules`                  |
 | GitHub Copilot | `~/.github/copilot-instructions.md` | `.github/copilot-instructions.md` |
-| Gemini CLI | `~/.gemini/GEMINI.md` | `GEMINI.md` |
-| OpenCode | `~/.opencode/instructions.md` | `AGENTS.md` |
-| Aider | `~/.aider.conventions.md` | `.aider.conf.yml` |
+| Gemini CLI     | `~/.gemini/GEMINI.md`               | `GEMINI.md`                       |
+| OpenCode       | `~/.opencode/instructions.md`       | `AGENTS.md`                       |
+| Aider          | `~/.aider.conventions.md`           | `.aider.conf.yml`                 |
 
 ---
 
@@ -707,13 +786,13 @@ conventions-file: .aider.conventions.md
 
 After running `scaffold-project.sh`, the `.bmad/` directory contains:
 
-| File | When to Fill In | Purpose |
-|------|-----------------|---------|
-| `PROJECT-CONTEXT.md` | Before first sprint | Project vision, goals, stakeholders, constraints, timeline |
-| `tech-stack.md` | Before architecture decisions | Languages, frameworks, databases, cloud platform, CI/CD |
-| `team-conventions.md` | Before first code review | Code style, naming conventions, architecture patterns, PR process |
-| `domain-glossary.md` | During analysis phase | Business domain terminology, entities, relationships |
-| `handoff-log.md` | Ongoing | Record of work handed off between agents or to humans |
+| File                  | When to Fill In               | Purpose                                                           |
+| --------------------- | ----------------------------- | ----------------------------------------------------------------- |
+| `PROJECT-CONTEXT.md`  | Before first sprint           | Project vision, goals, stakeholders, constraints, timeline        |
+| `tech-stack.md`       | Before architecture decisions | Languages, frameworks, databases, cloud platform, CI/CD           |
+| `team-conventions.md` | Before first code review      | Code style, naming conventions, architecture patterns, PR process |
+| `domain-glossary.md`  | During analysis phase         | Business domain terminology, entities, relationships              |
+| `handoff-log.md`      | Ongoing                       | Record of work handed off between agents or to humans             |
 
 **Tip:** Fill `PROJECT-CONTEXT.md` and `tech-stack.md` first. Other files populate based on these.
 
@@ -728,30 +807,35 @@ After running `scaffold-project.sh`, the `.bmad/` directory contains:
 ### Using a Single Agent (Claude Code)
 
 **Get a project brief from Business Analyst:**
+
 ```
 /business-analyst Generate a concise project brief including stakeholders, success
 criteria, and constraints, based on the project context.
 ```
 
 **Ask Solution Architect for system design:**
+
 ```
 /solution-architect Propose a system architecture with service boundaries, API contracts,
 and data models. Reference the PRD in docs/stories/ and tech-stack.md.
 ```
 
 **Request UX/UI wireframes:**
+
 ```
 /ux-designer Create wireframes and a design spec for the checkout flow, based on user
 personas in docs/ux/ and the PRD in docs/stories/.
 ```
 
 **Backend Engineer implementation plan:**
+
 ```
 /backend-engineer Create a sprint-level implementation plan for the payment service,
 referencing the architecture decisions in docs/architecture/ and tech-stack.md.
 ```
 
 **QE test strategy:**
+
 ```
 /tester-qe Propose a comprehensive test strategy with test types, coverage goals, and
 security testing approach, based on docs/stories/ and tech-stack.md.
@@ -820,7 +904,7 @@ Use this mega-prompt to coordinate all agents. **Agents and project context are 
 
 > **⚠ Critical — Claude Code users:** Do NOT paste the squad prompt as a single block of text. That triggers skill-matching on the whole message, and any other installed planning/analysis plugin (e.g. superpowers) will intercept it. Each agent must be invoked in its own turn with an explicit slash command.
 >
-> Also: if you have a plugin with `PostToolUse` or `Stop` hooks that inject follow-up instructions (e.g. the thedotmack superpowers plugin), those hooks fire *below* the skill layer and override BMAD regardless of what slash command you use. **Disable any non-BMAD planning plugins before running a BMAD session** (Claude Code → Settings → Plugins).
+> Also: if you have a plugin with `PostToolUse` or `Stop` hooks that inject follow-up instructions (e.g. the thedotmack superpowers plugin), those hooks fire _below_ the skill layer and override BMAD regardless of what slash command you use. **Disable any non-BMAD planning plugins before running a BMAD session** (Claude Code → Settings → Plugins).
 
 ### Claude Code — One Agent Per Turn
 
@@ -833,6 +917,7 @@ Reply `refine: [feedback]` to iterate with the same agent, or `next` to advance.
 #### 🗂 Phase 1 — Plan (Turns 1–10)
 
 **Turn 1 — Business Analyst:**
+
 ```
 /business-analyst
 Review .bmad/PROJECT-CONTEXT.md. Identify stakeholders, constraints, and risks.
@@ -841,6 +926,7 @@ Generate a project brief and save to docs/project-brief.md.
 ```
 
 **Turn 2 — Product Owner:**
+
 ```
 /product-owner
 Read docs/project-brief.md.
@@ -848,6 +934,7 @@ Create a PRD with prioritized user stories. Save to docs/prd.md and docs/stories
 ```
 
 **Turn 3 — Solution Architect:**
+
 ```
 /solution-architect
 Read docs/prd.md and .bmad/tech-stack.md.
@@ -857,6 +944,7 @@ Save overall architecture to docs/architecture/solution-architecture.md.
 ```
 
 **Turn 4 — UX Designer:**
+
 ```
 /ux-designer
 Read docs/prd.md and docs/architecture/solution-architecture.md.
@@ -864,6 +952,7 @@ Create wireframes, user journeys, and a design system. Save to docs/ux/.
 ```
 
 **Turn 5 — Enterprise Architect:**
+
 ```
 /enterprise-architect
 Read docs/architecture/solution-architecture.md and all ADRs in docs/architecture/adr/.
@@ -872,6 +961,7 @@ Save to docs/architecture/enterprise-architecture.md.
 ```
 
 **Turn 6 — Tech Lead (sequencing):**
+
 ```
 /tech-lead
 Review all planning artifacts:
@@ -887,6 +977,7 @@ Save sprint plan to docs/architecture/sprint-plan.md.
 ```
 
 **Turn 7 — Backend Engineer (spec):**
+
 ```
 /backend-engineer
 Read docs/architecture/sprint-plan.md and docs/architecture/adr/.
@@ -899,6 +990,7 @@ Do NOT write application code yet — output spec only.
 ```
 
 **Turn 8 — Frontend Engineer (spec):**
+
 ```
 /frontend-engineer
 Read docs/ux/, docs/architecture/sprint-plan.md, and docs/architecture/backend-implementation-spec.md.
@@ -912,6 +1004,7 @@ Do NOT write application code yet — output spec only.
 ```
 
 **Turn 9 — Mobile Engineer (spec):**
+
 ```
 /mobile-engineer
 Read docs/ux/ and docs/architecture/sprint-plan.md.
@@ -924,6 +1017,7 @@ Do NOT write application code yet — output spec only.
 ```
 
 **Turn 10 — Tester & QE (strategy):**
+
 ```
 /tester-qe
 Read all planning artifacts (docs/stories/, docs/architecture/, docs/ux/).
@@ -934,11 +1028,13 @@ Do NOT write test code yet — output strategy only.
 ```
 
 **After each turn — log the handoff:**
+
 ```
 /handoff
 ```
 
 **Gate before Phase 2 — confirm all planning artifacts exist:**
+
 ```
 /bmad-status
 ```
@@ -952,6 +1048,7 @@ Do NOT write test code yet — output strategy only.
 > **Prerequisite:** `/bmad-status` shows ✅ on all 8 paths. ADRs are now locked.
 
 **Turn 11 — Tech Lead (execution kickoff):**
+
 ```
 /tech-lead
 Read docs/architecture/sprint-plan.md. Extract Sprint 1 stories.
@@ -961,6 +1058,7 @@ Save to docs/architecture/sprint-1-kickoff.md.
 ```
 
 **Turn 12 — Backend Engineer (implement):**
+
 ```
 /backend-engineer
 Read docs/architecture/sprint-1-kickoff.md — find all stories assigned to backend.
@@ -975,6 +1073,7 @@ For each assigned story:
 ```
 
 **Turn 13 — Frontend Engineer (implement):**
+
 ```
 /frontend-engineer
 Read docs/architecture/sprint-1-kickoff.md — find all stories assigned to frontend.
@@ -989,6 +1088,7 @@ For each assigned story:
 ```
 
 **Turn 14 — Mobile Engineer (implement):**
+
 ```
 /mobile-engineer
 Read docs/architecture/sprint-1-kickoff.md — find all stories assigned to mobile.
@@ -1002,6 +1102,7 @@ For each assigned story:
 ```
 
 **Turn 15 — Tester & QE (write and run tests):**
+
 ```
 /tester-qe
 Read docs/architecture/sprint-1-kickoff.md for the full Sprint 1 story list.
@@ -1015,6 +1116,7 @@ For each story:
 ```
 
 **Log Phase 1 → Phase 2 handoffs:**
+
 ```
 /handoff tl be
 /handoff tl fe
@@ -1022,6 +1124,7 @@ For each story:
 ```
 
 **Final status check:**
+
 ```
 /bmad-status
 ```
@@ -1033,11 +1136,13 @@ For each story:
 > After Tester-QE completes Sprint N and you type `next` to accept. Replace `N` throughout.
 
 **Step 1 — Close out the sprint:**
+
 ```
 /bmad-eval
 ```
 
 **Step 2 — Tech Lead: review + kick off Sprint N+1:**
+
 ```
 /tech-lead
 Sprint N is complete. Read docs/testing/sprint-N-results.md.
@@ -1048,6 +1153,7 @@ Save to docs/architecture/sprint-N+1-kickoff.md.
 ```
 
 **Step 3 — Backend Engineer:**
+
 ```
 /backend-engineer
 Read docs/architecture/sprint-N+1-kickoff.md — find all stories assigned to backend.
@@ -1057,6 +1163,7 @@ Implement assigned stories. Mark deviations: // DEVIATION: [reason]
 ```
 
 **Step 4 — Frontend Engineer:**
+
 ```
 /frontend-engineer
 Read docs/architecture/sprint-N+1-kickoff.md — find all stories assigned to frontend.
@@ -1066,6 +1173,7 @@ Build UI components and wire up API calls. Mark deviations: // DEVIATION: [reaso
 ```
 
 **Step 5 — Mobile Engineer:**
+
 ```
 /mobile-engineer
 Read docs/architecture/sprint-N+1-kickoff.md — find all stories assigned to mobile.
@@ -1075,6 +1183,7 @@ Write screens and wire up API calls. Mark deviations: // DEVIATION: [reason]
 ```
 
 **Step 6 — Tester-QE:**
+
 ```
 /tester-qe
 Read docs/architecture/sprint-N+1-kickoff.md for the full story list.
@@ -1136,6 +1245,7 @@ The review gate is built into each agent's skill.
 #### 🗂 Phase 1 — Plan
 
 **Turn 1 — Business Analyst:**
+
 ```
 As a business analyst, review .bmad/PROJECT-CONTEXT.md. Identify stakeholders,
 constraints, and risks. Generate a project brief and save to docs/project-brief.md.
@@ -1143,12 +1253,14 @@ constraints, and risks. Generate a project brief and save to docs/project-brief.
 ```
 
 **Turn 2 — Product Owner:**
+
 ```
 As product owner, read docs/project-brief.md. Create a PRD with prioritized user stories.
 Save to docs/prd.md and docs/stories/.
 ```
 
 **Turn 3 — Solution Architect:**
+
 ```
 As solution architect, read docs/prd.md and .bmad/tech-stack.md. Propose system
 architecture, service boundaries, API contracts, and data models. Record all decisions
@@ -1156,12 +1268,14 @@ as ADRs in docs/architecture/adr/. Save to docs/architecture/solution-architectu
 ```
 
 **Turn 4 — UX Designer:**
+
 ```
 As UX designer, read docs/prd.md and docs/architecture/solution-architecture.md.
 Create wireframes, user journeys, and a design system. Save to docs/ux/.
 ```
 
 **Turn 5 — Enterprise Architect:**
+
 ```
 As enterprise architect, read docs/architecture/solution-architecture.md and all ADRs.
 Propose cloud infrastructure, CI/CD pipeline, monitoring, and compliance controls.
@@ -1169,12 +1283,14 @@ Save to docs/architecture/enterprise-architecture.md.
 ```
 
 **Turn 6 — Tech Lead (sequencing):**
+
 ```
 As tech lead, review all planning artifacts in docs/. Sequence stories into sprint batches.
 Identify dependencies and missing specs. Save to docs/architecture/sprint-plan.md.
 ```
 
 **Turn 7 — Backend Engineer (spec):**
+
 ```
 As backend engineer, read sprint-plan.md and all ADRs. Write the backend implementation
 spec: API contracts, data access patterns, event contracts.
@@ -1182,6 +1298,7 @@ Save to docs/architecture/backend-implementation-spec.md. No code yet.
 ```
 
 **Turn 8 — Frontend Engineer (spec):**
+
 ```
 As frontend engineer, read docs/ux/, sprint-plan.md, and backend-implementation-spec.md.
 Write the frontend implementation spec: component tree, state management, API consumption.
@@ -1189,6 +1306,7 @@ Save to docs/architecture/frontend-implementation-spec.md. No code yet.
 ```
 
 **Turn 9 — Mobile Engineer (spec):**
+
 ```
 As mobile engineer, read docs/ux/ and sprint-plan.md. Write the mobile implementation spec:
 platform decision, screen mapping, device constraints.
@@ -1196,6 +1314,7 @@ Save to docs/architecture/mobile-implementation-spec.md. No code yet.
 ```
 
 **Turn 10 — Tester & QE (strategy):**
+
 ```
 As tester and QE engineer, read all planning artifacts. Write a test strategy: unit,
 integration, e2e, security, performance quality gates, acceptance criteria per story.
@@ -1209,6 +1328,7 @@ Use `/bmad-status` after Turn 10. Use `/handoff` between turns.
 > Start only after `/bmad-status` confirms all 8 artifact paths are ✅.
 
 **Turn 11 — Tech Lead (kickoff):**
+
 ```
 As tech lead, planning is approved. Read docs/architecture/sprint-plan.md.
 Extract Sprint 1 stories. Produce a kickoff doc listing each story with its assigned
@@ -1217,6 +1337,7 @@ Save to docs/architecture/sprint-1-kickoff.md.
 ```
 
 **Turn 12 — Backend Engineer (implement):**
+
 ```
 As backend engineer, read docs/architecture/sprint-1-kickoff.md — find all stories
 assigned to backend. Read docs/architecture/backend-implementation-spec.md for API
@@ -1225,6 +1346,7 @@ Implement each assigned story. Mark deviations: // DEVIATION: [reason]
 ```
 
 **Turn 13 — Frontend Engineer (implement):**
+
 ```
 As frontend engineer, read docs/architecture/sprint-1-kickoff.md — find all stories
 assigned to frontend. Read docs/architecture/frontend-implementation-spec.md for
@@ -1234,6 +1356,7 @@ Build UI components and wire up API calls. Mark deviations: // DEVIATION: [reaso
 ```
 
 **Turn 14 — Mobile Engineer (implement):**
+
 ```
 As mobile engineer, read docs/architecture/sprint-1-kickoff.md — find all stories
 assigned to mobile. Read docs/architecture/mobile-implementation-spec.md for screen
@@ -1242,6 +1365,7 @@ Write mobile screens and wire up API calls. Mark deviations: // DEVIATION: [reas
 ```
 
 **Turn 15 — Tester & QE (write and run tests):**
+
 ```
 As tester and QE engineer, read docs/architecture/sprint-1-kickoff.md for the full
 Sprint 1 story list. Read docs/testing/test-strategy.md for quality gates.
@@ -1254,11 +1378,13 @@ Flag unmet acceptance criteria. Save results to docs/testing/sprint-1-results.md
 > After Tester-QE accepts Sprint N and you type `next`. Replace `N` throughout.
 
 **Close out Sprint N:**
+
 ```
 As the BMAD eval collector, run /bmad-eval to log Sprint N metrics.
 ```
 
 **Tech Lead — Sprint N+1 Kickoff:**
+
 ```
 As tech lead, Sprint N is complete. Read docs/testing/sprint-N-results.md for
 carry-overs. Read docs/architecture/sprint-plan.md — extract Sprint N+1 stories.
@@ -1267,6 +1393,7 @@ Save to docs/architecture/sprint-N+1-kickoff.md.
 ```
 
 **Backend Engineer — Sprint N+1:**
+
 ```
 As backend engineer, read docs/architecture/sprint-N+1-kickoff.md — find all stories
 assigned to backend. Read docs/architecture/backend-implementation-spec.md for patterns.
@@ -1274,6 +1401,7 @@ Follow .bmad/tech-stack.md. Implement assigned stories. Mark deviations: // DEVI
 ```
 
 **Frontend Engineer — Sprint N+1:**
+
 ```
 As frontend engineer, read docs/architecture/sprint-N+1-kickoff.md — find all stories
 assigned to frontend. Read docs/architecture/frontend-implementation-spec.md + docs/ux/.
@@ -1281,6 +1409,7 @@ Build UI components and wire up API calls. Mark deviations: // DEVIATION: [reaso
 ```
 
 **Mobile Engineer — Sprint N+1:**
+
 ```
 As mobile engineer, read docs/architecture/sprint-N+1-kickoff.md — find all stories
 assigned to mobile. Read docs/architecture/mobile-implementation-spec.md.
@@ -1288,6 +1417,7 @@ Write screens and wire up API calls. Mark deviations: // DEVIATION: [reason]
 ```
 
 **Tester & QE — Sprint N+1:**
+
 ```
 As tester and QE engineer, read docs/architecture/sprint-N+1-kickoff.md for the full
 story list. Read docs/testing/test-strategy.md for quality gates.
@@ -1309,6 +1439,7 @@ All agent skills are loaded from your global rules file. Select the prompt set t
 Use when starting a project from scratch. Full 10-agent planning → multi-sprint execution.
 
 **Prompt A — Plan (10 agents, no code):**
+
 ```
 # BMAD Squad: New Project Plan
 
@@ -1379,6 +1510,7 @@ performance quality gates, acceptance criteria per story. Save to docs/testing/t
 > ✅ Before Prompt B: run `/bmad-status` — all 8 artifact paths must be present.
 
 **Prompt B — Execute (Sprint 1):**
+
 ```
 # BMAD Squad: Sprint 1 Implementation
 
@@ -1474,6 +1606,7 @@ Write and run tests. Flag unmet criteria. Save to docs/testing/sprint-N+1-result
 Use when adding a new capability to an existing project. Skips EA (project context already exists). BA runs impact analysis after PO defines scope. Architecture agents run if the feature touches service boundaries or infrastructure.
 
 **Prompt A — Plan (5 agents, no code):**
+
 ```
 # BMAD Squad: Feature Plan
 
@@ -1533,6 +1666,7 @@ Update docs/testing/test-strategy.md with the feature's test section.
 ```
 
 **Prompt B — Execute:**
+
 ```
 # BMAD Squad: Feature Implementation
 
@@ -1588,6 +1722,7 @@ Save results to docs/testing/ with the feature name prefix.
 Use when investigating and resolving a reported defect. Starts with diagnosis before any fix code.
 
 **Prompt A — Diagnose (2 agents):**
+
 ```
 # BMAD Squad: Bug Diagnosis
 
@@ -1617,6 +1752,7 @@ Assess regression scope. Save fix plan to docs/testing/bugs/[bug-id]-fix-plan.md
 ```
 
 **Prompt B — Fix & Verify:**
+
 ```
 # BMAD Squad: Bug Fix Implementation
 
@@ -1646,6 +1782,7 @@ Save verification results to docs/testing/bugs/[bug-id]-verified.md.
 Use when a critical production issue needs the fastest possible resolution. Assess, fix, smoke test in one session — no planning docs.
 
 **Single Prompt — Assess, Fix, Verify:**
+
 ```
 # BMAD Squad: Production Hotfix
 
@@ -1683,6 +1820,7 @@ Save results to docs/testing/hotfixes/[date]-[issue]-verified.md.
 Use for known stories already in the backlog, dependency upgrades, refactors, or maintenance tasks that don't need full architecture review.
 
 **Prompt A — Refine (3 agents, no code):**
+
 ```
 # BMAD Squad: Backlog Refinement
 
@@ -1714,6 +1852,7 @@ Flag any ADR implications. Save to docs/architecture/[story-id]-notes.md.
 ```
 
 **Prompt B — Execute:**
+
 ```
 # BMAD Squad: Backlog Item Implementation
 
@@ -1790,6 +1929,7 @@ bmad-sdlc-agents/
 ## Integration Guide
 
 ### How Agents Use Context
+
 When you invoke an agent in any tool, it automatically:
 
 1. **Detects** `.bmad/PROJECT-CONTEXT.md` in the current project
@@ -1799,12 +1939,15 @@ When you invoke an agent in any tool, it automatically:
 5. **Applies** context to your prompt and generates project-aware responses
 
 ### Continuous Integration
+
 The `scripts/update.sh` pulls the latest agent skills and shared resources, then:
+
 - Rebuilds global tool directories
 - Refreshes all project `.bmad/` symlinks
 - Preserves project-specific overrides
 
 ### Version Control
+
 - **Commit to git:** `.bmad/` directory (context files are project-specific)
 - **Commit to git:** `docs/` directory (all artifacts)
 - **Do not commit:** Global `~/.claude/`, `~/.codex/`, `~/.kiro/`, `~/.skills/`, `~/.cursor/`, etc. (manage with `install-global.sh`)
@@ -1815,6 +1958,7 @@ The `scripts/update.sh` pulls the latest agent skills and shared resources, then
 ## Common Workflows
 
 ### Onboarding a New Team Member
+
 ```bash
 # Clone project repo (includes .bmad/)
 git clone <project-repo>
@@ -1829,6 +1973,7 @@ bash /path/to/bmad-sdlc-agents/scripts/install-global.sh
 ```
 
 ### Starting a New Project
+
 ```bash
 # Scaffold the project
 bash /path/to/bmad-sdlc-agents/scripts/scaffold-project.sh "New Platform"
@@ -1842,6 +1987,7 @@ git commit -m "Add BMAD project scaffold"
 ```
 
 ### Running Full Squad Analysis
+
 Use the **Squad Prompt** section above as a session script. For Claude Code, run one agent per turn using its slash command. Do not paste the whole squad prompt as one message — invoke each agent explicitly.
 
 ### Continuing to the Next Sprint
@@ -1864,6 +2010,7 @@ The key steps for every sprint boundary are the same regardless of tool:
 > The sprint plan is written once (Turn 6) and covers all sprints. You never need to re-plan unless scope changes — in that case, re-invoke Tech Lead with a `// SCOPE CHANGE:` note.
 
 ### Updating Agents Across All Projects
+
 ```bash
 # Pull latest agents and shared resources
 bash /path/to/bmad-sdlc-agents/scripts/update.sh
@@ -1888,20 +2035,20 @@ flowchart TD
 
     subgraph PLAN["📋 Plan Phase — 7 Waves"]
         subgraph W1["W1"]
-            BA["Business Analyst\n📄 project-brief.md"]
+            BA["Business Analyst<br>📄 project-brief.md"]
         end
         subgraph W2["W2"]
-            PO["Product Owner\n📄 prd.md + stories/"]
+            PO["Product Owner<br>📄 prd.md + stories/"]
         end
         subgraph W3["W3"]
-            SA["Solution Architect\n📄 solution-architecture.md"]
+            SA["Solution Architect<br>📄 solution-architecture.md"]
         end
         subgraph W4["W4 ∥ parallel"]
-            EA["Enterprise Architect\n📄 enterprise-architecture.md"]
-            UX["UX Designer\n📄 docs/ux/"]
+            EA["Enterprise Architect<br>📄 enterprise-architecture.md"]
+            UX["UX Designer<br>📄 docs/ux/"]
         end
         subgraph W5["W5"]
-            TL_PLAN["Tech Lead\n📄 sprint-plan.md"]
+            TL_PLAN["Tech Lead<br>📄 sprint-plan.md"]
         end
         subgraph W6["W6 ∥ parallel"]
             BE_SPEC["BE spec"]
@@ -1909,7 +2056,7 @@ flowchart TD
             ME_SPEC["ME spec"]
         end
         subgraph W7["W7"]
-            TQE_STRAT["Tester & QE\n📄 test-strategy.md"]
+            TQE_STRAT["Tester & QE<br>📄 test-strategy.md"]
         end
 
         BA --> PO --> SA
@@ -1923,7 +2070,7 @@ flowchart TD
 
     subgraph EXEC["🔨 Execute Phase — 3 Waves per Sprint"]
         subgraph E1["E1"]
-            KICKOFF["Tech Lead\n📄 sprint-N-kickoff.md"]
+            KICKOFF["Tech Lead<br>📄 sprint-N-kickoff.md"]
         end
         subgraph E2["E2 ∥ parallel"]
             BE["Backend Engineer"]
@@ -1931,7 +2078,7 @@ flowchart TD
             ME["Mobile Engineer"]
         end
         subgraph E3["E3"]
-            TQE["Tester & QE\n📄 sprint-N-results.md"]
+            TQE["Tester & QE<br>📄 sprint-N-results.md"]
         end
         PASS{All stories\npass?}
 
@@ -1956,20 +2103,20 @@ flowchart TD
 
     subgraph PLAN["📋 Plan Phase — 5 Waves"]
         subgraph W1["W1"]
-            PO["Product Owner\n📄 stories/feature-name/"]
+            PO["Product Owner<br/>📄 stories/feature-name/"]
         end
         subgraph W2["W2"]
-            BA["Business Analyst\n📄 analysis/feature-impact.md"]
+            BA["Business Analyst<br/>📄 analysis/feature-impact.md"]
         end
         subgraph W3["W3 ∥ parallel"]
-            SA["Solution Architect\n📄 ADRs updated"]
-            UX["UX Designer\n📄 docs/ux/feature-name/"]
+            SA["Solution Architect<br/>📄 ADRs updated"]
+            UX["UX Designer<br/>📄 docs/ux/feature-name/"]
         end
         subgraph W4["W4"]
-            TL_PLAN["Tech Lead\n📄 feature-name-plan.md"]
+            TL_PLAN["Tech Lead<br/>📄 feature-name-plan.md"]
         end
         subgraph W5["W5"]
-            TQE_STRAT["Tester & QE\n📄 test-strategy.md"]
+            TQE_STRAT["Tester & QE<br/>📄 test-strategy.md"]
         end
 
         PO --> BA
@@ -1981,7 +2128,7 @@ flowchart TD
 
     subgraph EXEC["🔨 Execute Phase — 3 Waves"]
         subgraph E1["E1"]
-            KICKOFF["Tech Lead\nKickoff + ADRs locked"]
+            KICKOFF["Tech Lead<br>Kickoff + ADRs locked"]
         end
         subgraph E2["E2 ∥ parallel"]
             BE["Backend Engineer"]
@@ -1989,7 +2136,7 @@ flowchart TD
             ME["Mobile Engineer"]
         end
         subgraph E3["E3"]
-            TQE["Tester & QE\nVerify + Regression"]
+            TQE["Tester & QE<br>Verify + Regression"]
         end
         PASS{Pass?}
 
@@ -2012,8 +2159,8 @@ flowchart TD
     START([🐛 Bug Report]) --> TQE1
 
     subgraph DIAGNOSE["📋 Diagnose (Prompt A — 2 agents)"]
-        TQE1["Tester & QE\nReproduce + Root-Cause Hypotheses\n📄 docs/testing/bugs/bug-id.md"]
-        TL1["Tech Lead\nConfirm Root Cause + Minimal Safe Fix\n📄 docs/testing/bugs/bug-id-fix-plan.md"]
+        TQE1["Tester & QE<br/>Reproduce + Root-Cause Hypotheses<br/>📄 docs/testing/bugs/bug-id.md"]
+        TL1["Tech Lead<br/>Confirm Root Cause + Minimal Safe Fix<br/>📄 docs/testing/bugs/bug-id-fix-plan.md"]
 
         TQE1 --> TL1
     end
@@ -2021,12 +2168,12 @@ flowchart TD
     TL1 --> ENG_Q
 
     subgraph FIX["🔨 Fix & Verify (Prompt B — 2 agents)"]
-        ENG_Q{Engineer\nRole?}
-        BE["Backend Engineer\n// FIX: bug-id"]
-        FE["Frontend Engineer\n// FIX: bug-id"]
-        ME["Mobile Engineer\n// FIX: bug-id"]
-        TQE2["Tester & QE\nVerify Fix + Regression\n📄 bug-id-verified.md"]
-        PASS{Bug\nResolved?}
+        ENG_Q{Engineer<br>Role?}
+        BE["Backend Engineer<br/>/ FIX: bug-id"]
+        FE["Frontend Engineer<br/>/ FIX: bug-id"]
+        ME["Mobile Engineer<br/>/ FIX: bug-id"]
+        TQE2["Tester & QE<br/>Verify Fix + Regression<br/>📄 bug-id-verified.md"]
+        PASS{Bug<br>Resolved?}
 
         ENG_Q -->|Backend| BE
         ENG_Q -->|Frontend| FE
@@ -2049,12 +2196,12 @@ flowchart TD
     START([🚨 Production Incident]) --> TL
 
     subgraph HOTFIX["Single Prompt — 3 agents in strict sequence"]
-        TL["Tech Lead\nAssess Root Cause\nMinimal Safe Fix + Rollback Plan\n📄 docs/testing/hotfixes/date-issue.md"]
-        ENG_Q{Smallest\nSafe Fix}
-        BE["Backend Engineer\n// HOTFIX: date-issue\nNo refactoring outside fix scope"]
-        FE["Frontend Engineer\n// HOTFIX: date-issue\nNo refactoring outside fix scope"]
-        ME["Mobile Engineer\n// HOTFIX: date-issue\nNo refactoring outside fix scope"]
-        TQE["Tester & QE\nSmoke Test Only — Critical Path\n📄 date-issue-verified.md"]
+        TL["Tech Lead<br/>Assess Root Cause<br/>Minimal Safe Fix + Rollback Plan<br>📄 docs/testing/hotfixes/date-issue.md"]
+        ENG_Q{Smallest<br/>Safe Fix}
+        BE["Backend Engineer<br/>/ HOTFIX: date-issue<br/>No refactoring outside fix scope"]
+        FE["Frontend Engineer<br/>/ HOTFIX: date-issue<br/>No refactoring outside fix scope"]
+        ME["Mobile Engineer<br/>/ HOTFIX: date-issue<br/>No refactoring outside fix scope"]
+        TQE["Tester & QE<br/>Smoke Test Only — Critical Path<br/>📄 date-issue-verified.md"]
         PASS{Critical Path\nUnbroken?}
 
         TL --> ENG_Q
@@ -2079,9 +2226,9 @@ flowchart TD
     START([📋 Backlog Item\nTech Debt / Chore]) --> PO
 
     subgraph REFINE["📋 Refine (Prompt A — 3 agents)"]
-        PO["Product Owner\nClarify Scope + Acceptance Criteria\n📄 docs/stories/story-id.md"]
-        BA["Business Analyst\nRequirements + Impact Analysis\n📄 docs/analysis/story-id-analysis.md"]
-        TL["Tech Lead\nTechnical Breakdown + Effort\n📄 docs/architecture/story-id-notes.md"]
+        PO["Product Owner\nClarify Scope + Acceptance Criteria<br>📄 docs/stories/story-id.md"]
+        BA["Business Analyst\nRequirements + Impact Analysis<br>📄 docs/analysis/story-id-analysis.md"]
+        TL["Tech Lead\nTechnical Breakdown + Effort<br>📄 docs/architecture/story-id-notes.md"]
 
         PO --> BA --> TL
     end
@@ -2089,12 +2236,12 @@ flowchart TD
     TL --> ENG_Q
 
     subgraph EXEC["🔨 Execute (Prompt B — 2 agents)"]
-        ENG_Q{Engineer\nRole?}
+        ENG_Q{Engineer<br>Role?}
         BE["Backend Engineer"]
         FE["Frontend Engineer"]
         ME["Mobile Engineer"]
-        TQE["Tester & QE\nVerify Acceptance Criteria\n📄 docs/testing/story-id-results.md"]
-        PASS{Criteria\nMet?}
+        TQE["Tester & QE<br>Verify Acceptance Criteria<br>📄 docs/testing/story-id-results.md"]
+        PASS{Criteria<br>Met?}
 
         ENG_Q -->|Backend| BE
         ENG_Q -->|Frontend| FE
@@ -2114,11 +2261,11 @@ BMAD includes a framework for measuring AI-assisted productivity gains, specific
 
 ### Three Dimensions × Nine Metrics
 
-| Dimension | Metrics | Weight |
-|-----------|---------|--------|
-| **Speed** | Time-to-First-Draft, Time-to-Approval, Iteration Turnaround | 35% |
-| **Quality** | First-Pass Review Rate, NFR Coverage Score, Arch Debt Introduced | 35% |
-| **Coverage** | Alternatives Evaluated, Risks Identified, Stakeholder Scenarios | 30% |
+| Dimension    | Metrics                                                          | Weight |
+| ------------ | ---------------------------------------------------------------- | ------ |
+| **Speed**    | Time-to-First-Draft, Time-to-Approval, Iteration Turnaround      | 35%    |
+| **Quality**  | First-Pass Review Rate, NFR Coverage Score, Arch Debt Introduced | 35%    |
+| **Coverage** | Alternatives Evaluated, Risks Identified, Stakeholder Scenarios  | 30%    |
 
 **Composite Score** = `0.35 × Speed + 0.35 × Quality + 0.30 × Coverage` (normalized 0–100)
 
@@ -2176,7 +2323,7 @@ A: Absolutely. Each project has its own `tech-stack.md`, so agents adapt to Type
 **Q: Another plugin (e.g. superpowers) keeps taking over my BMAD session. How do I stop it?**
 A: There are two layers to this conflict:
 
-1. **Hook injection** — Plugins with `PostToolUse` or `Stop` hooks can inject follow-up instructions *after every tool call*, below the skill-matching layer. Even an explicit slash command like `/business-analyst` can be overridden this way. The only fix is to **disable the conflicting plugin** in Claude Code → Settings → Plugins before running a BMAD session. You can re-enable it afterward for non-BMAD projects.
+1. **Hook injection** — Plugins with `PostToolUse` or `Stop` hooks can inject follow-up instructions _after every tool call_, below the skill-matching layer. Even an explicit slash command like `/business-analyst` can be overridden this way. The only fix is to **disable the conflicting plugin** in Claude Code → Settings → Plugins before running a BMAD session. You can re-enable it afterward for non-BMAD projects.
 
 2. **Skill-matching** — If you send a large prose prompt ("plan and design my project…"), Claude Code fuzzy-matches across all installed skills. A broad planning/analysis plugin wins because its triggers are wider. The fix is to **always start each message with the slash command** (`/business-analyst`, `/solution-architect`, etc.) — slash commands are explicit file lookups, not fuzzy matches, so they bypass skill competition.
 

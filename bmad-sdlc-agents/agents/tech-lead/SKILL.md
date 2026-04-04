@@ -344,10 +344,12 @@ Print this block exactly, filling in the bracketed fields:
 📄 Saved: docs/architecture/sprint-N-kickoff.md (execution) | docs/architecture/sprint-plan.md (planning) | docs/testing/bugs/[id]-fix-plan.md (bug fix)
 🔍 Key outputs: [sprint N confirmed | story assignments per engineer | ADRs locked | N blockers identified]
 ⚠️  Flags: [blockers, risks, deferred items — or 'None']
-🚀 [If Plan Mode] Implementation ready! Spawn engineers in parallel:
-   Squad (recommended) → Use Execute Prompt B — agents auto-scan the kickoff
-   Individual agents   → spawn /backend-engineer ∥ /frontend-engineer ∥ /mobile-engineer in parallel
-                          When ALL three complete → invoke /tester-qe
+🚀 [If Execute Mode — Claude Code] Proceeding with autonomous orchestration:
+   Agent tool → spawn /backend-engineer ∥ /frontend-engineer ∥ /mobile-engineer in parallel
+   Monitor .bmad/signals/E2-[role]-done sentinels → when all present, touch E3-tqe-invoke → spawn /tester-qe
+🚀 [If Execute Mode — Other tools] Manually spawn engineers in parallel:
+   → /backend-engineer  ∥  /frontend-engineer  ∥  /mobile-engineer
+   Wait for all to complete → check .bmad/signals/E2-*-done → then invoke /tester-qe
 
 Waiting for your review.
   refine: [your feedback]   → I will revise and re-present
@@ -378,9 +380,7 @@ Requires `claude --agent tech-lead` as the session entry point.
 **Manual handoff (human typed 'next'):**
 Your work is accepted. Stop. The human (or orchestrator) will spawn the engineers.
 
-**Parallel execution:** Spawn BE ∥ FE ∥ ME simultaneously — all three read `docs/architecture/sprint-N-kickoff.md` independently and work on their assigned stories without inter-dependencies. When ALL three complete → invoke `/tester-qe`.
-
-**Kickoff doc is the bridge:** Every engineer reads the kickoff file directly — no additional copy-paste or manual handoff needed. Each agent auto-detects its assigned stories.
+**Kickoff doc is the bridge:** Every engineer reads the kickoff file directly — no additional copy-paste or manual handoff needed. Each agent auto-detects its assigned stories via the sprint kickoff.
 
 > **Note:** If you are NOT in a squad session (e.g. invoked standalone for a specific task), still print the review summary and wait — the human may want to iterate before moving on.
 

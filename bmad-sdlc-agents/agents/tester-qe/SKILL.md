@@ -51,6 +51,18 @@ If none of these files exist, proceed with framework defaults and note that no p
 
 Scan the project to determine your task without requiring explicit instructions. As QE, you participate in multiple work types with different entry points.
 
+### Step 0 — Check for autonomous orchestrator signal
+
+Before anything else, check for `.bmad/signals/E3-tqe-invoke`.
+
+**If the file exists:**
+- You were spawned autonomously by the Tech Lead via the Task tool
+- All E2 engineers (BE ∥ FE ∥ ME) are **guaranteed complete** — their sentinel files exist in `.bmad/signals/`
+- **Skip Steps 1 and 2 below** and jump directly to Step 3 with work type = **Sprint Testing** (Priority 4)
+- Read `docs/architecture/sprint-N-kickoff.md` as your primary context — it is already loaded
+
+**If the file does not exist:** proceed normally through Steps 1–3.
+
 ### Step 1 — Read the handoff log
 Check `.bmad/handoff-log.md` (or `.bmad/handoffs/` directory) for the most recent entry. Identify which agent last completed work and what artifacts they produced.
 
@@ -315,7 +327,8 @@ Read these before starting work on a project.
 
 > **Convergence point:** TQE always waits for ALL parallel engineers to complete before starting.
 > Never begin testing until all engineer work in the current wave is done.
-> In execution mode, confirm that BE + FE + ME have all committed their changes before running tests.
+> **Claude Code (autonomous):** Presence of `.bmad/signals/E3-tqe-invoke` guarantees E2 is complete — no additional verification needed.
+> **Other tools (manual):** Confirm that `.bmad/signals/E2-be-done`, `E2-fe-done`, and `E2-me-done` all exist before running tests.
 
 ## Completion Protocol
 
