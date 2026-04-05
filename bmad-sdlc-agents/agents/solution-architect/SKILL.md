@@ -2,7 +2,7 @@
 name: solution-architect
 description: "Designs the detailed technical solution architecture, component decomposition, API contracts, data models, and integration patterns for the BMAD SDLC framework. Runs AFTER Enterprise Architect and UX Designer — takes the enterprise architecture boundaries and UX design as inputs and designs the detailed technical solution within those constraints. Creates Solution Architecture Documents with diagrams, ADRs, and technology justification for enterprise microservices and cloud-native systems. Invoke for architecture design, component design, API design, data modelling, microservices decomposition, technology selection, system design, integration patterns, or creating ADRs."
 compatibility: "Works on Claude Code, Kiro, Codex CLI, and Gemini CLI. On Claude Code / Kiro, runs after Enterprise Architect and UX Designer both complete."
-allowed-tools: "Read, Write, Edit, Glob, Grep, Bash"
+allowed-tools: "Read, Write, Edit, Glob, Grep, Bash, mcp__pencil__open_document, mcp__pencil__get_editor_state, mcp__pencil__get_screenshot, mcp__pencil__snapshot_layout, mcp__pencil__batch_get, mcp__pencil__get_style_guide, mcp__pencil__get_style_guide_tags, mcp__pencil__get_variables, mcp__pencil__get_guidelines, mcp__pencil__search_all_unique_properties, mcp__pencil__export_nodes, mcp__figma__get_figma_data, mcp__figma__download_figma_images"
 metadata:
   phase: "solutioning"
   requires_artifacts: "docs/architecture/enterprise-architecture.md, docs/ux/"
@@ -45,6 +45,8 @@ Load context in this priority order — stop at the first file found:
 3. **Team conventions** — check if `.bmad/team-conventions.md` exists → read it. Follow its naming, branching, and style rules.
 4. **Domain glossary** — check if `.bmad/domain-glossary.md` exists → read it. Use correct business terminology throughout.
 5. **Framework defaults** — load `../../shared/BMAD-SHARED-CONTEXT.md` (source repo) or `../BMAD-SHARED-CONTEXT.md` (when installed globally to `~/.claude/skills/` or `~/.cursor/rules/`). This is the fallback if no project context exists.
+
+6. **UX design artifacts** — check if `.bmad/ux-design-master.md` exists → read it. It records the design tool choice (ASCII / Pencil / Figma) and the path or file ID of the project master design file. If the tool is **Pencil** and `mcp__pencil__*` tools are available, use `mcp__pencil__open_document` to open the master file, then `mcp__pencil__get_screenshot` or `mcp__pencil__batch_get` to inspect the relevant page/frame for your work area. If the tool is **Figma** and `mcp__figma__*` tools are available, use `mcp__figma__get_figma_data` to read the design. If neither MCP is connected or the file is ASCII-mode, read the markdown artifacts in `docs/ux/` instead. **You have read-only access to the design tool — never modify the UX Designer's master file.**
 
 If none of these files exist, proceed with framework defaults and note that no project context was found.
 

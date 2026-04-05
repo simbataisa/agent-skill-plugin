@@ -48,6 +48,8 @@ Install the global layer once across all tools, then scaffold `.bmad/` context f
   - `team-conventions.md` – Code style, naming, patterns, architecture rules
   - `domain-glossary.md` – Business domain terms, concepts, entities
   - `handoff-log.md` – Record of handoffs between agents/humans
+  - `ux-design-master.md` – Design tool choice (ASCII/Pencil/Figma), master file reference, page index (created by UX Designer on first run)
+  - `signals/` – Sentinel files for inter-agent coordination
 
 - **`docs/`** – Project documentation
   - `architecture/` – System design, decision records, diagrams
@@ -63,7 +65,8 @@ When an agent runs, it loads context in this order (later overrides earlier):
 2. `.bmad/PROJECT-CONTEXT.md` (project goals, stakeholders)
 3. `.bmad/tech-stack.md` (technology choices)
 4. `.bmad/team-conventions.md` (project rules and standards)
-5. User prompt (immediate task)
+5. `.bmad/ux-design-master.md` (design tool + master file reference, if exists)
+6. User prompt (immediate task)
 
 This creates project-aware agents that respect global conventions while adapting to project specifics.
 
@@ -477,13 +480,13 @@ At the start of every conversation, read these files:
 
 ## Available BMAD Agents (skills)
 
-| Skill ($ invoke)        | Role                                           |
-| ----------------------- | ---------------------------------------------- |
-| `$business-analyst`     | Discovery, stakeholder analysis, project brief |
-| `$product-owner`        | PRD, backlog, user stories                     |
-| `$solution-architect`   | System design, APIs, ADRs                      |
-| `$enterprise-architect` | Cloud infra, compliance, CI/CD                 |
-| `$ux-designer`          | Wireframes, design system, accessibility       |
+| Skill ($ invoke)        | Role                                                            |
+| ----------------------- | --------------------------------------------------------------- |
+| `$product-owner`        | BRD, PRD, MVP scope (first agent)                              |
+| `$business-analyst`     | Requirements analysis from BRD/PRD (second agent)              |
+| `$enterprise-architect` | Enterprise arch — cloud infra, compliance, CI/CD (W3 ∥)        |
+| `$ux-designer`          | Wireframes, design system, accessibility (W3 ∥ EA)             |
+| `$solution-architect`   | Detailed solution design — APIs, data models, ADRs             |
 | `$tech-lead`            | Orchestration, code review, risk               |
 | `$tester-qe`            | Test strategy, quality gates                   |
 | `$backend-engineer`     | APIs, services, data layers                    |
@@ -815,6 +818,8 @@ After running `scaffold-project.sh`, the `.bmad/` directory contains:
 | `team-conventions.md` | Before first code review      | Code style, naming conventions, architecture patterns, PR process |
 | `domain-glossary.md`  | During analysis phase         | Business domain terminology, entities, relationships              |
 | `handoff-log.md`      | Ongoing                       | Record of work handed off between agents or to humans             |
+| `ux-design-master.md` | After first UX Designer run   | Design tool choice (ASCII / Pencil / Figma), master file path/ID, and page index |
+| `signals/`            | Automatically by agents       | Sentinel files for inter-agent coordination and autonomous mode    |
 
 **Tip:** Fill `PROJECT-CONTEXT.md` and `tech-stack.md` first. Other files populate based on these.
 
@@ -938,48 +943,55 @@ Reply `refine: [feedback]` to iterate with the same agent, or `next` to advance.
 
 #### 🗂 Phase 1 — Plan (Turns 1–10)
 
-**Turn 1 — Business Analyst:**
-
-```
-/business-analyst
-Review .bmad/PROJECT-CONTEXT.md. Identify stakeholders, constraints, and risks.
-Generate a project brief and save to docs/project-brief.md.
-[Your task description here]
-```
-
-**Turn 2 — Product Owner:**
+**Turn 1 — Product Owner:**
 
 ```
 /product-owner
-Read docs/project-brief.md.
-Create a PRD with prioritized user stories. Save to docs/prd.md and docs/stories/.
+Review .bmad/PROJECT-CONTEXT.md. Elicit business requirements from stakeholders.
+Create the BRD capturing business goals, constraints, regulatory requirements, and data classification.
+Translate BRD into a PRD with features, user personas, MVP scope, and success criteria.
+Save BRD to docs/brd.md and PRD to docs/prd.md.
+[Your project description here]
 ```
 
-**Turn 3 — Solution Architect:**
+**Turn 2 — Business Analyst:**
 
 ```
-/solution-architect
-Read docs/prd.md and .bmad/tech-stack.md.
-Propose system architecture, service boundaries, API contracts, and data models.
-Record every architectural decision as an ADR in docs/architecture/adr/.
-Save overall architecture to docs/architecture/solution-architecture.md.
+/business-analyst
+Read docs/brd.md and docs/prd.md.
+Perform deep requirements analysis: stakeholder analysis, gap analysis, business rules documentation,
+feasibility assessment, use cases, and user stories with Given-When-Then acceptance criteria.
+Save to docs/requirements/requirements-analysis.md. Save stories to docs/stories/.
+```
+
+**Turn 3 — Enterprise Architect:**
+
+```
+/enterprise-architect
+Read docs/requirements/requirements-analysis.md.
+Define enterprise architecture: cloud infrastructure topology, multi-environment deployment,
+compliance controls, disaster recovery, CI/CD pipeline, and observability.
+Save to docs/architecture/enterprise-architecture.md.
 ```
 
 **Turn 4 — UX Designer:**
 
 ```
 /ux-designer
-Read docs/prd.md and docs/architecture/solution-architecture.md.
-Create wireframes, user journeys, and a design system. Save to docs/ux/.
+Read docs/requirements/requirements-analysis.md and docs/brd.md.
+Select wireframe mode (ASCII / Pencil / Figma) — you will be prompted to choose.
+Create personas, user journeys, information architecture, wireframes, and a design system.
+Save to docs/ux/ and record design tool choice in .bmad/ux-design-master.md.
 ```
 
-**Turn 5 — Enterprise Architect:**
+**Turn 5 — Solution Architect:**
 
 ```
-/enterprise-architect
-Read docs/architecture/solution-architecture.md and all ADRs in docs/architecture/adr/.
-Propose cloud infrastructure, CI/CD pipeline, monitoring, and compliance controls.
-Save to docs/architecture/enterprise-architecture.md.
+/solution-architect
+Read docs/architecture/enterprise-architecture.md and docs/ux/.
+Design detailed solution architecture within EA boundaries: service decomposition,
+API contracts, data models, ADRs, integration patterns, and technology justification.
+Save to docs/architecture/solution-architecture.md and ADRs to docs/architecture/adr/.
 ```
 
 **Turn 6 — Tech Lead (sequencing):**
@@ -987,14 +999,14 @@ Save to docs/architecture/enterprise-architecture.md.
 ```
 /tech-lead
 Review all planning artifacts:
-- docs/project-brief.md, docs/prd.md
-- docs/architecture/ (all ADRs, solution-architecture.md, enterprise-architecture.md)
-- docs/stories/ (all epics), docs/ux/
+- docs/brd.md, docs/prd.md, docs/requirements/requirements-analysis.md
+- docs/architecture/ (enterprise-architecture.md, solution-architecture.md, all ADRs)
+- docs/stories/, docs/ux/
 
 Sequence stories into sprint batches. Identify:
 1. Which stories each engineer must implement first (dependencies)
 2. Any missing specs or unresolved ADRs that would block implementation
-3. Acceptance criteria gaps that need clarification before coding starts
+3. Acceptance criteria gaps needing clarification before coding starts
 Save sprint plan to docs/architecture/sprint-plan.md.
 ```
 
@@ -1002,7 +1014,7 @@ Save sprint plan to docs/architecture/sprint-plan.md.
 
 ```
 /backend-engineer
-Read docs/architecture/sprint-plan.md and docs/architecture/adr/.
+Read docs/architecture/sprint-plan.md, docs/architecture/solution-architecture.md, and docs/architecture/adr/.
 Write the backend implementation spec:
 - API endpoint contracts (routes, request/response schemas)
 - Data access layer patterns and repository interfaces
@@ -1015,7 +1027,7 @@ Do NOT write application code yet — output spec only.
 
 ```
 /frontend-engineer
-Read docs/ux/, docs/architecture/sprint-plan.md, and docs/architecture/backend-implementation-spec.md.
+Read docs/ux/ (wireframes and design system from .bmad/ux-design-master.md if Pencil/Figma), docs/architecture/sprint-plan.md, and docs/architecture/backend-implementation-spec.md.
 Write the frontend implementation spec:
 - Component tree and responsibility breakdown
 - State management approach
@@ -1266,42 +1278,50 @@ The review gate is built into each agent's skill.
 
 #### 🗂 Phase 1 — Plan
 
-**Turn 1 — Business Analyst:**
+**Turn 1 — Product Owner:**
 
 ```
-As a business analyst, review .bmad/PROJECT-CONTEXT.md. Identify stakeholders,
-constraints, and risks. Generate a project brief and save to docs/project-brief.md.
-[Your task description here]
+As product owner, review .bmad/PROJECT-CONTEXT.md. Elicit business requirements.
+Create the BRD (business goals, constraints, regulatory requirements, data classification)
+and PRD (features, personas, MVP scope, success criteria, epics).
+Save to docs/brd.md and docs/prd.md.
+[Your project description here]
 ```
 
-**Turn 2 — Product Owner:**
+**Turn 2 — Business Analyst:**
 
 ```
-As product owner, read docs/project-brief.md. Create a PRD with prioritized user stories.
-Save to docs/prd.md and docs/stories/.
+As business analyst, read docs/brd.md and docs/prd.md.
+Perform deep requirements analysis: stakeholder analysis, gap analysis, business rules,
+feasibility, use cases, and user stories with Given-When-Then acceptance criteria.
+Save to docs/requirements/requirements-analysis.md and docs/stories/.
 ```
 
-**Turn 3 — Solution Architect:**
+**Turn 3 — Enterprise Architect:**
 
 ```
-As solution architect, read docs/prd.md and .bmad/tech-stack.md. Propose system
-architecture, service boundaries, API contracts, and data models. Record all decisions
-as ADRs in docs/architecture/adr/. Save to docs/architecture/solution-architecture.md.
+As enterprise architect, read docs/requirements/requirements-analysis.md.
+Define enterprise architecture: cloud infrastructure, multi-environment deployment,
+compliance controls, DR strategy, CI/CD pipeline, and observability.
+Save to docs/architecture/enterprise-architecture.md.
 ```
 
 **Turn 4 — UX Designer:**
 
 ```
-As UX designer, read docs/prd.md and docs/architecture/solution-architecture.md.
-Create wireframes, user journeys, and a design system. Save to docs/ux/.
+As UX designer, read docs/requirements/requirements-analysis.md.
+Select wireframe mode when prompted (ASCII / Pencil / Figma).
+Create personas, user journeys, information architecture, wireframes, and design system.
+Record tool choice in .bmad/ux-design-master.md. Save to docs/ux/.
 ```
 
-**Turn 5 — Enterprise Architect:**
+**Turn 5 — Solution Architect:**
 
 ```
-As enterprise architect, read docs/architecture/solution-architecture.md and all ADRs.
-Propose cloud infrastructure, CI/CD pipeline, monitoring, and compliance controls.
-Save to docs/architecture/enterprise-architecture.md.
+As solution architect, read docs/architecture/enterprise-architecture.md and docs/ux/.
+Design detailed solution within EA boundaries: service decomposition, API contracts,
+data models, ADRs, and integration patterns.
+Save to docs/architecture/solution-architecture.md and docs/architecture/adr/.
 ```
 
 **Turn 6 — Tech Lead (sequencing):**
@@ -1476,37 +1496,47 @@ Only advance to the next wave when ALL agents in the current wave reply 'next'.
 
 ---
 
-## Wave 1 — Business Analyst
-Review .bmad/PROJECT-CONTEXT.md. Identify stakeholders, constraints, risks, and success
-criteria. Generate a project brief. Save to docs/project-brief.md.
+## Wave 1 — Product Owner
+Review .bmad/PROJECT-CONTEXT.md. Elicit business requirements from stakeholders.
+Create the BRD (business goals, constraints, regulatory requirements, data classification)
+and the PRD (features, user personas, MVP scope, success criteria, epics).
+Save BRD to docs/brd.md and PRD to docs/prd.md.
 [Describe the project goal here]
 
-## Wave 2 — Product Owner
-Read docs/project-brief.md. Create a full PRD: vision, epics, prioritized user stories
-with acceptance criteria. Save to docs/prd.md and individual stories to docs/stories/.
+## Wave 2 — Business Analyst
+Read docs/brd.md and docs/prd.md.
+Perform deep requirements analysis: stakeholder analysis, gap analysis, business rules,
+feasibility, use cases, and user stories with Given-When-Then acceptance criteria.
+Save to docs/requirements/requirements-analysis.md. Save stories to docs/stories/.
 
-## Wave 3 — Solution Architect
-Read docs/prd.md and .bmad/tech-stack.md. Propose system architecture, service
-boundaries, API contracts, and data models. Record all decisions as ADRs in
-docs/architecture/adr/. Save to docs/architecture/solution-architecture.md.
-
-## Wave 4 ∥ — Enterprise Architect + UX Designer (parallel)
-**Spawn both agents simultaneously — they have no inter-dependencies.**
+## Wave 3 ∥ — Enterprise Architect + UX Designer (parallel)
+**Spawn both agents simultaneously — both read docs/requirements/requirements-analysis.md independently.**
 
 ### Enterprise Architect
-Read docs/architecture/solution-architecture.md and all ADRs. Define cloud
-infrastructure, CI/CD pipeline, observability, and compliance controls.
+Read docs/requirements/requirements-analysis.md.
+Define enterprise architecture: cloud infrastructure topology, multi-environment deployment,
+compliance controls, disaster recovery, CI/CD pipeline, and observability.
 Save to docs/architecture/enterprise-architecture.md.
 
 ### UX Designer
-Read docs/prd.md and docs/architecture/solution-architecture.md. Create wireframes,
-user journeys, and a component design system. Save to docs/ux/.
+Read docs/requirements/requirements-analysis.md.
+Select wireframe mode when prompted (ASCII / Pencil / Figma — Pencil is default if connected).
+Create personas, user journeys, information architecture, wireframes, and a design system.
+Record design tool choice in .bmad/ux-design-master.md. Save design artifacts to docs/ux/.
+
+## Wave 4 — Solution Architect
+**Wait for BOTH Enterprise Architect and UX Designer to complete.**
+Read docs/architecture/enterprise-architecture.md and docs/ux/ (design system, wireframes).
+Design the detailed technical solution within EA boundaries: service decomposition,
+API contracts, data models, ADRs, and integration patterns.
+Save to docs/architecture/solution-architecture.md and ADRs to docs/architecture/adr/.
 
 ## Wave 5 — Tech Lead (sequencing)
-**Wait for BOTH Enterprise Architect and UX Designer to complete.**
-Review all planning artifacts. Sequence stories into sprint batches. For each sprint,
-list story assignments per engineer role (backend, frontend, mobile).
-Identify dependencies and spec gaps. Save to docs/architecture/sprint-plan.md.
+**Wait for Solution Architect to complete.**
+Review all planning artifacts (brd.md, prd.md, requirements-analysis.md, enterprise-architecture.md,
+solution-architecture.md, all ADRs, docs/stories/, docs/ux/).
+Sequence stories into sprint batches. Identify dependencies and spec gaps.
+Save to docs/architecture/sprint-plan.md.
 
 ## Wave 6 ∥ — Backend + Frontend + Mobile Engineer (parallel, spec only — no code)
 **Spawn all three agents simultaneously — they read sprint-plan.md independently.**
@@ -1973,6 +2003,51 @@ bmad-sdlc-agents/
 
 ---
 
+## Design Tool Integration (Pencil / Figma)
+
+BMAD supports three wireframing modes, selected once per project by the UX Designer on first invocation.
+
+### Wireframe Modes
+
+| Mode | When to choose | Output |
+|---|---|---|
+| **ASCII / Text** | No design tool available, or speed over fidelity | Text wireframes in `docs/ux/wireframes/*.md` |
+| **Pencil** _(default if connected)_ | Pencil desktop app is installed and Pencil MCP is connected | Visual wireframes in a master `.pencil` file |
+| **Figma** | Figma MCP is connected | Visual wireframes in a master Figma file |
+
+The UX Designer **always asks the human** before doing any design work. The choice is recorded once in `.bmad/ux-design-master.md` — all subsequent invocations (revisions, new feature pages) reuse the same tool and master file without re-prompting.
+
+### Master File Principle
+
+One master file per project — not one file per feature. Every feature or epic adds a **new page or frame** to the same file. This means the entire team can open one file to see all UX work, past and present.
+
+`.bmad/ux-design-master.md` records:
+- Design tool choice
+- Path or file ID of the master file
+- Page/frame naming convention and page index
+
+### Read-Only Access for All Other Agents
+
+Every non-UX agent (PO, BA, EA, SA, TL, BE, FE, ME, TQE) has **read-only** access to the design tool via MCP:
+
+| Agent | Can read | Cannot modify |
+|---|---|---|
+| All 9 non-UX agents | `mcp__pencil__open_document`, `mcp__pencil__get_screenshot`, `mcp__pencil__batch_get`, `mcp__figma__get_figma_data`, + 9 other read-only Pencil tools | `mcp__pencil__batch_design`, `mcp__pencil__set_variables`, `mcp__pencil__replace_all_matching_properties` |
+
+Agents load `.bmad/ux-design-master.md` in **Project Context Loading step 6** and use it to navigate directly to the relevant page/frame for their work area — e.g. the Frontend Engineer opens the master Pencil file and reads only the page for the current sprint feature.
+
+> **Rule:** Only the UX Designer writes to the master design file. All other agents have read-only access and must never modify UX artifacts.
+
+### MCP Configuration
+
+Pencil and Figma MCP config files are included in `mcp-configs/global/`:
+- `mcp-configs/global/pencil.json` — Pencil desktop MCP
+- `mcp-configs/global/figma.json` — Figma MCP
+
+Merge the config for your chosen design tool into your AI tool's MCP settings. See `mcp-configs/README.md` for merge instructions.
+
+---
+
 ## Integration Guide
 
 ### How Agents Use Context
@@ -2082,17 +2157,17 @@ flowchart TD
 
     subgraph PLAN["📋 Plan Phase — 7 Waves"]
         subgraph W1["W1"]
-            BA["Business Analyst<br>📄 project-brief.md"]
+            PO["Product Owner<br>📄 brd.md + prd.md"]
         end
         subgraph W2["W2"]
-            PO["Product Owner<br>📄 prd.md + stories/"]
+            BA["Business Analyst<br>📄 requirements-analysis.md + stories/"]
         end
-        subgraph W3["W3"]
-            SA["Solution Architect<br>📄 solution-architecture.md"]
-        end
-        subgraph W4["W4 ∥ parallel"]
+        subgraph W3["W3 ∥ parallel"]
             EA["Enterprise Architect<br>📄 enterprise-architecture.md"]
-            UX["UX Designer<br>📄 docs/ux/"]
+            UX["UX Designer<br>📄 docs/ux/ + ux-design-master.md"]
+        end
+        subgraph W4["W4"]
+            SA["Solution Architect<br>📄 solution-architecture.md"]
         end
         subgraph W5["W5"]
             TL_PLAN["Tech Lead<br>📄 sprint-plan.md"]
@@ -2106,9 +2181,9 @@ flowchart TD
             TQE_STRAT["Tester & QE<br>📄 test-strategy.md"]
         end
 
-        BA --> PO --> SA
-        SA --> EA & UX
-        EA & UX --> TL_PLAN
+        PO --> BA
+        BA --> EA & UX
+        EA & UX --> SA --> TL_PLAN
         TL_PLAN --> BE_SPEC & FE_SPEC & ME_SPEC
         BE_SPEC & FE_SPEC & ME_SPEC --> TQE_STRAT
     end
@@ -2142,7 +2217,7 @@ flowchart TD
 
 ### ✨ Feature Request / Enhancement
 
-Skips BA and EA (project context already exists). Architecture agents run only if the feature touches service boundaries.
+PO defines feature scope, BA performs impact analysis, then SA and UX run in parallel (using existing EA enterprise architecture). No full EA wave needed since enterprise architecture is already established.
 
 ```mermaid
 flowchart TD
@@ -2387,5 +2462,5 @@ To contribute an agent or template, see the contribution guidelines in `CONTRIBU
 
 ---
 
-**Last updated:** 2026-03-27
-**BMAD Version:** 2.3 (Agent Rules + Parallel Execution Waves + Agent Intelligence + Mermaid Workflow Diagrams)
+**Last updated:** 2026-04-05
+**BMAD Version:** 2.4 (PO→BA→EA∥UX→SA→TL Flow + Responsibility Boundaries + Design Tool Integration + Read-Only Pencil/Figma MCP for All Agents)

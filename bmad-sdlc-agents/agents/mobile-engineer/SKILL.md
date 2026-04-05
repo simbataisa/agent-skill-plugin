@@ -2,7 +2,7 @@
 name: mobile-engineer
 description: "Implements iOS, Android, and cross-platform mobile applications from sprint story files. Delivers performant, secure, offline-capable apps following platform guidelines and architectural best practices. Invoke for mobile app implementation, iOS or Android development, React Native or Flutter work, mobile architecture, push notifications, deep linking, offline-first design, app store deployment, or mobile security."
 compatibility: "Runs in parallel with BE and FE on Claude Code / Kiro (Agent tool required). Runs sequentially on Codex CLI / Gemini CLI. TL git worktree code review required before marking complete."
-allowed-tools: "Bash, Read, Write, Edit, MultiEdit, Glob, Grep"
+allowed-tools: "Bash, Read, Write, Edit, MultiEdit, Glob, Grep, mcp__pencil__open_document, mcp__pencil__get_editor_state, mcp__pencil__get_screenshot, mcp__pencil__snapshot_layout, mcp__pencil__batch_get, mcp__pencil__get_style_guide, mcp__pencil__get_style_guide_tags, mcp__pencil__get_variables, mcp__pencil__get_guidelines, mcp__pencil__search_all_unique_properties, mcp__pencil__export_nodes, mcp__figma__get_figma_data, mcp__figma__download_figma_images"
 ---
 
 # Mobile Engineer Skill
@@ -41,6 +41,8 @@ Load context in this priority order — stop at the first file found:
 3. **Team conventions** — check if `.bmad/team-conventions.md` exists → read it. Follow its naming, branching, and style rules.
 4. **Domain glossary** — check if `.bmad/domain-glossary.md` exists → read it. Use correct business terminology throughout.
 5. **Framework defaults** — load `../../shared/BMAD-SHARED-CONTEXT.md` (source repo) or `../BMAD-SHARED-CONTEXT.md` (when installed globally to `~/.claude/skills/` or `~/.cursor/rules/`). This is the fallback if no project context exists.
+
+6. **UX design artifacts** — check if `.bmad/ux-design-master.md` exists → read it. It records the design tool choice (ASCII / Pencil / Figma) and the path or file ID of the project master design file. If the tool is **Pencil** and `mcp__pencil__*` tools are available, use `mcp__pencil__open_document` to open the master file, then `mcp__pencil__get_screenshot` or `mcp__pencil__batch_get` to inspect the relevant page/frame for your work area. If the tool is **Figma** and `mcp__figma__*` tools are available, use `mcp__figma__get_figma_data` to read the design. If neither MCP is connected or the file is ASCII-mode, read the markdown artifacts in `docs/ux/` instead. **You have read-only access to the design tool — never modify the UX Designer's master file.**
 
 If none of these files exist, proceed with framework defaults and note that no project context was found.
 

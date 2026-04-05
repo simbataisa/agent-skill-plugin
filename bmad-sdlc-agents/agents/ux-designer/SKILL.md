@@ -103,17 +103,58 @@ Read `BMAD-SHARED-CONTEXT.md` in the parent directory for the overall BMAD workf
 
 ---
 
-## Design Tool Detection
+## Wireframe Mode Selection
 
-**At the start of every design task**, check which design tool MCP is connected and load the appropriate reference:
+**Do this immediately after Autonomous Task Detection — before creating any design artifact.**
 
-| If available | Action |
+### Step 1 — Check for an existing design master reference
+
+Check if `.bmad/ux-design-master.md` exists:
+- **Exists** → Read it. It records the design tool choice and master file reference for this project. Use the recorded tool — do not re-prompt the human. Skip to **Design Tool Setup** below.
+- **Does not exist** → This is the first UX design session for this project. Proceed to Step 2.
+
+### Step 2 — Prompt the human (first session only)
+
+Ask the human the following question before doing any design work:
+
+> **Which wireframe format should I use for this project?**
+>
+> **A) ASCII / Text** — Simple text-based wireframes embedded in markdown files. No design tool required. Fast to produce, portable, but limited visual fidelity. Best for teams without Pencil or Figma access, or when speed matters more than fidelity.
+>
+> **B) Pencil — recommended** _(default if Pencil MCP is connected)_ — Full visual wireframes in the Pencil desktop app. I will create a **master Pencil file** for this project with one page per feature/epic. All UX work lives in a single source of truth that every agent can open read-only.
+>
+> **C) Figma** _(if Figma MCP is connected)_ — Full visual wireframes in Figma. I will create or use a **master Figma file** for this project with one page/section per feature/epic. Same single-source-of-truth principle.
+>
+> _Default if no answer is given: **B (Pencil)** if `mcp__pencil__get_editor_state` responds, otherwise **A (ASCII)**._
+
+### Step 3 — Record the choice
+
+Once the human responds (or the default is applied), create `.bmad/ux-design-master.md` with this structure:
+
+```markdown
+# UX Design Master Reference
+**Design Tool:** [ASCII | Pencil | Figma]
+**Master File:** [path to .pencil file | Figma file ID | N/A for ASCII]
+**Page/Frame Convention:** One page per epic or feature — name format: `[EPIC-ID] Feature Name`
+**Created:** [YYYY-MM-DD]
+**Last Updated:** [YYYY-MM-DD]
+
+## Page Index
+| Page / Frame        | Feature / Epic         | Status         |
+|---------------------|------------------------|----------------|
+| Overview            | Information Architecture | ✅ Done        |
+| [EPIC-ID] [Feature] | [Short description]    | ⏳ In Progress |
+```
+
+> **Master file principle:** ONE master file per project — not one file per feature. Every new feature or epic adds a new page or frame to the same file. This means the entire team — Enterprise Architect, Solution Architect, Tech Lead, Frontend, Mobile, Tester-QE — can open one file to see all UX work, past and current. For feature requests and enhancements, always update the existing master file (add a page) rather than creating a new file.
+
+### Design Tool Setup
+
+| Mode | What to do |
 |---|---|
-| `mcp__pencil__*` tools | Read [`references/pencil-mcp-integration.md`](references/pencil-mcp-integration.md) — Pencil desktop is connected; use it for all wireframing and design work |
-| `mcp__figma__*` tools | Read [`references/figma-mcp-integration.md`](references/figma-mcp-integration.md) — Figma MCP is connected; read frames and extract design tokens from Figma |
-| Neither | Fall back to HTML/SVG wireframes and markdown specs using the `templates/` files |
-
-Always prefer a connected design tool over static output. Check for `mcp__pencil__get_editor_state` first — if it responds, Pencil is live.
+| **ASCII** | Produce wireframes as fenced code blocks inside markdown files in `docs/ux/wireframes/`. No MCP needed. Load the standard markdown `templates/` for all other UX artifacts. |
+| **Pencil** | Read [`references/pencil-mcp-integration.md`](references/pencil-mcp-integration.md) for full usage guide. Use `mcp__pencil__open_document` to open the master file, `mcp__pencil__batch_design` to create/update frames, `mcp__pencil__get_screenshot` to verify output. |
+| **Figma** | Read [`references/figma-mcp-integration.md`](references/figma-mcp-integration.md) for full usage guide. Use `mcp__figma__get_figma_data` to read existing frames; follow the integration guide for creating new frames or pages. |
 
 ## Design Preferences Elicitation
 
@@ -160,7 +201,7 @@ Load the appropriate template from `templates/` when producing each deliverable:
 
 ### When Starting a New Project
 
-0. **Elicit design preferences** — Present the Design Preferences questions to the user. Confirm choices or apply defaults. Generate `tailwind.config.ts` + `globals.css` immediately. If Pencil MCP is connected, apply tokens to canvas.
+0. **Select wireframe mode + elicit design preferences** — Follow the **Wireframe Mode Selection** protocol above: check for `.bmad/ux-design-master.md`, prompt the human for tool choice if absent, record the decision. Then present the Design Preferences questions to confirm colours, typography, and component library. Generate `tailwind.config.ts` + `globals.css` after design preferences are confirmed. If Pencil is the chosen tool, open or create the master file and apply design tokens to canvas.
 1. **Read inputs** — Load `docs/prd.md` and `docs/project-brief.md`. Understand who the users are, what they need, and what the business constraints are.
 2. **Synthesize user understanding** — Create personas from PRD user descriptions. If user research data exists, synthesize it first.
 3. **Map journeys** — For each persona, map their critical workflows end-to-end.
