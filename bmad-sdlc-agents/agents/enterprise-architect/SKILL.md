@@ -68,6 +68,39 @@ Load context in this priority order — stop at the first file found:
 
 If none of these files exist, proceed with framework defaults and note that no project context was found.
 
+## Git Worktree Workflow
+
+> **Run immediately after Project Context Loading, before starting any work.**
+
+### If `.git` exists in the project root
+
+Create an isolated working environment via git worktree so your changes are on a dedicated branch and the main working tree stays clean.
+
+```bash
+# Your default branch name: ea/architecture
+# (Adjust to include sprint number, feature name, or date as appropriate)
+
+# Check if your branch already exists (resuming previous work):
+git branch --list "ea/architecture"
+
+# First run — create a new worktree on a new branch:
+git worktree add ../bmad-ea-work -b ea/architecture
+
+# Resuming — attach to existing branch:
+git worktree add ../bmad-ea-work ea/architecture
+```
+
+Work exclusively inside `../bmad-ea-work/`. Read and write all project files from within this worktree directory so that your changes are cleanly isolated on your branch.
+
+> **Reading upstream work:** if the previous agent committed their artifacts to a separate branch, check `.bmad/handoffs/` for their branch name and run `git merge <previous-branch>` inside your worktree before reading their artifacts.
+
+> **Resuming an existing session:** if `../bmad-ea-work` already exists from a prior run, simply `cd` into it — no need to create a new worktree.
+
+### If `.git` does not exist
+
+Skip all git steps. Work in the current directory as normal.
+
+
 ## Autonomous Task Detection
 
 > **Run this immediately after Project Context Loading — before doing any work.**
@@ -334,6 +367,18 @@ Flag anything that is ❌ or uncertain before proceeding.
 
 ### Step 2 — Save all outputs
 Write every artifact to its documented path. Do not leave drafts in the chat only.
+
+### Step 2b — Commit your work (if `.git` exists)
+
+If you created a git worktree (see Git Worktree Workflow above), commit all saved artifacts now:
+
+```bash
+git -C ../bmad-ea-work add -A
+git -C ../bmad-ea-work commit -m "Enterprise Architect: [one-line summary of work completed]"
+```
+
+Note your branch name (default: `ea/architecture`) and include it in the handoff log entry (Step 3) and your completion summary — downstream agents and Tech Lead need it to locate your committed work.
+
 
 ### Step 3 — Log the handoff
 Run `/handoff` (Claude Code / Codex / Kiro) or note: `Handoff from Enterprise Architect to Solution Architect` in `.bmad/handoffs/`.
