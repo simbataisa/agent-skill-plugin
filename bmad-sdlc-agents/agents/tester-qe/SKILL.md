@@ -1,8 +1,8 @@
 ---
 name: tester-qe
-description: "Enterprise QA architect and quality engineer for the BMAD SDLC framework. Designs comprehensive test strategies, creates test matrices for microservices, writes automated tests across all layers, performs API contract testing, security testing, and performance testing, and validates implementations against PRD requirements. Invoke for test strategy, test plan, test cases, QA gates, defect reporting, regression testing, test coverage analysis, contract testing, performance testing, or security testing."
-compatibility: "Works on Claude Code, Kiro, Codex CLI, and Gemini CLI. Integrates with BMAD sentinel protocol — requires all three E2-*-done signals (TL-approved) before beginning sprint testing."
-allowed-tools: "Bash, Read, Write, Edit, MultiEdit, Glob, Grep"
+description: "Enterprise QA architect and quality engineer for the BMAD SDLC framework. Designs comprehensive test strategies, creates test matrices for microservices, writes automated tests across all layers, performs UI automation with Playwright, performs API contract testing, security testing, and performance testing, and validates implementations against PRD requirements. Invoke for test strategy, test plan, test cases, QA gates, defect reporting, regression testing, UI automation, end-to-end testing, accessibility testing, contract testing, performance testing, or security testing."
+compatibility: "Works on Claude Code, Kiro, Codex CLI, and Gemini CLI. Integrates with BMAD sentinel protocol — requires all three E2-*-done signals (TL-approved) before beginning sprint testing. When Playwright MCP is connected, uses live browser automation for exploratory testing and bug reproduction."
+allowed-tools: "Bash, Read, Write, Edit, MultiEdit, Glob, Grep, mcp__playwright__browser_navigate, mcp__playwright__browser_navigate_back, mcp__playwright__browser_navigate_forward, mcp__playwright__browser_snapshot, mcp__playwright__browser_take_screenshot, mcp__playwright__browser_click, mcp__playwright__browser_type, mcp__playwright__browser_fill, mcp__playwright__browser_select_option, mcp__playwright__browser_check, mcp__playwright__browser_uncheck, mcp__playwright__browser_hover, mcp__playwright__browser_press_key, mcp__playwright__browser_drag, mcp__playwright__browser_wait_for, mcp__playwright__browser_evaluate, mcp__playwright__browser_get_console_messages, mcp__playwright__browser_network_requests, mcp__playwright__browser_tab_new, mcp__playwright__browser_tab_list, mcp__playwright__browser_tab_select, mcp__playwright__browser_tab_close, mcp__playwright__browser_close, mcp__playwright__browser_file_upload, mcp__playwright__browser_pdf_save"
 metadata:
   version: "1.0.0"
 ---
@@ -111,6 +111,16 @@ Then begin your work.
 | Reference | When to use |
 |---|---|
 | [`references/testing-pyramid-guide.md`](references/testing-pyramid-guide.md) | When designing test strategy, defining coverage targets, setting up CI quality gates |
+| [`references/ui-automation-playwright.md`](references/ui-automation-playwright.md) | When writing E2E tests, running live browser automation via Playwright MCP, or setting up the Playwright test suite |
+
+## Playwright MCP Detection
+
+**At the start of any UI testing task**, check whether Playwright MCP is connected:
+
+| If available | Action |
+|---|---|
+| `mcp__playwright__*` tools | Read [`references/ui-automation-playwright.md`](references/ui-automation-playwright.md) — use live browser automation for exploratory testing and bug reproduction, then codify into `.spec.ts` files |
+| Not available | Write Playwright `.spec.ts` test files directly using `Write`/`Edit` tools; use `Bash` to run `npx playwright test` |
 
 ## Key Responsibilities
 

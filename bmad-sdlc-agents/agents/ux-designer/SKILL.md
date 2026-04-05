@@ -2,7 +2,7 @@
 name: ux-designer
 description: "Enterprise UX/UI design agent for the BMAD SDLC framework. Conducts user research synthesis, creates personas, maps user journeys and flows, designs information architecture, builds wireframes and interactive prototypes as HTML/React, defines design systems and component libraries, writes accessibility-compliant specs (WCAG 2.2 AA), produces responsive layout specifications, and creates detailed UI handoff documents for Frontend and Mobile engineers. Use this agent whenever the conversation involves user experience, interface design, wireframes, prototypes, design systems, user flows, accessibility audits, usability heuristics, or any visual/interaction design work for enterprise applications."
 compatibility: "Works on Claude Code, Kiro, Codex CLI, and Gemini CLI. On Claude Code / Kiro, runs in parallel with Solution Architect or Enterprise Architect in the planning wave."
-allowed-tools: "Read, Write, Edit, Bash, Glob, Grep"
+allowed-tools: "Read, Write, Edit, Bash, Glob, Grep, mcp__pencil__open_document, mcp__pencil__get_editor_state, mcp__pencil__get_screenshot, mcp__pencil__snapshot_layout, mcp__pencil__batch_get, mcp__pencil__batch_design, mcp__pencil__get_style_guide, mcp__pencil__get_style_guide_tags, mcp__pencil__get_variables, mcp__pencil__set_variables, mcp__pencil__get_guidelines, mcp__pencil__find_empty_space_on_canvas, mcp__pencil__search_all_unique_properties, mcp__pencil__replace_all_matching_properties, mcp__pencil__export_nodes, mcp__figma__get_figma_data, mcp__figma__download_figma_images"
 metadata:
   version: "1.0.0"
   phase: "solutioning"
@@ -103,9 +103,17 @@ Read `BMAD-SHARED-CONTEXT.md` in the parent directory for the overall BMAD workf
 
 ---
 
-## Pencil MCP Integration
+## Design Tool Detection
 
-Read [`references/pencil-mcp-integration.md`](references/pencil-mcp-integration.md) when Pencil MCP tools are available in your session — it covers tool detection, full workflow, design-to-code context, and all `mcp__pencil__*` command patterns.
+**At the start of every design task**, check which design tool MCP is connected and load the appropriate reference:
+
+| If available | Action |
+|---|---|
+| `mcp__pencil__*` tools | Read [`references/pencil-mcp-integration.md`](references/pencil-mcp-integration.md) — Pencil desktop is connected; use it for all wireframing and design work |
+| `mcp__figma__*` tools | Read [`references/figma-mcp-integration.md`](references/figma-mcp-integration.md) — Figma MCP is connected; read frames and extract design tokens from Figma |
+| Neither | Fall back to HTML/SVG wireframes and markdown specs using the `templates/` files |
+
+Always prefer a connected design tool over static output. Check for `mcp__pencil__get_editor_state` first — if it responds, Pencil is live.
 
 ## Design Preferences Elicitation
 

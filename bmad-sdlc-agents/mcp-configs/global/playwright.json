@@ -1,0 +1,13 @@
+{
+  "_comment": "Playwright MCP server (Microsoft official). Provides browser automation for UI testing — navigate, click, type, screenshot, accessibility snapshots. Used by Tester-QE for end-to-end and visual regression tests. Requires Node.js >= 18.",
+  "_preferred_install": "Install via the official Claude plugin marketplace — search 'playwright' in Plugins > Discover. This is the recommended method and handles updates automatically.",
+  "_manual_setup": "If not using the Claude plugin, merge this config into your tool's MCP settings. Requires browsers: run 'npx playwright install chromium' first. Remove --headless for headed/visual debugging.",
+  "_browser_install": "REQUIRED before first use: run 'npx playwright install chromium' in your terminal. Browsers install to ~/Library/Caches/ms-playwright (macOS) or ~/.cache/ms-playwright (Linux).",
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp", "--headless"],
+      "env": {}
+    }
+  }
+}

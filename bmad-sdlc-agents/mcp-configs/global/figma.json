@@ -1,0 +1,13 @@
+{
+  "_comment": "Figma MCP server. Requires a Figma Personal Access Token with File content (Read) and Dev resources (Read/Write) scopes. Used by UX Designer for design-to-code workflows. Remote server — no local install needed.",
+  "_setup": "1. Figma → Account Settings → Personal Access Tokens → Generate new token. 2. Set FIGMA_API_KEY env var or paste token in the config below.",
+  "mcpServers": {
+    "figma": {
+      "command": "npx",
+      "args": ["-y", "@figma/mcp-server-figma", "--figma-api-key", "${FIGMA_API_KEY}"],
+      "env": {
+        "FIGMA_API_KEY": "YOUR_FIGMA_PERSONAL_ACCESS_TOKEN"
+      }
+    }
+  }
+}

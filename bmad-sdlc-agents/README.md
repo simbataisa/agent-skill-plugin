@@ -8,18 +8,18 @@ Install the global layer once across all tools, then scaffold `.bmad/` context f
 
 ## Agent Team
 
-| Agent                    | Skill File                             | BMAD Phase     | Role                                                     |
-| ------------------------ | -------------------------------------- | -------------- | -------------------------------------------------------- |
-| **Business Analyst**     | `agents/business-analyst/SKILL.md`     | Analysis       | Problem exploration, stakeholder analysis, project brief |
-| **Product Owner**        | `agents/product-owner/SKILL.md`        | Planning       | PRD, backlog prioritization, artifact alignment          |
-| **Solution Architect**   | `agents/solution-architect/SKILL.md`   | Solutioning    | Service decomposition, API contracts, data models, ADRs  |
-| **Enterprise Architect** | `agents/enterprise-architect/SKILL.md` | Solutioning    | Cloud infra, compliance, observability, CI/CD, FinOps    |
-| **UX/UI Designer**       | `agents/ux-designer/SKILL.md`          | Solutioning    | Personas, journeys, wireframes, design system, a11y      |
-| **Tech Lead**            | `agents/tech-lead/SKILL.md`            | All Phases     | Orchestration, code review, risk, release readiness      |
-| **Tester & QE**          | `agents/tester-qe/SKILL.md`            | All Phases     | Test strategy, quality gates, security testing           |
-| **Backend Engineer**     | `agents/backend-engineer/SKILL.md`     | Implementation | APIs, data layers, event-driven services                 |
-| **Frontend Engineer**    | `agents/frontend-engineer/SKILL.md`    | Implementation | React/TypeScript, state management, a11y                 |
-| **Mobile Engineer**      | `agents/mobile-engineer/SKILL.md`      | Implementation | iOS/Android, native APIs, mobile architecture            |
+| Agent                    | Skill File                             | BMAD Phase     | Role                                                                     |
+| ------------------------ | -------------------------------------- | -------------- | ------------------------------------------------------------------------ |
+| **Product Owner**        | `agents/product-owner/SKILL.md`        | Analysis       | Voice of the Business — BRD, high-level PRD, MVP scope (runs first)      |
+| **Business Analyst**     | `agents/business-analyst/SKILL.md`     | Analysis       | Requirements analyst — deep-dives BRD/PRD, produces requirements analysis |
+| **Enterprise Architect** | `agents/enterprise-architect/SKILL.md` | Solutioning    | High-level enterprise arch BEFORE SA — cloud infra, compliance, CI/CD    |
+| **UX/UI Designer**       | `agents/ux-designer/SKILL.md`          | Solutioning    | Personas, journeys, wireframes, design system, a11y (parallel with EA)   |
+| **Solution Architect**   | `agents/solution-architect/SKILL.md`   | Solutioning    | Detailed solution design using EA + UX outputs — APIs, data models, ADRs |
+| **Tech Lead**            | `agents/tech-lead/SKILL.md`            | All Phases     | Orchestration, sprint planning, code review, risk, release readiness      |
+| **Tester & QE**          | `agents/tester-qe/SKILL.md`            | All Phases     | Test strategy, quality gates, security testing, UI automation             |
+| **Backend Engineer**     | `agents/backend-engineer/SKILL.md`     | Implementation | APIs, data layers, event-driven services                                  |
+| **Frontend Engineer**    | `agents/frontend-engineer/SKILL.md`    | Implementation | React/TypeScript, state management, a11y                                  |
+| **Mobile Engineer**      | `agents/mobile-engineer/SKILL.md`      | Implementation | iOS/Android, native APIs, mobile architecture                             |
 
 ---
 
@@ -112,19 +112,19 @@ Each agent announces what it detected and what it will do — or reports `Blocke
 
 Every agent's Completion Protocol includes a `🚀` line in the review summary pointing to the next agent in the chain:
 
-| Agent                 | 🚀 Suggests                                                                                                  |
-| --------------------- | ------------------------------------------------------------------------------------------------------------ |
-| Business Analyst      | `/product-owner` (new project) or `/solution-architect` ∥ `/ux-designer` (feature) or `/tech-lead` (backlog) |
-| Product Owner         | `/solution-architect` (new project) or `/business-analyst` (feature/backlog — for impact analysis)           |
-| Solution Architect    | `/enterprise-architect` — infra, compliance, CI/CD design                                                    |
-| Enterprise Architect  | `/ux-designer` — wireframes, design system, accessibility                                                    |
-| UX Designer           | `/tech-lead` — sprint plan and implementation kickoff                                                        |
-| Tech Lead (Plan Mode) | Execute Prompt B (squad) or individual engineer commands                                                     |
-| Backend Engineer      | `/frontend-engineer` then `/tester-qe`                                                                       |
-| Frontend Engineer     | `/mobile-engineer` (if in scope) or `/tester-qe`                                                             |
-| Mobile Engineer       | `/tester-qe` — full sprint testing                                                                           |
-| Tester-QE (all pass)  | `/tech-lead` — release sign-off or next sprint kickoff                                                       |
-| Tester-QE (failures)  | Return to the failing engineer for fixes                                                                     |
+| Agent                 | 🚀 Suggests                                                                                          |
+| --------------------- | ---------------------------------------------------------------------------------------------------- |
+| Product Owner         | `/business-analyst` — deep requirements analysis of your BRD + PRD                                  |
+| Business Analyst      | `/enterprise-architect` ∥ `/ux-designer` in parallel — both read your requirements analysis         |
+| Enterprise Architect  | `/solution-architect` (after UX is also done)                                                        |
+| UX Designer           | `/solution-architect` (after EA is also done)                                                        |
+| Solution Architect    | `/tech-lead` — sprint plan from your solution architecture                                           |
+| Tech Lead (Plan Mode) | Execute Prompt B (squad) or individual engineer commands                                             |
+| Backend Engineer      | `/frontend-engineer` then `/tester-qe`                                                               |
+| Frontend Engineer     | `/mobile-engineer` (if in scope) or `/tester-qe`                                                     |
+| Mobile Engineer       | `/tester-qe` — full sprint testing                                                                   |
+| Tester-QE (all pass)  | `/tech-lead` — release sign-off or next sprint kickoff                                               |
+| Tester-QE (failures)  | Return to the failing engineer for fixes                                                              |
 
 You never need to remember the agent sequence — each agent hands you off to the next one.
 
@@ -147,15 +147,15 @@ Agents are organized into **waves** — all agents in the same wave run simultan
 
 **New Project — Plan Phase:**
 
-| Wave | Agents                                              | Depends On                      |
-| ---- | --------------------------------------------------- | ------------------------------- |
-| W1   | Business Analyst                                    | —                               |
-| W2   | Product Owner                                       | BA → `docs/project-brief.md`    |
-| W3   | Solution Architect                                  | PO → `docs/prd.md`              |
-| W4   | Enterprise Architect ∥ UX Designer                  | SA → `solution-architecture.md` |
-| W5   | Tech Lead                                           | EA + UX (both must complete)    |
-| W6   | Backend Eng ∥ Frontend Eng ∥ Mobile Eng (spec only) | TL → `sprint-plan.md`           |
-| W7   | Tester & QE (strategy only)                         | All three specs from W6         |
+| Wave | Agents                                              | Depends On                                                    |
+| ---- | --------------------------------------------------- | ------------------------------------------------------------- |
+| W1   | Product Owner                                       | —                                                             |
+| W2   | Business Analyst                                    | PO → `docs/brd.md` + `docs/prd.md`                           |
+| W3   | Enterprise Architect ∥ UX Designer                  | BA → `docs/requirements/requirements-analysis.md`             |
+| W4   | Solution Architect                                  | EA → `enterprise-architecture.md` AND UX → `docs/ux/`        |
+| W5   | Tech Lead                                           | SA → `solution-architecture.md`                               |
+| W6   | Backend Eng ∥ Frontend Eng ∥ Mobile Eng (spec only) | TL → `sprint-plan.md`                                         |
+| W7   | Tester & QE (strategy only)                         | All three specs from W6                                       |
 
 **Sprint Execution:**
 
@@ -167,13 +167,14 @@ Agents are organized into **waves** — all agents in the same wave run simultan
 
 **Feature — Plan Phase:**
 
-| Wave | Agents                             | Depends On                               |
-| ---- | ---------------------------------- | ---------------------------------------- |
-| W1   | Product Owner                      | —                                        |
-| W2   | Business Analyst (impact analysis) | PO → `docs/stories/[feature]/`           |
-| W3   | Solution Architect ∥ UX Designer   | BA → `docs/analysis/[feature]-impact.md` |
-| W4   | Tech Lead                          | SA + UX (both must complete)             |
-| W5   | Tester & QE                        | TL → `[feature]-plan.md`                 |
+| Wave | Agents                              | Depends On                                              |
+| ---- | ----------------------------------- | ------------------------------------------------------- |
+| W1   | Product Owner                       | —                                                       |
+| W2   | Business Analyst (impact analysis)  | PO → `docs/features/[feature-name]-brief.md`            |
+| W3   | Enterprise Architect ∥ UX Designer  | BA → `docs/analysis/[feature-name]-impact.md`           |
+| W4   | Solution Architect                  | EA + UX (both must complete)                            |
+| W5   | Tech Lead                           | SA → updated `solution-architecture.md`                 |
+| W6   | Tester & QE                         | TL → `[feature]-plan.md`                                |
 
 **How to spawn parallel waves:** In Claude Code, use the `Agent` tool to launch multiple sub-agents in a single message. In Cursor/Windsurf, open parallel composer windows. The key rule: **never start the next wave until ALL agents in the current wave have printed their ✅ summary.** Each agent knows its topology — if it finishes before a parallel peer, it reports completion and notes which peer to wait for.
 
@@ -256,11 +257,11 @@ All inter-agent coordination uses files in `.bmad/signals/`. No direct agent-to-
 
 | File | Written By | Meaning |
 |------|-----------|---------|
-| `.bmad/signals/ba-done` | Business Analyst | BA artifacts complete; PO can proceed |
-| `.bmad/signals/po-done` | Product Owner | PRD complete; SA can proceed |
-| `.bmad/signals/sa-done` | Solution Architect | Architecture complete; EA/UX can proceed |
-| `.bmad/signals/ea-done` | Enterprise Architect | Infra/compliance design complete |
-| `.bmad/signals/ux-done` | UX Designer | UX specs complete |
+| `.bmad/signals/po-done` | Product Owner | BRD + PRD complete; BA can proceed |
+| `.bmad/signals/ba-done` | Business Analyst | Requirements analysis complete; EA + UX can proceed in parallel |
+| `.bmad/signals/ea-done` | Enterprise Architect | Enterprise architecture complete (converges with `ux-done` before SA starts) |
+| `.bmad/signals/ux-done` | UX Designer | UX specs complete (converges with `ea-done` before SA starts) |
+| `.bmad/signals/sa-done` | Solution Architect | Detailed solution architecture complete; TL can proceed |
 | `.bmad/signals/tl-plan-done` | Tech Lead | Sprint kickoff complete; engineers can proceed |
 
 **Execution phase sentinels (two-phase TL verification protocol):**
@@ -358,18 +359,18 @@ At the start of every conversation, read these files to understand this project:
 
 ## Available BMAD Agents (slash commands)
 
-| Command                 | Role                                           |
-| ----------------------- | ---------------------------------------------- |
-| `/business-analyst`     | Discovery, stakeholder analysis, project brief |
-| `/product-owner`        | PRD, backlog, user stories                     |
-| `/solution-architect`   | System design, APIs, ADRs                      |
-| `/enterprise-architect` | Cloud infra, compliance, CI/CD                 |
-| `/ux-designer`          | Wireframes, design system, accessibility       |
-| `/tech-lead`            | Orchestration, code review, risk               |
-| `/tester-qe`            | Test strategy, quality gates                   |
-| `/backend-engineer`     | APIs, services, data layers                    |
-| `/frontend-engineer`    | React/TypeScript, components, a11y             |
-| `/mobile-engineer`      | iOS/Android, native architecture               |
+| Command                 | Role                                                    |
+| ----------------------- | ------------------------------------------------------- |
+| `/product-owner`        | BRD, high-level PRD, MVP scope (first agent)            |
+| `/business-analyst`     | Requirements analysis from BRD/PRD (second agent)       |
+| `/enterprise-architect` | Enterprise arch — cloud infra, compliance, CI/CD        |
+| `/ux-designer`          | Wireframes, design system, accessibility (parallel EA)  |
+| `/solution-architect`   | Detailed solution design — APIs, data models, ADRs      |
+| `/tech-lead`            | Orchestration, sprint planning, code review, risk       |
+| `/tester-qe`            | Test strategy, quality gates, UI automation             |
+| `/backend-engineer`     | APIs, services, data layers                             |
+| `/frontend-engineer`    | React/TypeScript, components, a11y                      |
+| `/mobile-engineer`      | iOS/Android, native architecture                        |
 ```
 
 ### Cursor — `.cursor/rules/001-project-context.mdc`

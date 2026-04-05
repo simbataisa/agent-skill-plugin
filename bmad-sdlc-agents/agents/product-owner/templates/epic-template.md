@@ -1,6 +1,6 @@
 # Epic Template
 
-A comprehensive template for writing an epic in the BMAD method. Epics are large features aligned to business initiatives, broken into multiple user stories, and delivered across 1-3 sprints (or more for complex initiatives).
+A template for the Product Owner to define an Epic — a business-level capability grouping aligned to a business initiative. The PO owns the epic definition: problem statement, business value, scope boundaries, personas, and milestones. The **Business Analyst** then decomposes the epic into detailed User Stories with Acceptance Criteria (see `agents/business-analyst/templates/user-story-template.md`).
 
 ---
 
@@ -162,48 +162,39 @@ List the primary user personas this epic impacts.
 
 ---
 
-## User Stories
+## Story Inventory (BA Handoff)
 
-### Story List
-
-**All user stories required to complete this epic. Linked to backlog; prioritized by MVP phasing.**
+**The Product Owner defines story titles and priorities here. The Business Analyst authors the detailed story documents with Acceptance Criteria (see `docs/stories/` and `agents/business-analyst/templates/user-story-template.md`).**
 
 #### MVP Phase 1 (Critical Path)
 
-| Story ID | Title | Type | Priority | Estimate | Owner |
-|----------|-------|------|----------|----------|-------|
-| **US-1001** | Reduce checkout to 3 steps (consolidate address + shipping) | Story | P0 | 8 pts | Frontend |
-| **US-1002** | Auto-fill shipping address from user profile | Story | P0 | 5 pts | Frontend |
-| **US-1003** | Add progress indicator (Step X of 3) | Story | P0 | 3 pts | Frontend |
-| **US-1004** | Validate address fields in real-time (inline errors) | Story | P0 | 5 pts | Frontend |
-| **US-1005** | Create backend API endpoint for 3-step checkout | Story | P0 | 8 pts | Backend |
-| **US-1006** | Integrate with payment processor (Stripe v3) | Story | P0 | 13 pts | Backend |
-| **US-1007** | Order confirmation page with tracking | Story | P0 | 5 pts | Frontend |
+| Story ID | Title | Phase | MoSCoW | Likely Owner | BA Story Status |
+|----------|-------|-------|--------|---|---|
+| **US-1001** | Reduce checkout to 3 steps (consolidate address + shipping) | MVP | Must | Frontend | ☐ Pending BA |
+| **US-1002** | Auto-fill shipping address from user profile | MVP | Must | Frontend | ☐ Pending BA |
+| **US-1003** | Add progress indicator (Step X of 3) | MVP | Must | Frontend | ☐ Pending BA |
+| **US-1004** | Validate address fields in real-time (inline errors) | MVP | Must | Frontend | ☐ Pending BA |
+| **US-1005** | Create backend API endpoint for 3-step checkout | MVP | Must | Backend | ☐ Pending BA |
+| **US-1006** | Integrate with payment processor (Stripe v3) | MVP | Must | Backend | ☐ Pending BA |
+| **US-1007** | Order confirmation page with tracking | MVP | Must | Frontend | ☐ Pending BA |
 
 #### MVP Phase 2 (Express Checkout)
 
-| Story ID | Title | Type | Priority | Estimate | Owner |
-|----------|-------|------|----------|----------|-------|
-| **US-1008** | Implement Apple Pay integration (iOS) | Story | P1 | 13 pts | Mobile |
-| **US-1009** | Implement Google Pay integration (Android) | Story | P1 | 13 pts | Mobile |
-| **US-1010** | Save addresses for future checkouts | Story | P1 | 8 pts | Frontend + Backend |
-| **US-1011** | Guest checkout flow (no account required) | Story | P1 | 8 pts | Frontend + Backend |
+| Story ID | Title | Phase | MoSCoW | Likely Owner | BA Story Status |
+|----------|-------|-------|--------|---|---|
+| **US-1008** | Apple Pay integration (iOS) | MVP | Should | Mobile | ☐ Pending BA |
+| **US-1009** | Google Pay integration (Android) | MVP | Should | Mobile | ☐ Pending BA |
+| **US-1010** | Save addresses for future checkouts | MVP | Should | Frontend + Backend | ☐ Pending BA |
+| **US-1011** | Guest checkout flow (no account required) | MVP | Should | Frontend + Backend | ☐ Pending BA |
 
-#### Phase 3 (Enhancements)
+#### v2 (Enhancements)
 
-| Story ID | Title | Type | Priority | Estimate | Owner |
-|----------|-------|------|----------|----------|-------|
-| **US-1012** | Estimated delivery date based on shipping method | Story | P2 | 5 pts | Frontend |
-| **US-1013** | Coupon code application during checkout | Story | P2 | 5 pts | Frontend + Backend |
-| **US-1014** | A/B test: "Save for next time" vs. "Always remember" | Test Story | P2 | 3 pts | Analytics |
+| Story ID | Title | Phase | MoSCoW | Likely Owner | BA Story Status |
+|----------|-------|-------|--------|---|---|
+| **US-1012** | Estimated delivery date based on shipping method | v2 | Could | Frontend | ☐ Deferred |
+| **US-1013** | Coupon code application during checkout | v2 | Could | Frontend + Backend | ☐ Deferred |
 
-#### Technical Debt / Infrastructure
-
-| Story ID | Title | Type | Priority | Estimate | Owner |
-|----------|-------|------|----------|----------|-------|
-| **US-1015** | Unit test coverage: checkout module (target > 85%) | Tech Story | P0 | 5 pts | Frontend |
-| **US-1016** | Load testing: checkout under 10k concurrent users | Tech Story | P0 | 5 pts | QA + Backend |
-| **US-1017** | Documentation: checkout API specification | Tech Story | P1 | 2 pts | Backend |
+> **Note:** Story point estimates are NOT set here — the Tech Lead assigns estimates after reviewing architecture. The BA writes the detailed story document for each entry above before the TL begins sprint planning.
 
 ---
 
