@@ -17,11 +17,12 @@ Choose the squad prompt set that matches the nature of the work:
 
 | Work Type | Prompt Set | Key Agents | When to Use |
 |-----------|-----------|------------|-------------|
-| **New Project** | A → B → C | All 10 planning + 5 execution | Greenfield project from scratch |
-| **Feature / Enhancement** | A → B | PO → SA → UX → TL → TQE + execution | New capability on an existing project |
+| **New Project** | A → B → C | All agents — planning + security + execution | Greenfield project from scratch |
+| **Feature / Enhancement** | A → B | PO → SA → UX → InfoSec (delta) → TL → DevSecOps → TQE + execution | New capability on an existing project |
 | **Bug Fix** | A → B | TQE diagnose → TL root cause → fix + verify | Defect in existing functionality |
 | **Hotfix** | Single prompt | TL + engineer + TQE | Critical production emergency |
 | **Backlog / Tech Debt** | A → B | PO refine → TL breakdown + execution | Known story, chore, or refactor |
+| **Security Review** | Single prompt | InfoSec Architect + DevSecOps Engineer | Compliance audit, threat model refresh, security gate review |
 
 Full prompt templates for all work types are in `bmad-sdlc-agents/README.md` under **Squad Prompt**.
 
@@ -38,16 +39,18 @@ Agents operate in a collaborative/iterative mode:
 
 | Agent | Phase | Primary Responsibility |
 |-------|-------|-----------------------|
-| Business Analyst | Analysis | Problem exploration, stakeholder analysis, project brief |
-| Product Owner | Planning | PRD, backlog prioritization, artifact alignment |
-| Solution Architect | Solutioning | Service decomposition, API contracts, data models, ADRs |
-| Enterprise Architect | Solutioning | Cloud infra, compliance, observability, CI/CD, FinOps |
+| Product Owner | Analysis / Planning | BRD, PRD, epic definition, RICE prioritisation, business value |
+| Business Analyst | Analysis | Deep requirements analysis, user stories, acceptance criteria, use cases |
+| InfoSec Architect | Solutioning | Threat modelling (STRIDE/PASTA), IAM design, compliance mapping, risk register, incident response |
+| Enterprise Architect | Solutioning | Cloud infra, compliance architecture, observability, CI/CD, FinOps, technology radar |
 | UX/UI Designer | Solutioning | Personas, user journeys, wireframes, design system, accessibility |
-| Tech Lead | All Phases | Orchestration, code review standards, risk, release readiness |
-| Tester & QE | All Phases | Test strategy, test cases, security testing, quality gates |
+| Solution Architect | Solutioning | Service decomposition, API contracts, data models, ADRs, integration specs |
+| Tech Lead | All Phases | Orchestration, sprint planning, code review via worktree, risk, release readiness |
+| DevSecOps Engineer | Implementation | SAST/DAST, container security, IaC scanning, secrets management, security pipeline gates |
 | Backend Engineer | Implementation | APIs, data layers, event-driven services |
 | Frontend Engineer | Implementation | React/TypeScript components, state management, accessibility |
 | Mobile Engineer | Implementation | iOS, Android, React Native, Flutter, offline-first |
+| Tester & QE | Implementation | Test strategy, test cases, E2E automation, quality gates, pre-release sign-off |
 
 ## Standard Artifact Directory Structure
 
@@ -86,6 +89,22 @@ project-root/
 │   │   ├── api-spec.md
 │   │   ├── data-model.md
 │   │   └── integration-spec.md
+│   ├── security/                 # InfoSec Architect + DevSecOps outputs
+│   │   ├── threat-model.md       # STRIDE threat model and DFD
+│   │   ├── security-architecture.md  # Controls, IAM, encryption, network
+│   │   ├── risk-register.md      # Risks, CVSS scores, owners, mitigations
+│   │   ├── iam-design.md         # Roles, permissions, federation, MFA policy
+│   │   ├── compliance-mapping.md # SOC2 / GDPR / HIPAA / PCI-DSS control map
+│   │   ├── data-classification.md
+│   │   ├── incident-response-plan.md
+│   │   ├── security-policies.md
+│   │   ├── devsecops-pipeline.md # CI/CD security gate configuration
+│   │   ├── sast-dast-report.md   # Scan findings and triage
+│   │   ├── secrets-management.md # Vault / Secrets Manager strategy
+│   │   ├── container-security.md # Image hardening and runtime policies
+│   │   ├── iac-security-report.md
+│   │   ├── dependency-audit.md
+│   │   └── security-gate-results.md  # Pre-release sign-off
 │   └── reviews/
 │       ├── code-review-checklist.md
 │       └── architecture-review.md
@@ -93,7 +112,20 @@ project-root/
 ├── tests/                        # Test code
 └── .bmad/                        # BMAD config and state
     ├── project-state.md          # Current phase, blockers, decisions
-    └── handoff-log.md            # Record of agent-to-agent handoffs
+    ├── handoff-log.md            # Record of agent-to-agent handoffs
+    └── signals/
+        ├── po-done               # PO sentinel
+        ├── ba-done               # BA sentinel
+        ├── infosec-done          # InfoSec Architect sentinel
+        ├── ea-done               # Enterprise Architect sentinel
+        ├── ux-done               # UX Designer sentinel
+        ├── sa-done               # Solution Architect sentinel
+        ├── tl-plan-done          # Tech Lead sprint kickoff sentinel
+        ├── devsecops-done        # DevSecOps Engineer sentinel
+        ├── E2-be-done            # TL-approved BE implementation
+        ├── E2-fe-done            # TL-approved FE implementation
+        ├── E2-me-done            # TL-approved ME implementation
+        └── autonomous-mode       # Skip human review gates (autonomous orchestration)
 ```
 
 ## Artifact Versioning
