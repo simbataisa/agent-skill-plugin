@@ -65,6 +65,52 @@
         "SLACK_BOT_TOKEN": "${SLACK_BOT_TOKEN}",
         "SLACK_TEAM_ID": "${SLACK_TEAM_ID}"
       }
+    },
+    "_vault_example": {
+      "_disabled": true,
+      "_description": "HashiCorp Vault for secrets management. Set VAULT_ADDR and VAULT_TOKEN. STRONGLY RECOMMENDED: use read-only token. See mcp-configs/project/vault.json",
+      "command": "npx",
+      "args": ["-y", "vault-mcp-server"],
+      "env": {
+        "VAULT_ADDR": "${VAULT_ADDR}",
+        "VAULT_TOKEN": "${VAULT_TOKEN}"
+      }
+    },
+    "_sentry_example": {
+      "_disabled": true,
+      "_description": "Sentry error monitoring. Set SENTRY_AUTH_TOKEN and SENTRY_ORG. See mcp-configs/project/sentry.json",
+      "command": "npx",
+      "args": ["-y", "@sentry/mcp-server"],
+      "env": {
+        "SENTRY_AUTH_TOKEN": "${SENTRY_AUTH_TOKEN}",
+        "SENTRY_ORG": "${SENTRY_ORG}"
+      }
+    },
+    "_grafana_example": {
+      "_disabled": true,
+      "_description": "Grafana observability dashboards. Set GRAFANA_URL and GRAFANA_API_KEY. Read-only API key recommended. See mcp-configs/project/grafana.json",
+      "command": "npx",
+      "args": ["-y", "@grafana/mcp-server"],
+      "env": {
+        "GRAFANA_URL": "${GRAFANA_URL}",
+        "GRAFANA_API_KEY": "${GRAFANA_API_KEY}"
+      }
+    },
+    "_kubernetes_example": {
+      "_disabled": true,
+      "_description": "Kubernetes cluster access. Uses current kubeconfig context. STRONGLY RECOMMENDED: use read-only RBAC service account. See mcp-configs/project/kubernetes.json",
+      "command": "npx",
+      "args": ["-y", "kubernetes-mcp-server"],
+      "env": {
+        "KUBECONFIG": "${KUBECONFIG:-$HOME/.kube/config}"
+      }
+    },
+    "_openapi_example": {
+      "_disabled": true,
+      "_description": "OpenAPI/AsyncAPI spec tools. Validates, lints, and generates code from specs. See mcp-configs/project/openapi.json",
+      "command": "npx",
+      "args": ["-y", "openapi-mcp-server"],
+      "env": {}
     }
   }
 }

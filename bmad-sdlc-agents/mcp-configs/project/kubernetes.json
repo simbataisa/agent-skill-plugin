@@ -1,0 +1,12 @@
+{
+  "_comment": "Kubernetes MCP server. Uses the current kubeconfig context. Used by DevSecOps Engineer for pod security policy validation, Enterprise Architect for infrastructure review. STRONGLY RECOMMENDED: point kubeconfig to a read-only / limited RBAC service account.",
+  "mcpServers": {
+    "kubernetes": {
+      "command": "npx",
+      "args": ["-y", "kubernetes-mcp-server"],
+      "env": {
+        "KUBECONFIG": "${KUBECONFIG:-$HOME/.kube/config}"
+      }
+    }
+  }
+}

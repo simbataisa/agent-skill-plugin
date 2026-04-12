@@ -1,0 +1,13 @@
+{
+  "_comment": "HashiCorp Vault MCP server. Set VAULT_ADDR (e.g. http://127.0.0.1:8200) and VAULT_TOKEN env vars. Used by DevSecOps Engineer for secrets policy enforcement and rotation management. STRONGLY RECOMMENDED: use a read-only token scoped to metadata-only paths.",
+  "mcpServers": {
+    "vault": {
+      "command": "npx",
+      "args": ["-y", "vault-mcp-server"],
+      "env": {
+        "VAULT_ADDR": "${VAULT_ADDR}",
+        "VAULT_TOKEN": "${VAULT_TOKEN}"
+      }
+    }
+  }
+}

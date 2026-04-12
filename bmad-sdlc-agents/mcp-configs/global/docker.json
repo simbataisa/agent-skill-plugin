@@ -1,0 +1,10 @@
+{
+  "_comment": "Docker MCP server. Provides container management — build, inspect images, list containers, check vulnerabilities. Used by DevSecOps Engineer for image hardening and Backend Engineer for local container testing. Requires Docker daemon running.",
+  "mcpServers": {
+    "docker": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-docker"],
+      "env": {}
+    }
+  }
+}

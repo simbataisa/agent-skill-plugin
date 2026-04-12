@@ -1,0 +1,13 @@
+{
+  "_comment": "Sentry error monitoring MCP. Set SENTRY_AUTH_TOKEN and SENTRY_ORG env vars. Used by Tester-QE for bug triage and regression detection, and by Backend/Frontend Engineers for error investigation.",
+  "mcpServers": {
+    "sentry": {
+      "command": "npx",
+      "args": ["-y", "@sentry/mcp-server"],
+      "env": {
+        "SENTRY_AUTH_TOKEN": "${SENTRY_AUTH_TOKEN}",
+        "SENTRY_ORG": "${SENTRY_ORG}"
+      }
+    }
+  }
+}

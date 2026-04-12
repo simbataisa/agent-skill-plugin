@@ -1,0 +1,10 @@
+{
+  "_comment": "OpenAPI MCP server. Validates, lints, and generates code from OpenAPI/AsyncAPI specs. Used by Solution Architect for API-first design, Backend Engineer for spec validation, and DevSecOps for API security rule checking.",
+  "mcpServers": {
+    "openapi": {
+      "command": "npx",
+      "args": ["-y", "openapi-mcp-server"],
+      "env": {}
+    }
+  }
+}

@@ -7,6 +7,14 @@
           {
             "type": "command",
             "command": "bash -c 'HOOKS=\"${CLAUDE_HOOKS_DIR:-$HOME/.claude/hooks}\"; [ -f \"$HOOKS/validate-bmad-paths.sh\" ] && bash \"$HOOKS/validate-bmad-paths.sh\" \"$CLAUDE_TOOL_INPUT_PATH\" || exit 0'"
+          },
+          {
+            "type": "command",
+            "command": "bash -c 'HOOKS=\"${CLAUDE_HOOKS_DIR:-$HOME/.claude/hooks}\"; [ -f \"$HOOKS/check-secrets-in-write.sh\" ] && bash \"$HOOKS/check-secrets-in-write.sh\" || exit 0'"
+          },
+          {
+            "type": "command",
+            "command": "bash -c 'HOOKS=\"${CLAUDE_HOOKS_DIR:-$HOME/.claude/hooks}\"; [ -f \"$HOOKS/check-security-imports.sh\" ] && bash \"$HOOKS/check-security-imports.sh\" || exit 0'"
           }
         ]
       },
@@ -27,6 +35,10 @@
           {
             "type": "command",
             "command": "bash -c 'HOOKS=\"${CLAUDE_HOOKS_DIR:-$HOME/.claude/hooks}\"; [ -f \"$HOOKS/notify-doc-written.sh\" ] && bash \"$HOOKS/notify-doc-written.sh\" \"$CLAUDE_TOOL_INPUT_PATH\" || exit 0'"
+          },
+          {
+            "type": "command",
+            "command": "bash -c 'HOOKS=\"${CLAUDE_HOOKS_DIR:-$HOME/.claude/hooks}\"; [ -f \"$HOOKS/post-security-artifact.sh\" ] && bash \"$HOOKS/post-security-artifact.sh\" || exit 0'"
           }
         ]
       }

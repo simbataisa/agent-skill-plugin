@@ -1,0 +1,13 @@
+{
+  "_comment": "SonarQube MCP server. Set SONARQUBE_URL (e.g. http://localhost:9000) and SONARQUBE_TOKEN env vars. Used by DevSecOps Engineer for SAST quality gates and Tech Lead for code review quality metrics.",
+  "mcpServers": {
+    "sonarqube": {
+      "command": "npx",
+      "args": ["-y", "sonarqube-mcp-server"],
+      "env": {
+        "SONARQUBE_URL": "${SONARQUBE_URL}",
+        "SONARQUBE_TOKEN": "${SONARQUBE_TOKEN}"
+      }
+    }
+  }
+}

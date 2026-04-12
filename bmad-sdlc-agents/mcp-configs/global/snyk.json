@@ -1,0 +1,12 @@
+{
+  "_comment": "Snyk security scanner MCP. Set SNYK_TOKEN env var. Used by DevSecOps Engineer for SAST/DAST, dependency scanning, container image scanning, and IaC scanning. Also used by Tester-QE for security test validation.",
+  "mcpServers": {
+    "snyk": {
+      "command": "npx",
+      "args": ["-y", "snyk-mcp-server"],
+      "env": {
+        "SNYK_TOKEN": "${SNYK_TOKEN}"
+      }
+    }
+  }
+}
