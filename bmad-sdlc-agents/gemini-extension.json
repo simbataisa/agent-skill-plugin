@@ -1,0 +1,6 @@
+{
+  "name": "bmad-sdlc",
+  "description": "BMAD SDLC Framework — 12 AI agents for full software development lifecycle (PO, BA, InfoSec, EA, UX, SA, TL, DevSecOps, BE, FE, ME, TQE)",
+  "version": "1.0.0",
+  "contextFileName": "GEMINI.md"
+}

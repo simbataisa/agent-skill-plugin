@@ -1,0 +1,13 @@
+@./shared/BMAD-SHARED-CONTEXT.md
+@./agents/product-owner/SKILL.md
+@./agents/business-analyst/SKILL.md
+@./agents/infosec-architect/SKILL.md
+@./agents/enterprise-architect/SKILL.md
+@./agents/ux-designer/SKILL.md
+@./agents/solution-architect/SKILL.md
+@./agents/tech-lead/SKILL.md
+@./agents/devsecops-engineer/SKILL.md
+@./agents/backend-engineer/SKILL.md
+@./agents/frontend-engineer/SKILL.md
+@./agents/mobile-engineer/SKILL.md
+@./agents/tester-qe/SKILL.md

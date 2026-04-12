@@ -96,6 +96,216 @@ append_file() {
     fi
 }
 
+# ============================================================
+# Sub-agent namespace helpers
+# ============================================================
+# Sub-agents live as sibling .md files alongside SKILL.md in each agent folder
+# (mirrors the superpowers pattern: skills/<name>/SKILL.md + sibling cmd files):
+#   agents/<agent>/SKILL.md          ← main skill (uppercase, skipped by walker)
+#   agents/<agent>/<cmd>.md          ← sub-agent commands (lowercase siblings)
+#   agents/<agent>/references/       ← supporting reference docs
+#   agents/<agent>/templates/        ← output templates
+#
+# This creates the <agent>:<sub-command> namespace across all AI coders:
+#   Claude Code  → /agent:cmd        (native subdir commands)
+#   Gemini CLI   → skills/<agent>/   (folder copy via contextFileName)
+#   Codex        → skills/<agent>/<cmd>.md
+#   Cursor/Windsurf/Kiro/Others → adapted per tool
+
+# Walk agents/<agent>/<cmd>.md (non-SKILL.md siblings) and call a handler for each.
+# Handler receives: agent_name  cmd_name  src_file  [extra_args...]
+# Usage: walk_sub_agents <handler_fn> [extra_args...]
+walk_sub_agents() {
+    local handler="$1"
+    shift
+    for agent_dir in "$AGENTS_DIR"/*/; do
+        if [[ -d "$agent_dir" ]]; then
+            local agent_name="$(basename "$agent_dir")"
+            for cmd_file in "$agent_dir"/*.md; do
+                if [[ -f "$cmd_file" ]]; then
+                    local cmd_name="$(basename "$cmd_file" .md)"
+                    [[ "$cmd_name" == "SKILL" ]] && continue   # skip main skill file
+                    "$handler" "$agent_name" "$cmd_name" "$cmd_file" "$@"
+                fi
+            done
+        fi
+    done
+}
+
+# ============================================================
+# Command format adapters
+# ============================================================
+# Claude Code commands use YAML frontmatter (description, argument-hint) + markdown.
+# These adapters transform that canonical format for other tools.
+
+# Strip YAML frontmatter, return only the markdown body.
+# Uses awk for BSD/macOS + GNU/Linux compatibility (sed semicolons after } fail on BSD).
+strip_frontmatter() {
+    local file="$1"
+    # Count --- delimiters: skip lines where the delimiter count is exactly 1
+    # f==0 → before any ---  (print)
+    # f==1 → inside frontmatter (skip)
+    # f>=2 → after closing --- (print)
+    awk '/^---$/{f++; next} f!=1{print}' "$file"
+}
+
+# Extract a YAML frontmatter field value.
+# Uses awk for BSD/macOS + GNU/Linux compatibility.
+extract_frontmatter_field() {
+    local file="$1"
+    local field="$2"
+    awk -v field="${field}:" '
+        /^---$/ { fm++; next }
+        fm==1 && index($0, field)==1 {
+            sub("^" field "[[:space:]]*", "")
+            gsub(/^["'"'"']|["'"'"']$/, "")
+            print
+        }
+    ' "$file"
+}
+
+# ── Adapter signatures ────────────────────────────────────────────────────────
+# All adapters receive:  agent_name  cmd_name  src_file  dest_base_dir
+# They build the namespaced destination path internally.
+# Invocation shorthand (via walk_sub_agents):
+#   walk_sub_agents adapt_for_cursor  "$CURSOR_COMMANDS"
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Claude Code / Cowork / OpenCode / GitHub Copilot:
+# Native YAML frontmatter. Preserve subdirectory → /agent:cmd namespace.
+# dest: <base>/<agent>/<cmd>.md  →  Claude Code reads as /agent:cmd
+install_native() {
+    local agent="$1" cmd="$2" src="$3" base="$4"
+    local dst="$base/$agent/$cmd.md"
+    if [[ "$DRY_RUN" == true ]]; then
+        echo "  [DRY] /$agent:$cmd -> $dst"
+        return
+    fi
+    mkdir -p "$(dirname "$dst")"
+    cp "$src" "$dst"
+}
+
+# Codex CLI: YAML-compatible, replace $ARGUMENTS -> $1
+install_codex() {
+    local agent="$1" cmd="$2" src="$3" base="$4"
+    local dst="$base/$agent/$cmd.md"
+    if [[ "$DRY_RUN" == true ]]; then
+        echo "  [DRY] codex /$agent:$cmd -> $dst"
+        return
+    fi
+    mkdir -p "$(dirname "$dst")"
+    sed 's/\$ARGUMENTS/$1/g' "$src" > "$dst"
+}
+
+# Cursor: strip YAML frontmatter, add # /agent:cmd header
+adapt_for_cursor() {
+    local agent="$1" cmd="$2" src="$3" base="$4"
+    local dst="$base/$agent/$cmd.md"
+    local description arg_hint
+    description="$(extract_frontmatter_field "$src" "description")"
+    arg_hint="$(extract_frontmatter_field "$src" "argument-hint")"
+    if [[ "$DRY_RUN" == true ]]; then
+        echo "  [DRY] cursor /$agent:$cmd -> $dst"
+        return
+    fi
+    mkdir -p "$(dirname "$dst")"
+    {
+        echo "# /${agent}:${cmd}"
+        [[ -n "$description" ]] && echo "" && echo "$description"
+        [[ -n "$arg_hint"    ]] && echo "" && echo "**Usage:** \`/${agent}:${cmd} ${arg_hint}\`"
+        echo ""
+        strip_frontmatter "$src"
+    } > "$dst"
+}
+
+# Windsurf: rules format, one file per command under bmad-commands/<agent>/
+adapt_for_windsurf() {
+    local agent="$1" cmd="$2" src="$3" base="$4"
+    local dst="$base/$agent/$cmd.md"
+    local description arg_hint
+    description="$(extract_frontmatter_field "$src" "description")"
+    arg_hint="$(extract_frontmatter_field "$src" "argument-hint")"
+    if [[ "$DRY_RUN" == true ]]; then
+        echo "  [DRY] windsurf /$agent:$cmd -> $dst"
+        return
+    fi
+    mkdir -p "$(dirname "$dst")"
+    {
+        echo "# Rule: ${agent}:${cmd}"
+        echo ""
+        echo "**Trigger:** When the user asks to run \`${agent}:${cmd}\` or \"${cmd//-/ }\"."
+        [[ -n "$description" ]] && echo "" && echo "$description"
+        [[ -n "$arg_hint"    ]] && echo "" && echo "**Arguments:** ${arg_hint}"
+        echo ""
+        strip_frontmatter "$src"
+    } > "$dst"
+}
+
+# Gemini CLI: strip frontmatter, replace $ARGUMENTS -> {{input}}
+# Goes into extension's commands/<agent>/<cmd>.md  →  /bmad-sdlc:<agent>-<cmd>
+# (Gemini flattens the namespace: extension:command, not extension:agent:command)
+adapt_for_gemini() {
+    local agent="$1" cmd="$2" src="$3" base="$4"
+    local dst="$base/${agent}-${cmd}.md"   # flat file: agent-cmd (Gemini uses ext:name)
+    local description arg_hint
+    description="$(extract_frontmatter_field "$src" "description")"
+    arg_hint="$(extract_frontmatter_field "$src" "argument-hint")"
+    if [[ "$DRY_RUN" == true ]]; then
+        echo "  [DRY] gemini /bmad-sdlc:${agent}-${cmd} -> $dst"
+        return
+    fi
+    mkdir -p "$(dirname "$dst")"
+    {
+        echo "# ${agent}:${cmd}"
+        [[ -n "$description" ]] && echo "" && echo "$description"
+        [[ -n "$arg_hint"    ]] && echo "" && echo "**Arguments:** ${arg_hint}"
+        echo ""
+        strip_frontmatter "$src" | sed 's/\$ARGUMENTS/{{input}}/g'
+    } > "$dst"
+}
+
+# Kiro: steering file with inclusion: manual + body (becomes /<agent>:<cmd> in Kiro)
+adapt_for_kiro() {
+    local agent="$1" cmd="$2" src="$3" base="$4"
+    local dst="$base/${agent}-${cmd}.md"
+    local description
+    description="$(extract_frontmatter_field "$src" "description")"
+    if [[ "$DRY_RUN" == true ]]; then
+        echo "  [DRY] kiro /${agent}:${cmd} -> $dst"
+        return
+    fi
+    mkdir -p "$(dirname "$dst")"
+    {
+        echo "---"
+        echo "description: ${description:-BMAD ${agent}:${cmd}}"
+        echo "inclusion: manual"
+        echo "---"
+        echo ""
+        strip_frontmatter "$src" | sed 's/\$ARGUMENTS/{{args}}/g'
+    } > "$dst"
+}
+
+# Aider: no native commands; embed as ## Workflow: agent:cmd sections in conventions
+adapt_for_aider() {
+    local agent="$1" cmd="$2" src="$3" conv_file="$4"
+    local description
+    description="$(extract_frontmatter_field "$src" "description")"
+    if [[ "$DRY_RUN" == true ]]; then
+        echo "  [DRY] aider /${agent}:${cmd} -> $conv_file"
+        return
+    fi
+    mkdir -p "$(dirname "$conv_file")"
+    {
+        echo ""
+        echo "---"
+        echo ""
+        echo "## Workflow: ${agent}:${cmd}"
+        [[ -n "$description" ]] && echo "" && echo "$description"
+        echo ""
+        strip_frontmatter "$src" | sed 's/\$ARGUMENTS/the user-provided arguments/g'
+    } >> "$conv_file"
+}
+
 # Merge BMAD hooks into an existing settings.json, backing up first.
 # Usage: merge_settings_json <bmad_source.json> <target_settings.json>
 merge_settings_json() {
@@ -243,13 +453,8 @@ if [[ -d "$HOME/.claude" ]] || command -v claude &> /dev/null; then
     done
 
     # Copy slash commands to ~/.claude/commands/
-    if [[ -d "$COMMANDS_DIR" ]]; then
-        for cmd_file in "$COMMANDS_DIR"/*.md; do
-            if [[ -f "$cmd_file" ]]; then
-                copy_file "$cmd_file" "$CLAUDE_COMMANDS/$(basename "$cmd_file")"
-            fi
-        done
-    fi
+    # Install commands preserving agent/cmd subdirectory structure → /agent:cmd
+    walk_sub_agents install_native "$CLAUDE_COMMANDS"
 
     # Merge global hooks into ~/.claude/settings.json (backs up first)
     if [[ -f "$HOOKS_DIR/settings.json" ]]; then
@@ -327,7 +532,15 @@ if [[ -d "$HOME/.skills" ]]; then
         fi
     done
 
-    echo "  Install path: $COWORK_SKILLS/"
+    # Copy shared context
+    copy_file "$SHARED_CONTEXT" "$HOME/.skills/BMAD-SHARED-CONTEXT.md"
+
+    # Copy slash commands to ~/.skills/commands/ (Cowork uses commands/ like Claude Code)
+    COWORK_COMMANDS="$HOME/.skills/commands"
+    walk_sub_agents install_native "$COWORK_COMMANDS"
+
+    echo "  Skills:   $COWORK_SKILLS/"
+    echo "  Commands: $COWORK_COMMANDS/"
     INSTALLED_TOOLS+=("Cowork")
     echo ""
 fi
@@ -345,52 +558,43 @@ if [[ -d "$HOME/.codex" ]] || command -v codex &> /dev/null; then
         mkdir -p "$CODEX_PROMPTS"
     fi
 
-    # Remove legacy bmad-* prefixed skill folders
+    # Remove legacy: old bmad-* prefixed folders AND old agent-named subdirs
     if [[ "$DRY_RUN" == false ]]; then
         for legacy in "$CODEX_SKILLS"/bmad-*/; do
-            if [[ -d "$legacy" ]]; then
-                rm -rf "$legacy"
-                echo "  ✓ Removed legacy skill folder: $(basename "$legacy")"
-            fi
+            [[ -d "$legacy" ]] && rm -rf "$legacy" && echo "  ✓ Removed legacy: $(basename "$legacy")"
+        done
+        for agent_dir in "$AGENTS_DIR"/*/; do
+            legacy="$CODEX_SKILLS/$(basename "$agent_dir")"
+            [[ -d "$legacy" ]] && rm -rf "$legacy" && echo "  ✓ Removed legacy dir: $(basename "$legacy")"
         done
     fi
 
     # Copy shared context
     copy_file "$SHARED_CONTEXT" "$HOME/.codex/BMAD-SHARED-CONTEXT.md"
 
-    # Copy all agents to ~/.codex/skills/<agent-name>/SKILL.md (folder-based)
-    for agent_dir in "$AGENTS_DIR"/*; do
-        if [[ -d "$agent_dir" ]]; then
-            agent_name="$(basename "$agent_dir")"
-            if [[ "$DRY_RUN" == true ]]; then
-                echo "  [DRY] mkdir + cp $agent_dir/SKILL.md -> $CODEX_SKILLS/$agent_name/SKILL.md"
-            else
-                mkdir -p "$CODEX_SKILLS/$agent_name"
-                cp "$agent_dir/SKILL.md" "$CODEX_SKILLS/$agent_name/SKILL.md"
-                # Copy references/ and templates/ if they exist
-                if [[ -d "$agent_dir/references" ]]; then
-                    cp -r "$agent_dir/references" "$CODEX_SKILLS/$agent_name/"
-                fi
-                if [[ -d "$agent_dir/templates" ]]; then
-                    cp -r "$agent_dir/templates" "$CODEX_SKILLS/$agent_name/"
-                fi
-            fi
+    # Deploy each agent as skills/<agent>/ folder — mirrors superpowers pattern.
+    # Each folder: SKILL.md (agent persona) + sibling cmd .md files.
+    #   ~/.codex/skills/tech-lead/SKILL.md
+    #   ~/.codex/skills/tech-lead/code-review.md
+    #   ~/.codex/skills/tech-lead/sprint-plan.md
+    for agent_dir in "$AGENTS_DIR"/*/; do
+        [[ -d "$agent_dir" ]] || continue
+        agent_name="$(basename "$agent_dir")"
+
+        if [[ "$DRY_RUN" == true ]]; then
+            echo "  [DRY] $CODEX_SKILLS/$agent_name/"
+            for f in "$agent_dir"/*.md; do
+                [[ -f "$f" ]] && echo "  [DRY]   $(basename "$f")"
+            done
+        else
+            # Wipe and replace — prevents stale files from accumulating on re-runs
+            rm -rf "$CODEX_SKILLS/$agent_name"
+            cp -r "$agent_dir" "$CODEX_SKILLS/$agent_name"
         fi
     done
 
-    # Copy slash commands to ~/.codex/prompts/ (Codex uses prompts/ not commands/)
-    if [[ -d "$COMMANDS_DIR" ]]; then
-        for cmd_file in "$COMMANDS_DIR"/*.md; do
-            if [[ -f "$cmd_file" ]]; then
-                copy_file "$cmd_file" "$CODEX_PROMPTS/$(basename "$cmd_file")"
-            fi
-        done
-    fi
-
-    echo "  Skills:  $CODEX_SKILLS/"
-    echo "  Prompts: $CODEX_PROMPTS/"
-    echo "  Invoke agents:  \$business-analyst, \$solution-architect, etc."
-    echo "  Invoke commands: /bmad-status, /handoff, etc."
+    echo "  Skills:   $CODEX_SKILLS/"
+    echo "  Layout:   $CODEX_SKILLS/<agent>/SKILL.md + <cmd>.md siblings"
     INSTALLED_TOOLS+=("Codex CLI")
     echo ""
 fi
@@ -451,29 +655,8 @@ if [[ -d "$HOME/.kiro" ]] || command -v kiro &> /dev/null; then
         fi
     done
 
-    # Copy commands as manual-inclusion steering files (become /slash-commands in Kiro)
-    if [[ -d "$COMMANDS_DIR" ]]; then
-        for cmd_file in "$COMMANDS_DIR"/*.md; do
-            if [[ -f "$cmd_file" ]]; then
-                cmd_name="$(basename "$cmd_file" .md)"
-                if [[ "$DRY_RUN" == true ]]; then
-                    echo "  [DRY] transform command -> $KIRO_STEERING/$cmd_name.md"
-                else
-                    # Read existing frontmatter description, wrap with Kiro's inclusion: manual
-                    desc=$(head -5 "$cmd_file" | grep "^description:" | sed 's/^description: *//')
-                    {
-                        echo "---"
-                        echo "description: ${desc:-BMAD command: $cmd_name}"
-                        echo "inclusion: manual"
-                        echo "---"
-                        echo ""
-                        # Skip original frontmatter, keep body
-                        awk '/^---$/{n++} n>=2{if(n==2 && /^---$/){n++;next}; print}' "$cmd_file"
-                    } > "$KIRO_STEERING/$cmd_name.md"
-                fi
-            fi
-        done
-    fi
+    # Install commands as manual-inclusion steering files → /agent:cmd in Kiro
+    walk_sub_agents adapt_for_kiro "$KIRO_STEERING"
 
     echo "  Skills:   $KIRO_SKILLS/"
     echo "  Steering: $KIRO_STEERING/"
@@ -488,17 +671,33 @@ fi
 if [[ -d "$HOME/.cursor" ]] || command -v cursor &> /dev/null; then
     echo -e "${GREEN}✓ Cursor${NC} found"
     CURSOR_RULES="$HOME/.cursor/rules"
+    CURSOR_SKILLS="$HOME/.cursor/skills"
 
     if [[ "$DRY_RUN" == false ]]; then
         mkdir -p "$CURSOR_RULES"
+        mkdir -p "$CURSOR_SKILLS"
     fi
 
     for agent_dir in "$AGENTS_DIR"/*; do
         if [[ -d "$agent_dir" ]]; then
             agent_name="$(basename "$agent_dir")"
             prepend_shared_context "$agent_dir/SKILL.md" "$CURSOR_RULES/${agent_name}.md"
+            # Copy references/ and templates/ so agents can read them via relative paths
+            if [[ "$DRY_RUN" == false ]]; then
+                mkdir -p "$CURSOR_SKILLS/$agent_name"
+                if [[ -d "$agent_dir/references" ]]; then
+                    cp -r "$agent_dir/references" "$CURSOR_SKILLS/$agent_name/"
+                fi
+                if [[ -d "$agent_dir/templates" ]]; then
+                    cp -r "$agent_dir/templates" "$CURSOR_SKILLS/$agent_name/"
+                fi
+            fi
         fi
     done
+
+    # Adapt commands for Cursor: strip frontmatter, add /agent:cmd header
+    CURSOR_COMMANDS="$HOME/.cursor/commands"
+    walk_sub_agents adapt_for_cursor "$CURSOR_COMMANDS"
 
     # Copy Cursor-specific global rules (.mdc files)
     if [[ -d "$RULES_DIR/cursor/global" ]]; then
@@ -509,7 +708,36 @@ if [[ -d "$HOME/.cursor" ]] || command -v cursor &> /dev/null; then
         done
     fi
 
-    echo "  Install path: $CURSOR_RULES/"
+    # Copy Cursor-specific global rules (.mdc files)
+    if [[ -d "$RULES_DIR/cursor/global" ]]; then
+        for rule_file in "$RULES_DIR/cursor/global"/*.mdc; do
+            if [[ -f "$rule_file" ]]; then
+                copy_file "$rule_file" "$CURSOR_RULES/$(basename "$rule_file")"
+            fi
+        done
+    fi
+
+    # Register the repo's .cursor-plugin/plugin.json with Cursor's plugin registry
+    # Cursor discovers plugins via ~/.cursor/plugins/<name>/plugin.json
+    CURSOR_PLUGIN_DIR="$HOME/.cursor/plugins/bmad-sdlc"
+    if [[ "$DRY_RUN" == true ]]; then
+        echo "  [DRY] register plugin -> $CURSOR_PLUGIN_DIR/plugin.json"
+    else
+        mkdir -p "$CURSOR_PLUGIN_DIR"
+        cp "$BASE_DIR/.cursor-plugin/plugin.json" "$CURSOR_PLUGIN_DIR/plugin.json"
+        # Patch the paths in the copied plugin.json to point at the source repo
+        sed -i.bak \
+            "s|\"./agents/\"|\"$AGENTS_DIR/\"|g; \
+             s|\"./commands/\"|\"$COMMANDS_DIR/\"|g; \
+             s|\"./hooks/global/settings.json\"|\"$BASE_DIR/hooks/global/settings.json\"|g" \
+            "$CURSOR_PLUGIN_DIR/plugin.json"
+        rm -f "$CURSOR_PLUGIN_DIR/plugin.json.bak"
+    fi
+
+    echo "  Rules:    $CURSOR_RULES/"
+    echo "  Skills:   $CURSOR_SKILLS/"
+    echo "  Commands: $CURSOR_COMMANDS/"
+    echo "  Plugin:   $CURSOR_PLUGIN_DIR/plugin.json"
     INSTALLED_TOOLS+=("Cursor")
     echo ""
 fi
@@ -520,15 +748,27 @@ fi
 if [[ -d "$HOME/.windsurf" ]]; then
     echo -e "${GREEN}✓ Windsurf${NC} found"
     WINDSURF_RULES="$HOME/.windsurf/rules"
+    WINDSURF_SKILLS="$HOME/.windsurf/skills"
 
     if [[ "$DRY_RUN" == false ]]; then
         mkdir -p "$WINDSURF_RULES"
+        mkdir -p "$WINDSURF_SKILLS"
     fi
 
     for agent_dir in "$AGENTS_DIR"/*; do
         if [[ -d "$agent_dir" ]]; then
             agent_name="$(basename "$agent_dir")"
             prepend_shared_context "$agent_dir/SKILL.md" "$WINDSURF_RULES/${agent_name}.md"
+            # Copy references/ and templates/ so agents can read them
+            if [[ "$DRY_RUN" == false ]]; then
+                mkdir -p "$WINDSURF_SKILLS/$agent_name"
+                if [[ -d "$agent_dir/references" ]]; then
+                    cp -r "$agent_dir/references" "$WINDSURF_SKILLS/$agent_name/"
+                fi
+                if [[ -d "$agent_dir/templates" ]]; then
+                    cp -r "$agent_dir/templates" "$WINDSURF_SKILLS/$agent_name/"
+                fi
+            fi
         fi
     done
 
@@ -541,7 +781,13 @@ if [[ -d "$HOME/.windsurf" ]]; then
         done
     fi
 
-    echo "  Install path: $WINDSURF_RULES/"
+    # Adapt commands for Windsurf rules format
+    WINDSURF_COMMANDS="$HOME/.windsurf/rules/bmad-commands"
+    walk_sub_agents adapt_for_windsurf "$WINDSURF_COMMANDS"
+
+    echo "  Rules:    $WINDSURF_RULES/"
+    echo "  Skills:   $WINDSURF_SKILLS/"
+    echo "  Commands: $WINDSURF_COMMANDS/"
     INSTALLED_TOOLS+=("Windsurf")
     echo ""
 fi
@@ -552,6 +798,7 @@ fi
 if [[ -d "$HOME/.github" ]]; then
     echo -e "${GREEN}✓ GitHub Copilot${NC} found"
     COPILOT_INSTRUCTIONS="$HOME/.github/copilot-instructions.md"
+    COPILOT_SKILLS="$HOME/.github/bmad-skills"
 
     if [[ "$DRY_RUN" == true ]]; then
         echo "  [DRY] append all agents -> $COPILOT_INSTRUCTIONS"
@@ -560,6 +807,7 @@ if [[ -d "$HOME/.github" ]]; then
         fi
     else
         mkdir -p "$(dirname "$COPILOT_INSTRUCTIONS")"
+        mkdir -p "$COPILOT_SKILLS"
         {
             if [[ -f "$COPILOT_INSTRUCTIONS" ]]; then
                 cat "$COPILOT_INSTRUCTIONS"
@@ -582,9 +830,29 @@ if [[ -d "$HOME/.github" ]]; then
                 done
             fi
         } > "$COPILOT_INSTRUCTIONS"
+
+        # Copy references/ and templates/ to a parallel skills directory for Copilot
+        for agent_dir in "$AGENTS_DIR"/*; do
+            if [[ -d "$agent_dir" ]]; then
+                agent_name="$(basename "$agent_dir")"
+                mkdir -p "$COPILOT_SKILLS/$agent_name"
+                if [[ -d "$agent_dir/references" ]]; then
+                    cp -r "$agent_dir/references" "$COPILOT_SKILLS/$agent_name/"
+                fi
+                if [[ -d "$agent_dir/templates" ]]; then
+                    cp -r "$agent_dir/templates" "$COPILOT_SKILLS/$agent_name/"
+                fi
+            fi
+        done
     fi
 
-    echo "  Install path: $COPILOT_INSTRUCTIONS"
+    # Copy commands natively (Copilot supports YAML frontmatter)
+    COPILOT_COMMANDS="$HOME/.github/bmad-commands"
+    walk_sub_agents install_native "$COPILOT_COMMANDS"
+
+    echo "  Instructions: $COPILOT_INSTRUCTIONS"
+    echo "  Skills:       $COPILOT_SKILLS/"
+    echo "  Commands:     $COPILOT_COMMANDS/"
     INSTALLED_TOOLS+=("GitHub Copilot")
     echo ""
 fi
@@ -592,71 +860,110 @@ fi
 # ============================================================
 # Gemini CLI
 # ============================================================
+# 13 extensions, one per BMAD agent: /bmad-<agent>:<cmd>
+#
+# ~/.gemini/extensions/bmad-product-owner/
+#   gemini-extension.json   name: "bmad-product-owner"
+#   GEMINI.md               @./skills/create-brd/SKILL.md ...
+#   skills/
+#     create-brd/SKILL.md   → /bmad-product-owner:create-brd
+#     create-prd/SKILL.md   → /bmad-product-owner:create-prd
+#     new-epic/SKILL.md     → /bmad-product-owner:new-epic
+#     new-story/SKILL.md    → /bmad-product-owner:new-story
+#
+# No root SKILL.md, no shared/, no references/ at root — pure skills/ only.
+# Extension dir wiped clean on each install (prevents nested dir accumulation).
+# ============================================================
 if [[ -d "$HOME/.gemini" ]] || command -v gemini &> /dev/null; then
     echo -e "${GREEN}✓ Gemini CLI${NC} found"
-    GEMINI_SKILLS="$HOME/.gemini/skills"
-    GEMINI_INSTRUCTIONS="$HOME/.gemini/GEMINI.md"
+    GEMINI_EXTENSIONS_DIR="$HOME/.gemini/extensions"
 
+    # Remove ALL legacy installs from previous versions
     if [[ "$DRY_RUN" == false ]]; then
-        mkdir -p "$GEMINI_SKILLS"
-    fi
-
-    # Remove legacy flat GEMINI.md if it exists (replaced by skills/ folder approach)
-    if [[ "$DRY_RUN" == false ]] && [[ -f "$GEMINI_INSTRUCTIONS" ]]; then
-        rm -f "$GEMINI_INSTRUCTIONS"
-        echo "  ✓ Removed legacy GEMINI.md (replaced by skills/ folders)"
-    fi
-
-    # Remove legacy bmad-* prefixed skill folders
-    if [[ "$DRY_RUN" == false ]]; then
-        for legacy in "$GEMINI_SKILLS"/bmad-*/; do
-            if [[ -d "$legacy" ]]; then
-                rm -rf "$legacy"
-                echo "  ✓ Removed legacy skill folder: $(basename "$legacy")"
-            fi
+        for legacy in \
+            "$HOME/.gemini/skills/bmad-"* \
+            "$HOME/.gemini/BMAD-SHARED-CONTEXT.md" \
+            "$GEMINI_EXTENSIONS_DIR/bmad-sdlc" \
+            "$GEMINI_EXTENSIONS_DIR/bmad"; do
+            [[ -e "$legacy" ]] && rm -rf "$legacy" && echo "  ✓ Removed legacy: $(basename "$legacy")"
+        done
+        for agent_dir in "$AGENTS_DIR"/*/; do
+            legacy="$HOME/.gemini/skills/$(basename "$agent_dir")"
+            [[ -e "$legacy" ]] && rm -rf "$legacy" && echo "  ✓ Removed legacy skill: $(basename "$legacy")"
         done
     fi
 
-    # Copy shared context to ~/.gemini/
-    copy_file "$SHARED_CONTEXT" "$HOME/.gemini/BMAD-SHARED-CONTEXT.md"
+    # Deploy one extension per agent (skip the bmad orchestrator — not a user-facing agent)
+    for agent_dir in "$AGENTS_DIR"/*/; do
+        [[ -d "$agent_dir" ]] || continue
+        agent_name="$(basename "$agent_dir")"
+        [[ "$agent_name" == "bmad" ]] && continue
+        ext_name="bmad-${agent_name}"
+        ext_dir="$GEMINI_EXTENSIONS_DIR/${ext_name}"
 
-    # Copy all agents to ~/.gemini/skills/<agent-name>/SKILL.md (folder-based, same as Claude Code)
-    for agent_dir in "$AGENTS_DIR"/*; do
-        if [[ -d "$agent_dir" ]]; then
-            agent_name="$(basename "$agent_dir")"
-            if [[ "$DRY_RUN" == true ]]; then
-                echo "  [DRY] mkdir + cp $agent_dir/SKILL.md -> $GEMINI_SKILLS/$agent_name/SKILL.md"
-            else
-                mkdir -p "$GEMINI_SKILLS/$agent_name"
-                cp "$agent_dir/SKILL.md" "$GEMINI_SKILLS/$agent_name/SKILL.md"
-                if [[ -d "$agent_dir/references" ]]; then
-                    cp -r "$agent_dir/references" "$GEMINI_SKILLS/$agent_name/"
-                fi
-                if [[ -d "$agent_dir/templates" ]]; then
-                    cp -r "$agent_dir/templates" "$GEMINI_SKILLS/$agent_name/"
-                fi
-                echo "  ✓ Installed skill: $agent_name"
+        if [[ "$DRY_RUN" == true ]]; then
+            echo "  [DRY] /${ext_name}:"
+            echo "  [DRY]   :${agent_name}  →  skills/${agent_name}/SKILL.md  (persona)"
+            for cmd_file in "$agent_dir"/*.md; do
+                [[ -f "$cmd_file" ]] || continue
+                cmd_name="$(basename "$cmd_file" .md)"
+                [[ "$cmd_name" == "SKILL" ]] && continue
+                echo "  [DRY]   :${cmd_name}  →  skills/${cmd_name}/SKILL.md"
+            done
+        else
+            # Wipe clean on each install — prevents nested dir accumulation from re-runs
+            rm -rf "$ext_dir"
+            mkdir -p "$ext_dir/skills"
+
+            # Write gemini-extension.json
+            description="$(extract_frontmatter_field "$agent_dir/SKILL.md" description)"
+            cat > "$ext_dir/gemini-extension.json" <<EXTEOF
+{
+  "name": "${ext_name}",
+  "description": "${description}",
+  "version": "1.0.0",
+  "contextFileName": "GEMINI.md"
+}
+EXTEOF
+
+            # Agent persona → skills/<agent-name>/SKILL.md  (/bmad-<agent>:<agent-name>)
+            mkdir -p "$ext_dir/skills/$agent_name"
+            cp "$agent_dir/SKILL.md" "$ext_dir/skills/$agent_name/SKILL.md"
+
+            # Each sibling cmd .md → skills/<cmd>/SKILL.md  (/bmad-<agent>:<cmd>)
+            for cmd_file in "$agent_dir"/*.md; do
+                [[ -f "$cmd_file" ]] || continue
+                cmd_name="$(basename "$cmd_file" .md)"
+                [[ "$cmd_name" == "SKILL" ]] && continue
+                mkdir -p "$ext_dir/skills/$cmd_name"
+                cp "$cmd_file" "$ext_dir/skills/$cmd_name/SKILL.md"
+            done
+
+            # Build GEMINI.md: pure @imports only (matching superpowers pattern)
+            # Persona first, then commands — all invocable via /<ext>:<skill-name>
+            {
+                echo "@./skills/${agent_name}/SKILL.md"
+                for cmd_file in "$agent_dir"/*.md; do
+                    [[ -f "$cmd_file" ]] || continue
+                    cmd_name="$(basename "$cmd_file" .md)"
+                    [[ "$cmd_name" == "SKILL" ]] && continue
+                    echo "@./skills/${cmd_name}/SKILL.md"
+                done
+            } > "$ext_dir/GEMINI.md"
+            if [[ -d "$RULES_DIR/gemini/global" ]]; then
+                for rule_file in "$RULES_DIR/gemini/global"/*.md; do
+                    [[ -f "$rule_file" ]] && { echo ""; cat "$rule_file"; } >> "$ext_dir/GEMINI.md"
+                done
             fi
+
+            n_cmds=$(ls "$ext_dir/skills" | wc -l | tr -d ' ')
+            echo "  ✓ /${ext_name}  ($n_cmds commands)"
         fi
     done
 
-    # Copy Gemini-specific global rules into GEMINI.md if present
-    if [[ -d "$RULES_DIR/gemini/global" ]]; then
-        if [[ "$DRY_RUN" == true ]]; then
-            echo "  [DRY] write gemini global rules -> $GEMINI_INSTRUCTIONS"
-        else
-            {
-                for rule_file in "$RULES_DIR/gemini/global"/*.md; do
-                    if [[ -f "$rule_file" ]]; then
-                        cat "$rule_file"
-                        echo ""
-                    fi
-                done
-            } > "$GEMINI_INSTRUCTIONS"
-        fi
-    fi
-
-    echo "  Skills: $GEMINI_SKILLS/"
+    echo "  Extensions:  $GEMINI_EXTENSIONS_DIR/bmad-*/"
+    echo "  Invoke:      /bmad-product-owner:create-brd,  /bmad-tech-lead:code-review,  etc."
+    echo "  Register:    for ext in ~/.gemini/extensions/bmad-*/; do gemini extensions install \"\$ext\"; done"
     INSTALLED_TOOLS+=("Gemini CLI")
     echo ""
 fi
@@ -691,7 +998,32 @@ if [[ -d "$HOME/.opencode" ]] || command -v opencode &> /dev/null; then
         } > "$OPENCODE_INSTRUCTIONS"
     fi
 
-    echo "  Install path: $OPENCODE_INSTRUCTIONS"
+    # Copy references and templates to ~/.opencode/bmad-skills/<agent>/
+    OPENCODE_SKILLS="$HOME/.opencode/bmad-skills"
+    for agent_dir in "$AGENTS_DIR"/*; do
+        if [[ -d "$agent_dir" ]]; then
+            agent_name="$(basename "$agent_dir")"
+            if [[ "$DRY_RUN" == true ]]; then
+                echo "  [DRY] copy refs/templates -> $OPENCODE_SKILLS/$agent_name/"
+            else
+                mkdir -p "$OPENCODE_SKILLS/$agent_name"
+                if [[ -d "$agent_dir/references" ]]; then
+                    cp -r "$agent_dir/references" "$OPENCODE_SKILLS/$agent_name/"
+                fi
+                if [[ -d "$agent_dir/templates" ]]; then
+                    cp -r "$agent_dir/templates" "$OPENCODE_SKILLS/$agent_name/"
+                fi
+            fi
+        fi
+    done
+
+    # Install commands natively (OpenCode supports same format as Claude Code)
+    OPENCODE_COMMANDS="$HOME/.opencode/commands"
+    walk_sub_agents install_native "$OPENCODE_COMMANDS"
+
+    echo "  Instructions: $OPENCODE_INSTRUCTIONS"
+    echo "  Skills:       $OPENCODE_SKILLS/"
+    echo "  Commands:     $OPENCODE_COMMANDS/"
     INSTALLED_TOOLS+=("OpenCode")
     echo ""
 fi
@@ -723,7 +1055,30 @@ if [[ -d "$HOME/.aider" ]] || command -v aider &> /dev/null; then
         fi
     fi
 
-    echo "  Install path: $AIDER_CONVENTIONS"
+    # Copy references and templates to ~/.aider/bmad-skills/<agent>/
+    AIDER_SKILLS="$HOME/.aider/bmad-skills"
+    for agent_dir in "$AGENTS_DIR"/*; do
+        if [[ -d "$agent_dir" ]]; then
+            agent_name="$(basename "$agent_dir")"
+            if [[ "$DRY_RUN" == true ]]; then
+                echo "  [DRY] copy refs/templates -> $AIDER_SKILLS/$agent_name/"
+            else
+                mkdir -p "$AIDER_SKILLS/$agent_name"
+                if [[ -d "$agent_dir/references" ]]; then
+                    cp -r "$agent_dir/references" "$AIDER_SKILLS/$agent_name/"
+                fi
+                if [[ -d "$agent_dir/templates" ]]; then
+                    cp -r "$agent_dir/templates" "$AIDER_SKILLS/$agent_name/"
+                fi
+            fi
+        fi
+    done
+
+    # Embed commands as ## Workflow sections in the conventions file
+    walk_sub_agents adapt_for_aider "$AIDER_CONVENTIONS"
+
+    echo "  Conventions:  $AIDER_CONVENTIONS"
+    echo "  Skills:       $AIDER_SKILLS/"
     INSTALLED_TOOLS+=("Aider")
     echo ""
 fi
