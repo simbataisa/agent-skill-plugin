@@ -264,25 +264,29 @@ adapt_for_gemini() {
     } > "$dst"
 }
 
-# Kiro: steering file with inclusion: manual + body (becomes /<agent>:<cmd> in Kiro)
-adapt_for_kiro() {
-    local agent="$1" cmd="$2" src="$3" base="$4"
-    local dst="$base/${agent}-${cmd}.md"
+# Kiro: write a skill folder with correct name: frontmatter (name must match folder name)
+# Kiro does NOT support nested skill folders — all skills must be flat under ~/.kiro/skills/
+write_kiro_skill() {
+    local skill_name="$1" src="$2" skills_dir="$3"
+    local skill_dir="$skills_dir/$skill_name"
     local description
     description="$(extract_frontmatter_field "$src" "description")"
     if [[ "$DRY_RUN" == true ]]; then
-        echo "  [DRY] kiro /${agent}:${cmd} -> $dst"
+        echo "  [DRY] /kiro $skill_name  ->  $skill_dir/SKILL.md"
         return
     fi
-    mkdir -p "$(dirname "$dst")"
+    mkdir -p "$skill_dir"
+    # Double-quote the description to prevent YAML parse errors from [Bracket] prefixes
+    local safe_desc="${description:-BMAD ${skill_name}}"
+    safe_desc="${safe_desc//\"/\\\"}"   # escape any internal double-quotes
     {
         echo "---"
-        echo "description: ${description:-BMAD ${agent}:${cmd}}"
-        echo "inclusion: manual"
+        echo "name: ${skill_name}"
+        echo "description: \"${safe_desc}\""
         echo "---"
         echo ""
-        strip_frontmatter "$src" | sed 's/\$ARGUMENTS/{{args}}/g'
-    } > "$dst"
+        strip_frontmatter "$src"
+    } > "$skill_dir/SKILL.md"
 }
 
 # Aider: no native commands; embed as ## Workflow: agent:cmd sections in conventions
@@ -612,66 +616,78 @@ fi
 
 # ============================================================
 # Kiro (AWS)
+# 43 flat skill folders — Kiro does NOT support nested skill dirs.
+#
+# ~/.kiro/skills/
+#   tech-lead/SKILL.md                    → /tech-lead       (persona)
+#   tech-lead-code-review/SKILL.md        → /tech-lead-code-review
+#   tech-lead-sprint-plan/SKILL.md        → /tech-lead-sprint-plan
+#   ...
+#
+# ~/.kiro/steering/bmad-shared-context.md  inclusion: always
 # ============================================================
 if [[ -d "$HOME/.kiro" ]] || command -v kiro &> /dev/null; then
     echo -e "${GREEN}✓ Kiro${NC} found"
     KIRO_SKILLS="$HOME/.kiro/skills"
     KIRO_STEERING="$HOME/.kiro/steering"
 
+    # Wipe all existing BMAD skills and legacy steering files for a clean install
     if [[ "$DRY_RUN" == false ]]; then
-        mkdir -p "$KIRO_SKILLS"
         mkdir -p "$KIRO_STEERING"
-    fi
-
-    # Remove legacy bmad-* prefixed skill folders
-    if [[ "$DRY_RUN" == false ]]; then
-        for legacy in "$KIRO_SKILLS"/bmad-*/; do
-            if [[ -d "$legacy" ]]; then
-                rm -rf "$legacy"
-                echo "  ✓ Removed legacy skill folder: $(basename "$legacy")"
-            fi
+        # Remove all agent-named and agent-prefixed skill folders
+        for agent_dir in "$AGENTS_DIR"/*/; do
+            [[ -d "$agent_dir" ]] || continue
+            agent_name="$(basename "$agent_dir")"
+            for skill_dir in "$KIRO_SKILLS"/"${agent_name}"/ "$KIRO_SKILLS"/"${agent_name}"-*/; do
+                [[ -d "$skill_dir" ]] && rm -rf "$skill_dir"
+            done
+            # Remove legacy steering files: old installer put commands as <agent>-<cmd>.md in steering
+            for steer_file in "$KIRO_STEERING"/"${agent_name}"-*.md; do
+                [[ -f "$steer_file" ]] && rm -f "$steer_file" && echo "  ✓ Removed legacy steering: $(basename "$steer_file")"
+            done
         done
+        mkdir -p "$KIRO_SKILLS"
     fi
 
-    # Copy shared context as auto-included steering file
+    # Shared context as always-included steering file
     if [[ "$DRY_RUN" == true ]]; then
-        echo "  [DRY] write bmad-shared-context steering file -> $KIRO_STEERING/"
+        echo "  [DRY] $KIRO_STEERING/bmad-shared-context.md  (inclusion: always)"
     else
         {
             echo "---"
+            echo "inclusion: always"
             echo "description: BMAD shared context — organization standards and conventions"
-            echo "inclusion: auto"
             echo "---"
             echo ""
             cat "$SHARED_CONTEXT"
         } > "$KIRO_STEERING/bmad-shared-context.md"
     fi
 
-    # Copy all agents as folder-based skills to ~/.kiro/skills/<name>/SKILL.md
-    for agent_dir in "$AGENTS_DIR"/*; do
-        if [[ -d "$agent_dir" ]]; then
-            agent_name="$(basename "$agent_dir")"
-            if [[ "$DRY_RUN" == true ]]; then
-                echo "  [DRY] mkdir + cp $agent_dir/SKILL.md -> $KIRO_SKILLS/$agent_name/SKILL.md"
-            else
-                mkdir -p "$KIRO_SKILLS/$agent_name"
-                cp "$agent_dir/SKILL.md" "$KIRO_SKILLS/$agent_name/SKILL.md"
-                if [[ -d "$agent_dir/references" ]]; then
-                    cp -r "$agent_dir/references" "$KIRO_SKILLS/$agent_name/"
-                fi
-                if [[ -d "$agent_dir/templates" ]]; then
-                    cp -r "$agent_dir/templates" "$KIRO_SKILLS/$agent_name/"
-                fi
-            fi
-        fi
+    # Deploy 43 flat skill folders:
+    #   Agent persona  → skills/<agent-name>/SKILL.md       (/agent-name)
+    #   Agent command  → skills/<agent-name>-<cmd>/SKILL.md (/agent-name-cmd)
+    n_kiro=0
+    for agent_dir in "$AGENTS_DIR"/*/; do
+        [[ -d "$agent_dir" ]] || continue
+        agent_name="$(basename "$agent_dir")"
+
+        # Persona skill
+        write_kiro_skill "$agent_name" "$agent_dir/SKILL.md" "$KIRO_SKILLS"
+        (( n_kiro++ )) || true
+
+        # Command skills
+        for cmd_file in "$agent_dir"/*.md; do
+            [[ -f "$cmd_file" ]] || continue
+            cmd_name="$(basename "$cmd_file" .md)"
+            [[ "$cmd_name" == "SKILL" ]] && continue
+            write_kiro_skill "${agent_name}-${cmd_name}" "$cmd_file" "$KIRO_SKILLS"
+            (( n_kiro++ )) || true
+        done
     done
 
-    # Install commands as manual-inclusion steering files → /agent:cmd in Kiro
-    walk_sub_agents adapt_for_kiro "$KIRO_STEERING"
-
-    echo "  Skills:   $KIRO_SKILLS/"
-    echo "  Steering: $KIRO_STEERING/"
-    echo "  Invoke skills by description match, commands with / prefix"
+    echo "  Skills:   $KIRO_SKILLS/  ($n_kiro flat skill folders)"
+    echo "  Steering: $KIRO_STEERING/bmad-shared-context.md  (inclusion: always)"
+    echo "  Invoke:   /tech-lead,  /tech-lead-code-review,  /product-owner-create-brd,  etc."
     INSTALLED_TOOLS+=("Kiro")
     echo ""
 fi
