@@ -558,43 +558,54 @@ if [[ -d "$HOME/.codex" ]] || command -v codex &> /dev/null; then
         mkdir -p "$CODEX_PROMPTS"
     fi
 
-    # Remove legacy: old bmad-* prefixed folders AND old agent-named subdirs
+    # Wipe all existing bmad skills for a clean install
     if [[ "$DRY_RUN" == false ]]; then
-        for legacy in "$CODEX_SKILLS"/bmad-*/; do
-            [[ -d "$legacy" ]] && rm -rf "$legacy" && echo "  ✓ Removed legacy: $(basename "$legacy")"
-        done
-        for agent_dir in "$AGENTS_DIR"/*/; do
-            legacy="$CODEX_SKILLS/$(basename "$agent_dir")"
-            [[ -d "$legacy" ]] && rm -rf "$legacy" && echo "  ✓ Removed legacy dir: $(basename "$legacy")"
-        done
+        rm -rf "$CODEX_SKILLS"
+        mkdir -p "$CODEX_SKILLS"
     fi
 
     # Copy shared context
     copy_file "$SHARED_CONTEXT" "$HOME/.codex/BMAD-SHARED-CONTEXT.md"
 
-    # Deploy each agent as skills/<agent>/ folder — mirrors superpowers pattern.
-    # Each folder: SKILL.md (agent persona) + sibling cmd .md files.
+    # Deploy 43 flat skill folders under ~/.codex/skills/:
+    #   Agent persona  → skills/<agent-name>/SKILL.md
+    #   Agent command  → skills/<agent-name>-<cmd>/SKILL.md
+    #
     #   ~/.codex/skills/tech-lead/SKILL.md
-    #   ~/.codex/skills/tech-lead/code-review.md
-    #   ~/.codex/skills/tech-lead/sprint-plan.md
+    #   ~/.codex/skills/tech-lead-code-review/SKILL.md
+    #   ~/.codex/skills/tech-lead-sprint-plan/SKILL.md
+    n_skills=0
     for agent_dir in "$AGENTS_DIR"/*/; do
         [[ -d "$agent_dir" ]] || continue
         agent_name="$(basename "$agent_dir")"
 
+        # Persona skill
         if [[ "$DRY_RUN" == true ]]; then
-            echo "  [DRY] $CODEX_SKILLS/$agent_name/"
-            for f in "$agent_dir"/*.md; do
-                [[ -f "$f" ]] && echo "  [DRY]   $(basename "$f")"
-            done
+            echo "  [DRY] $CODEX_SKILLS/$agent_name/SKILL.md  (persona)"
         else
-            # Wipe and replace — prevents stale files from accumulating on re-runs
-            rm -rf "$CODEX_SKILLS/$agent_name"
-            cp -r "$agent_dir" "$CODEX_SKILLS/$agent_name"
+            mkdir -p "$CODEX_SKILLS/$agent_name"
+            cp "$agent_dir/SKILL.md" "$CODEX_SKILLS/$agent_name/SKILL.md"
         fi
+        (( n_skills++ )) || true
+
+        # Command skills: <agent-name>-<cmd>/SKILL.md
+        for cmd_file in "$agent_dir"/*.md; do
+            [[ -f "$cmd_file" ]] || continue
+            cmd_name="$(basename "$cmd_file" .md)"
+            [[ "$cmd_name" == "SKILL" ]] && continue
+            skill_dir="$CODEX_SKILLS/${agent_name}-${cmd_name}"
+            if [[ "$DRY_RUN" == true ]]; then
+                echo "  [DRY] $skill_dir/SKILL.md"
+            else
+                mkdir -p "$skill_dir"
+                cp "$cmd_file" "$skill_dir/SKILL.md"
+            fi
+            (( n_skills++ )) || true
+        done
     done
 
-    echo "  Skills:   $CODEX_SKILLS/"
-    echo "  Layout:   $CODEX_SKILLS/<agent>/SKILL.md + <cmd>.md siblings"
+    echo "  Skills:   $CODEX_SKILLS/  ($n_skills flat skill folders)"
+    echo "  Layout:   skills/<agent>/SKILL.md  +  skills/<agent>-<cmd>/SKILL.md"
     INSTALLED_TOOLS+=("Codex CLI")
     echo ""
 fi
