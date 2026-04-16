@@ -1,25 +1,30 @@
 # BMAD SDLC Agents: Two-Layer Agent Architecture
 
-**BMAD** (Breakthrough Method of Agile AI-Driven Development) is an enterprise methodology for delivering software through a cross-functional squad of 10 specialized AI agents. This repository implements the **two-layer architecture**: a global layer with reusable agent skills and shared resources, plus a project layer with context files checked into each project repo.
+**BMAD** (Breakthrough Method of Agile AI-Driven Development) is an enterprise methodology for delivering software through a cross-functional squad of 13 specialized AI agents (12 role-specific agents plus a `bmad` orchestrator). This repository implements the **two-layer architecture**: a global layer with reusable agent skills and shared resources, plus a project layer with context files checked into each project repo.
 
 Install the global layer once across all tools, then scaffold `.bmad/` context files into each project. Agents dynamically load project-specific knowledge from `.bmad/` combined with shared resources, creating a cohesive, context-aware squad.
+
+Every agent is held to the same four **Karpathy-derived engineering principles** — *Think before coding · Simplicity first · Surgical changes · Goal-driven execution* — installed as tool-tailored rulebooks under [`shared/karpathy-principles/`](shared/karpathy-principles/README.md) and referenced inline at the top of every `SKILL.md` and `brainstorm.md`.
 
 ---
 
 ## Agent Team
 
-| Agent                    | Skill File                             | BMAD Phase     | Role                                                                     |
-| ------------------------ | -------------------------------------- | -------------- | ------------------------------------------------------------------------ |
-| **Product Owner**        | `agents/product-owner/SKILL.md`        | Analysis       | Voice of the Business — BRD, high-level PRD, MVP scope (runs first)      |
-| **Business Analyst**     | `agents/business-analyst/SKILL.md`     | Analysis       | Requirements analyst — deep-dives BRD/PRD, produces requirements analysis |
-| **Enterprise Architect** | `agents/enterprise-architect/SKILL.md` | Solutioning    | High-level enterprise arch BEFORE SA — cloud infra, compliance, CI/CD    |
-| **UX/UI Designer**       | `agents/ux-designer/SKILL.md`          | Solutioning    | Personas, journeys, wireframes, design system, a11y (parallel with EA)   |
-| **Solution Architect**   | `agents/solution-architect/SKILL.md`   | Solutioning    | Detailed solution design using EA + UX outputs — APIs, data models, ADRs |
-| **Tech Lead**            | `agents/tech-lead/SKILL.md`            | All Phases     | Orchestration, sprint planning, code review, risk, release readiness      |
-| **Tester & QE**          | `agents/tester-qe/SKILL.md`            | All Phases     | Test strategy, quality gates, security testing, UI automation             |
-| **Backend Engineer**     | `agents/backend-engineer/SKILL.md`     | Implementation | APIs, data layers, event-driven services                                  |
-| **Frontend Engineer**    | `agents/frontend-engineer/SKILL.md`    | Implementation | React/TypeScript, state management, a11y                                  |
-| **Mobile Engineer**      | `agents/mobile-engineer/SKILL.md`      | Implementation | iOS/Android, native APIs, mobile architecture                             |
+| Agent                     | Skill File                              | BMAD Phase     | Role                                                                     |
+| ------------------------- | --------------------------------------- | -------------- | ------------------------------------------------------------------------ |
+| **BMAD Orchestrator**     | `agents/bmad/SKILL.md`                  | All Phases     | Routes work to the right sub-agent; entry point for squad prompts        |
+| **Product Owner**         | `agents/product-owner/SKILL.md`         | Analysis       | Voice of the Business — BRD, high-level PRD, MVP scope (runs first)      |
+| **Business Analyst**      | `agents/business-analyst/SKILL.md`      | Analysis       | Requirements analyst — deep-dives BRD/PRD, produces requirements analysis |
+| **Enterprise Architect**  | `agents/enterprise-architect/SKILL.md`  | Solutioning    | High-level enterprise arch BEFORE SA — cloud infra, compliance, CI/CD    |
+| **UX/UI Designer**        | `agents/ux-designer/SKILL.md`           | Solutioning    | Personas, journeys, wireframes, design system, a11y (parallel with EA)   |
+| **Solution Architect**    | `agents/solution-architect/SKILL.md`    | Solutioning    | Detailed solution design using EA + UX outputs — APIs, data models, ADRs |
+| **InfoSec Architect**     | `agents/infosec-architect/SKILL.md`     | Solutioning    | Threat modelling, controls, privacy-by-design, supply-chain, IR readiness |
+| **DevSecOps Engineer**    | `agents/devsecops-engineer/SKILL.md`    | All Phases     | Pipelines, IaC, SLOs, FinOps, reliability & recovery                     |
+| **Tech Lead**             | `agents/tech-lead/SKILL.md`             | All Phases     | Orchestration, sprint planning, code review, risk, release readiness     |
+| **Tester & QE**           | `agents/tester-qe/SKILL.md`             | All Phases     | Test strategy, quality gates, security testing, UI automation            |
+| **Backend Engineer**      | `agents/backend-engineer/SKILL.md`      | Implementation | APIs, data layers, event-driven services, authN/Z, idempotency           |
+| **Frontend Engineer**     | `agents/frontend-engineer/SKILL.md`     | Implementation | React/TypeScript, perf budgets, feature flags, i18n                      |
+| **Mobile Engineer**       | `agents/mobile-engineer/SKILL.md`       | Implementation | iOS/Android, offline, app-size, crash reporting                          |
 
 ---
 
@@ -29,14 +34,19 @@ Install the global layer once across all tools, then scaffold `.bmad/` context f
 
 **Install once.** Available in all projects.
 
-- **`agents/`** – 10 specialized agent skills, each in its own folder
-  - `<agent-name>/SKILL.md` – Core skill body (≤500 lines; loads on invocation)
+- **`agents/`** – 13 specialized agent skills, each in its own folder
+  - `<agent-name>/SKILL.md` – Core skill body (≤500 lines; loads on invocation). Opens with an `## Engineering Discipline` section that restates the Karpathy principles before any project-context loading.
+  - `<agent-name>/brainstorm.md` – 5-phase clarification command (`/<agent>:brainstorm`) with the same principles as preamble.
   - `<agent-name>/references/` – Deep-dive guides, patterns, and worked examples (loaded on demand)
   - `<agent-name>/templates/` – Output templates for deliverables (loaded on demand)
+  - `<agent-name>/sub-agents/` – Specialist helpers invoked via the Agent tool
 - **`shared/`** – Company-wide context, references, and templates
   - `BMAD-SHARED-CONTEXT.md` – Organization context, principles, standards
+  - `karpathy-principles/` – 10 tool-tailored rulebooks + index (`README.md`). Installed per tool by `install-global.sh`.
   - `references/technology-radar.md` – Technology choices, maturity tiers
   - `templates/` – ADR, story, test strategy, handoff log templates (agent-specific BRD/PRD/requirements templates live in `agents/<agent>/templates/`)
+- **`hooks/`** – Session-hook settings + scripts for Claude Code / Kiro, plus the Yolo autonomous harness
+- **`rules/`** – Per-tool rules fragments (Cursor / Windsurf / Copilot / Gemini / OpenCode / Aider) generated from agent content
 
 ### Project Layer
 
@@ -293,29 +303,40 @@ Enable with: `bash scripts/yolo.sh on` (Linux/macOS) or `.\scripts\yolo.ps1 on` 
 
 ### 🛠️ Tool Capability Matrix
 
-Agent behaviour is not identical across all AI coding tools. This matrix shows what works where so you can set the right expectations for your team.
+Agent behaviour is not identical across AI coding tools — and the gap has narrowed considerably as each tool has shipped multi-agent, hooks, and rules support over the last year. This matrix is a pragmatic cross-section as of the latest release; rate cells conservatively and verify against your tool's current docs before committing a workflow.
 
-| Capability | Claude Code | Kiro | Codex CLI | Gemini CLI |
-|---|---|---|---|---|
-| **Init file** | `CLAUDE.md` | `.kiro/steering/` | `AGENTS.md` | `GEMINI.md` (project) |
-| **Skills directory** | `~/.claude/skills/` | `~/.kiro/skills/` | `~/.codex/skills/` | `~/.gemini/skills/` |
-| **Model** | Claude Sonnet / Opus | Claude (via Amazon Bedrock) | GPT-4o | Gemini 2.x |
-| **Parallel subagent spawning** (Agent tool) | ✅ Full | ✅ Full | ❌ Not available | ❌ Not available |
-| **Session hooks** (PreToolUse / PostToolUse / Stop) | ✅ Full | ✅ Full | ❌ Not available | ❌ Not available |
-| **Yolo harness** | ✅ Full | ✅ Full | ❌ Not available | ❌ Not available |
-| **Sentinel file protocol** | ✅ Reliable | ✅ Reliable | ⚠️ Partial — model may skip sentinel writes after ✅ block | ⚠️ Partial — inconsistent file-check compliance |
-| **Autonomous sentinel chaining** | ✅ Reliable | ✅ Reliable | ⚠️ Unreliable | ⚠️ Unreliable |
-| **Slash commands** | ✅ `/agent-name` | ✅ `@agent-name` | ✅ `/agent-name` | ⚠️ Varies by version |
-| **Protocol step compliance** | ✅ High — follows multi-step protocols faithfully | ✅ High | ⚠️ Medium — tends to stop after ✅ summary; skips later steps | ⚠️ Medium — reformats output; compresses multi-branch logic |
-| **Wave E2 parallelism** (BE ∥ FE ∥ ME) | ✅ True parallel | ✅ True parallel | ❌ Sequential only | ❌ Sequential only |
-| **Git worktree TL review** | ✅ Full | ✅ Full | ✅ Full (tool-independent) | ✅ Full (tool-independent) |
+Legend: ✅ first-class · 🟡 works but with caveats · ❌ not currently supported.
+
+| Capability | Claude Code | Cowork | Cursor | Windsurf | GitHub Copilot | Codex CLI | Gemini CLI | Kiro | OpenCode | Aider |
+|---|---|---|---|---|---|---|---|---|---|---|
+| **Init file / rules entry** | `CLAUDE.md` | `~/.skills/` + `.bmad/` | `.cursor/rules/*.mdc` | `.windsurf/rules/*.md` (+ `.windsurfrules`) | `.github/copilot-instructions.md` | `AGENTS.md` | `GEMINI.md` | `AGENTS.md` + `.kiro/steering/` | `AGENTS.md` | `.aider.conventions.md` |
+| **Agent/skill container** | `~/.claude/skills/` (folder-per-skill) | `~/.skills/skills/` | Rules only | Rules only | Rules only | `~/.codex/skills/` | `~/.gemini/skills/` (folder-per-skill) | `~/.kiro/skills/` | `~/.opencode/instructions.md` | conventions file |
+| **Typical model(s)** | Claude Opus / Sonnet / Haiku | Claude Opus / Sonnet | User-selected (Claude, GPT, Gemini, …) | User-selected | GPT-family + Claude option | GPT-5 / o-series | Gemini 2.5 Pro / Flash | Claude via Bedrock | User-selected | User-selected (architect + editor split) |
+| **Subagent spawning** | ✅ Agent tool | ✅ Agent tool | 🟡 Background agents / Tasks | 🟡 Cascade sub-flows | 🟡 Coding Agent (PR-scale) | 🟡 via Responses API | 🟡 extensions & roles | ✅ Agent tool | 🟡 runner-level | ❌ (single-session) |
+| **Parallel E2 engineers** (BE ∥ FE ∥ ME) | ✅ True parallel | ✅ True parallel | 🟡 Multiple background agents | 🟡 Parallel Cascade sessions | 🟡 Multiple Coding Agent PRs | 🟡 limited parallelism | 🟡 emerging | ✅ True parallel | 🟡 manual | ❌ Sequential |
+| **Session hooks** (Pre/Post/Stop) | ✅ Full | ✅ Full | ❌ | ❌ | ❌ | 🟡 (some CLI hooks) | 🟡 (extension hooks) | ✅ Full | 🟡 limited | ❌ |
+| **Slash / invocation syntax** | `/agent-name` | `/skill-name` | `@agent` rules + Composer | `@agent` mentions in Cascade | `@workspace` / Agent Mode | `/agent-name` | `/agent-name` (version-dep.) | `@agent-name` | `@agent-name` | `/ask`, `/architect`, `/run` |
+| **Yolo / autonomous harness** | ✅ Full | ✅ Scheduled tasks + auto-run | 🟡 Background agents | 🟡 Cascade autopilot | 🟡 Coding Agent (GitHub-hosted) | 🟡 --dangerously-auto | 🟡 --yolo flag | ✅ Full | 🟡 | 🟡 --auto-commit |
+| **Sentinel-file protocol** | ✅ Reliable | ✅ Reliable | 🟡 Works; requires explicit rule | 🟡 Works; requires explicit rule | 🟡 Inconsistent outside Agent Mode | 🟡 Usually reliable post GPT-5 | 🟡 Improved on 2.5-Pro | ✅ Reliable | 🟡 | 🟡 |
+| **Protocol-step compliance** | ✅ High | ✅ High | 🟡 Good inside Composer | 🟡 Good inside Cascade | 🟡 Good in Agent Mode | 🟡 Medium–High (GPT-5) | 🟡 Medium–High (2.5-Pro) | ✅ High | 🟡 Medium | 🟡 Medium |
+| **MCP client support** | ✅ | ✅ | ✅ | ✅ | ✅ (Agent Mode) | ✅ | ✅ | ✅ | ✅ | 🟡 via plugins |
+| **Git worktree TL review** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Karpathy-principles auto-install path** | `~/.claude/KARPATHY-PRINCIPLES.md` | `~/.skills/KARPATHY-PRINCIPLES.md` | `~/.cursor/rules/001-karpathy-principles.mdc` | `~/.windsurf/rules/001-karpathy-principles.md` | `~/.github/copilot-instructions.md` (appended) | `~/.codex/KARPATHY-PRINCIPLES.md` | `~/.gemini/KARPATHY-PRINCIPLES.md` | `~/.kiro/steering/karpathy-principles.md` | `~/.opencode/instructions.md` (appended) | `~/.aider.conventions.md` (appended) |
 
 **Practical impact by tool:**
 
-- **Claude Code** — Full BMAD pipeline including autonomous chaining, parallel engineers, hooks, and Yolo harness. Recommended for the complete experience.
-- **Kiro** — Equivalent to Claude Code in nearly all respects. Path A and B both available. Yolo harness works. Only minor differences in slash command syntax (`@` vs `/`).
-- **Codex CLI** — Artifacts and quality gates work well. Autonomous chaining and sentinel writes are unreliable after the ✅ block. Engineers run sequentially (not in parallel). No hooks/harness. Each agent's Completion Protocol includes a `### 🔧 On Codex CLI / Gemini CLI` section with a simplified close procedure tailored to these constraints.
-- **Gemini CLI** — Similar limitations to Codex. Output formatting often deviates from spec (content is correct, structure varies). The `### 🔧 On Codex CLI / Gemini CLI` simplified protocol applies here too. Skills install to `~/.gemini/skills/<agent-name>/` using the same folder-per-skill convention as Claude Code and Kiro.
+- **Claude Code** — Reference implementation. Full BMAD pipeline: autonomous sentinel chaining, parallel engineers (BE ∥ FE ∥ ME), hooks, Yolo harness, plugins. Use this as the benchmark the other tools are measured against.
+- **Cowork (Claude Desktop)** — The desktop/agentic surface with skills, scheduled tasks, and MCP. Strong for document-producing roles (PO/BA/UX/EA) and for long-running orchestration of the squad. Shares Claude Code's compliance profile.
+- **Cursor** — Composer / Agent Mode + background agents cover multi-file changes and long-running work; rules system (`.cursor/rules/*.mdc`) is the right home for persistent BMAD guidance. No Claude-Code-style hooks, so harness features don't apply.
+- **Windsurf** — Cascade is the agentic equivalent of Composer; planning mode works well for brainstorm.md prompts. Rules files at `.windsurf/rules/` are first-class. Use its autopilot rather than the Yolo harness.
+- **GitHub Copilot** — Agent Mode (in IDE) is well-suited to individual agent roles; the asynchronous Coding Agent can run long-form work against a branch/PR. Uses `.github/copilot-instructions.md` and `.github/instructions/*.instructions.md`. Hooks/harness don't apply.
+- **Codex CLI** — GPT-5 / o-series era. Protocol compliance is much better than on GPT-4o, but sentinel chaining and multi-branch logic still drift occasionally — verify explicitly. Parallelism is improving via the Responses API but is not yet at Claude-Code parity. Each agent's Completion Protocol keeps a `### 🔧 On Codex CLI / Gemini CLI` fallback for safety.
+- **Gemini CLI** — Gemini 2.5 Pro greatly improved long-context and structured output; still reformats occasionally. Extensions system (this repo ships `gemini-extension.json`) is the cleanest install surface. Use `--yolo` selectively.
+- **Kiro (AWS)** — Spec-driven workflow with Skills, Steering, and Hooks — effectively a peer of Claude Code for BMAD. Only difference is `@agent-name` vs `/agent-name` invocation syntax.
+- **OpenCode** — Open standards (`AGENTS.md`, MCP) make install straightforward; exact capability depends on the model/runner you pair it with.
+- **Aider** — Architect+editor split is a natural fit for Karpathy-style "think before coding": use a strong model in `/architect` to produce the plan, a cheap model to apply edits. No subagents — drive the squad manually turn-by-turn.
+
+> **Recommendation:** if you want the fully autonomous BMAD pipeline (sentinels, parallel engineers, hooks, Yolo), pick **Claude Code**, **Kiro**, or **Cowork**. For IDE-integrated workflows with agentic modes, pick **Cursor**, **Windsurf**, or **GitHub Copilot**. For CLI-first teams, **Codex CLI** or **Gemini CLI** are solid — just budget for the occasional sentinel-verification step. **Aider** is excellent for disciplined single-threaded work where you want tight human control.
 
 ---
 
@@ -1969,45 +1990,48 @@ Save results to docs/testing/[story-id]-results.md.
 
 ```
 bmad-sdlc-agents/
-├── agents/                                 # Global: 10 agent skills (ordered by BMAD flow)
+├── agents/                                 # Global: 13 agent skills (ordered by BMAD flow)
+│   ├── bmad/                               # Orchestrator — routes work to the right sub-agent
+│   │   └── SKILL.md
 │   ├── product-owner/                      # W1 — BRD, PRD, epics, MVP scope
 │   │   ├── SKILL.md                        # Core skill body (≤500 lines)
-│   │   ├── references/                     # prioritisation-frameworks, quality-gate-checklist, common-scenarios
-│   │   └── templates/                      # brd-template, prd-template, epic-template, rice-prioritization, artifact-handoff-memo
-│   ├── business-analyst/                   # W2 — requirements analysis, user stories, use cases
-│   │   ├── SKILL.md
-│   │   ├── references/                     # requirements-frameworks, quality-gate-checklist, common-scenarios
-│   │   └── templates/                      # requirements-analysis-template, user-story-template, use-case-template, stakeholder-interview-template, requirements-matrix
+│   │   ├── brainstorm.md                   # /<agent>:brainstorm — 5-phase clarification flow
+│   │   ├── implement-story.md              # (engineers) or role-specific command files
+│   │   ├── references/                     # prioritisation-frameworks, quality-gate, scenarios
+│   │   ├── templates/                      # brd, prd, epic, rice, handoff-memo, …
+│   │   └── sub-agents/                     # Specialist helpers invoked via Agent tool
+│   ├── business-analyst/                   # W2 — requirements, user stories, use cases
 │   ├── enterprise-architect/               # W3 ∥ — cloud infra, compliance, CI/CD
-│   │   ├── SKILL.md
-│   │   └── references/
-│   ├── ux-designer/                        # W3 ∥ — wireframes (ASCII/Pencil/Figma), design system, a11y
-│   │   ├── SKILL.md
-│   │   ├── references/                     # pencil-mcp-integration, figma-mcp-integration, design-tokens-reference, design-preferences-elicitation
-│   │   └── templates/                      # ui-spec-template, persona-template, journey-template, screen-template, etc.
+│   ├── ux-designer/                        # W3 ∥ — wireframes (ASCII/Pencil/Figma), a11y
 │   ├── solution-architect/                 # W4 — detailed solution design within EA boundaries
-│   │   ├── SKILL.md
-│   │   └── references/
+│   ├── infosec-architect/                  # W4 ∥ — threat modelling, controls, privacy, SBOM
+│   ├── devsecops-engineer/                 # W4 ∥ — pipelines, IaC, SLOs, FinOps, reliability
 │   ├── tech-lead/                          # W5 — sprint planning, code review, orchestration
-│   │   ├── SKILL.md
-│   │   ├── references/
-│   │   └── templates/                      # alignment-checklist, sprint-kickoff-template, etc.
-│   ├── tester-qe/
-│   │   ├── SKILL.md
-│   │   ├── references/
-│   │   └── templates/
-│   ├── backend-engineer/
-│   │   ├── SKILL.md
-│   │   └── references/
-│   ├── frontend-engineer/
-│   │   ├── SKILL.md
-│   │   └── references/
-│   └── mobile-engineer/
-│       ├── SKILL.md
-│       └── references/
+│   ├── backend-engineer/                   # E2 ∥ — services, APIs, data, auth, events
+│   ├── frontend-engineer/                  # E2 ∥ — web UI, perf budgets, flags, i18n
+│   ├── mobile-engineer/                    # E2 ∥ — iOS/Android, offline, app-size, crash tools
+│   └── tester-qe/                          # E3 — test plan, quality gates, shift-left
+│
+│   # Every agent folder carries the same internal layout:
+│   #   SKILL.md (entry point, now opens with an "Engineering Discipline" /
+│   #     Karpathy-principles section before Project Context Loading),
+│   #   brainstorm.md (5-phase clarification command; preamble enforces the
+│   #     same principles), references/, templates/, sub-agents/.
 │
 ├── shared/                                 # Global: resources for all projects
-│   ├── BMAD-SHARED-CONTEXT.md
+│   ├── BMAD-SHARED-CONTEXT.md              # Four-phase cycle + handoff model
+│   ├── karpathy-principles/                # Tool-tailored "discipline" rulebooks (NEW)
+│   │   ├── README.md                       # Index + install recipes per tool
+│   │   ├── claude-code.md                  # Canonical adaptation for Claude Code
+│   │   ├── cowork.md                       # Desktop/file-creation framing
+│   │   ├── codex-cli.md                    # CLI + destructive-command caution
+│   │   ├── kiro.md                         # Has `inclusion: always` frontmatter
+│   │   ├── cursor.mdc                      # Has `alwaysApply: true` frontmatter
+│   │   ├── windsurf.md                     # Targets Cascade multi-file changesets
+│   │   ├── copilot-instructions.md         # Ties to green-PR success criteria
+│   │   ├── gemini-cli.md                   # Tool-call safety framing
+│   │   ├── opencode.md                     # Near-canonical
+│   │   └── aider.md                        # /add, /ask, /run, edit-block terminology
 │   ├── references/
 │   │   └── technology-radar.md
 │   └── templates/
@@ -2017,7 +2041,28 @@ bmad-sdlc-agents/
 │       └── handoff-log-template.md
 │       # Note: BRD, PRD, epic, requirements-analysis, and user-story templates
 │       # live in their respective agents/product-owner/templates/ and
-│       # agents/business-analyst/templates/ for agent-level progressive disclosure
+│       # agents/business-analyst/templates/ for agent-level progressive disclosure.
+│
+├── hooks/                                  # Session hooks (Claude Code / Kiro)
+│   ├── global/
+│   │   ├── settings.json                   # PreToolUse / PostToolUse / Stop bindings
+│   │   └── scripts/                        # Executable hook scripts
+│   ├── project/
+│   │   ├── settings.json
+│   │   └── scripts/
+│   └── yolo-harness/                       # Autonomous orchestration harness
+│       ├── settings.json
+│       ├── settings-windows.json
+│       └── hooks/
+│
+├── rules/                                  # Per-tool rules files generated from agents/
+│   ├── README.md
+│   ├── aider/                              # .aider.conventions.md fragments
+│   ├── copilot/                            # copilot-instructions.md fragments
+│   ├── cursor/                             # .cursor/rules/*.mdc
+│   ├── gemini/                             # GEMINI.md fragments
+│   ├── opencode/                           # AGENTS.md fragments
+│   └── windsurf/                           # .windsurf/rules/*.md
 │
 ├── mcp-configs/                            # MCP server configuration files
 │   └── global/
@@ -2027,6 +2072,12 @@ bmad-sdlc-agents/
 │       ├── filesystem.json                 # Filesystem access
 │       ├── github.json                     # GitHub integration
 │       └── playwright.json                 # Playwright testing automation
+│
+├── eval/                                   # Agent-quality eval dashboard
+│   └── bmad-agent-eval-dashboard.html
+│
+├── templates/                              # Top-level instruction-file templates
+│                                           # (CLAUDE.md / GEMINI.md / AGENTS.md / …)
 │
 ├── project-scaffold/                       # Template for new projects
 │   ├── .bmad/
@@ -2046,14 +2097,32 @@ bmad-sdlc-agents/
 │       ├── stories/                        # User stories with GWT ACs (BA)
 │       ├── analysis/                       # Use cases, impact analyses (BA)
 │       ├── architecture/                   # EA, SA, ADRs, sprint plans (EA + SA + TL)
+│       ├── security/                       # Threat models, controls, SBOM (InfoSec)
+│       ├── platform/                       # IaC, pipelines, runbooks, SLOs (DevSecOps)
 │       ├── ux/                             # Personas, wireframes, design system (UX)
 │       └── testing/                        # Test strategies, results, bug reports (TQE)
 │
-└── scripts/
-    ├── install-global.sh                   # Deploy agents/ + shared/ to all detected tools
-    ├── scaffold-project.sh                 # Create .bmad/ + project wiring files
-    └── update.sh                           # Update global install + all projects
+├── scripts/
+│   ├── install-global.sh                   # Deploy agents/ + shared/ + karpathy-principles to all detected tools
+│   ├── scaffold-project.sh                 # Create .bmad/ + project wiring files
+│   ├── update.sh                           # Update global install + all projects
+│   ├── clean-duplicate-hooks.py            # Dedup hooks after upgrades
+│   ├── migrate-handoff-log.py              # Migrate legacy handoff logs
+│   ├── yolo.sh                             # Yolo harness launcher (macOS/Linux)
+│   └── yolo.ps1                            # Yolo harness launcher (Windows)
+│
+├── CLAUDE.md                               # Project-level auto-load for Claude Code
+├── GEMINI.md                               # Project-level auto-load for Gemini CLI
+├── gemini-extension.json                   # Gemini CLI extension manifest
+├── FILES_CREATED.md                        # Changelog of generated files
+└── NEW_FILES_SUMMARY.txt                   # Upgrade audit trail
 ```
+
+> **Where the Karpathy principles live.** Three layers, all installed together by `scripts/install-global.sh`:
+>
+> 1. **`shared/karpathy-principles/`** — 10 tool-tailored rulebooks + index. Installed per tool (e.g. `~/.claude/KARPATHY-PRINCIPLES.md`, `~/.cursor/rules/001-karpathy-principles.mdc`, appended to `~/.aider.conventions.md`, etc.).
+> 2. **`agents/*/SKILL.md`** — each of the 13 agent skills opens with an `## Engineering Discipline` section that restates the four principles before any project-context loading.
+> 3. **`agents/*/brainstorm.md`** — the 5-phase clarification command carries the same principles as a preamble so brainstorming stays surgical, not performative.
 
 ---
 
