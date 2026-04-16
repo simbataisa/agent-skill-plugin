@@ -1111,6 +1111,106 @@ if [[ -d "$HOME/.aider" ]] || command -v aider &> /dev/null; then
 fi
 
 # ============================================================
+# Karpathy-Style Coding Principles — deploy per detected tool
+# ============================================================
+# Tool-tailored adaptations of the four behavioral principles
+# (Think Before Coding, Simplicity First, Surgical Changes, Goal-Driven
+# Execution) from forrestchang/andrej-karpathy-skills. Source files live in
+# shared/karpathy-principles/ alongside BMAD-SHARED-CONTEXT.md. See
+# shared/karpathy-principles/README.md for per-tool tailoring notes.
+# ============================================================
+KARPATHY_DIR="$BASE_DIR/shared/karpathy-principles"
+
+# Idempotent append: only cat $src onto $dst if $marker isn't already there.
+# Usage: append_karpathy <src> <dst> <marker-regex>
+append_karpathy() {
+    local src="$1" dst="$2" marker="$3"
+    if [[ "$DRY_RUN" == true ]]; then
+        echo "  [DRY] append $src -> $dst"
+        return
+    fi
+    mkdir -p "$(dirname "$dst")"
+    if [[ -f "$dst" ]] && grep -q "$marker" "$dst" 2>/dev/null; then
+        return  # already installed
+    fi
+    [[ -f "$dst" ]] && echo "" >> "$dst"
+    cat "$src" >> "$dst"
+}
+
+if [[ -d "$KARPATHY_DIR" ]]; then
+    echo -e "${BLUE}Installing Karpathy-style coding principles...${NC}"
+
+    # Claude Code — standalone file next to shared context
+    if [[ -d "$HOME/.claude" ]] || command -v claude &> /dev/null; then
+        copy_file "$KARPATHY_DIR/claude-code.md" "$HOME/.claude/KARPATHY-PRINCIPLES.md"
+        echo -e "  ${GREEN}✓${NC} Claude Code    → ~/.claude/KARPATHY-PRINCIPLES.md"
+    fi
+
+    # Cowork
+    if [[ -d "$HOME/.skills" ]]; then
+        copy_file "$KARPATHY_DIR/cowork.md" "$HOME/.skills/KARPATHY-PRINCIPLES.md"
+        echo -e "  ${GREEN}✓${NC} Cowork         → ~/.skills/KARPATHY-PRINCIPLES.md"
+    fi
+
+    # Codex CLI
+    if [[ -d "$HOME/.codex" ]] || command -v codex &> /dev/null; then
+        copy_file "$KARPATHY_DIR/codex-cli.md" "$HOME/.codex/KARPATHY-PRINCIPLES.md"
+        echo -e "  ${GREEN}✓${NC} Codex CLI      → ~/.codex/KARPATHY-PRINCIPLES.md"
+    fi
+
+    # Kiro — steering file (source already has inclusion: always frontmatter)
+    if [[ -d "$HOME/.kiro" ]] || command -v kiro &> /dev/null; then
+        copy_file "$KARPATHY_DIR/kiro.md" "$HOME/.kiro/steering/karpathy-principles.md"
+        echo -e "  ${GREEN}✓${NC} Kiro           → ~/.kiro/steering/karpathy-principles.md"
+    fi
+
+    # Cursor — .mdc rule file (source already has alwaysApply: true frontmatter)
+    if [[ -d "$HOME/.cursor" ]] || command -v cursor &> /dev/null; then
+        copy_file "$KARPATHY_DIR/cursor.mdc" "$HOME/.cursor/rules/001-karpathy-principles.mdc"
+        echo -e "  ${GREEN}✓${NC} Cursor         → ~/.cursor/rules/001-karpathy-principles.mdc"
+    fi
+
+    # Windsurf — rule file
+    if [[ -d "$HOME/.windsurf" ]]; then
+        copy_file "$KARPATHY_DIR/windsurf.md" "$HOME/.windsurf/rules/001-karpathy-principles.md"
+        echo -e "  ${GREEN}✓${NC} Windsurf       → ~/.windsurf/rules/001-karpathy-principles.md"
+    fi
+
+    # GitHub Copilot — append to copilot-instructions.md (idempotent)
+    if [[ -d "$HOME/.github" ]]; then
+        append_karpathy "$KARPATHY_DIR/copilot-instructions.md" \
+                        "$HOME/.github/copilot-instructions.md" \
+                        "^# GitHub Copilot — Coding Principles (Karpathy-style)"
+        echo -e "  ${GREEN}✓${NC} GitHub Copilot → ~/.github/copilot-instructions.md (appended)"
+    fi
+
+    # Gemini CLI — standalone file in ~/.gemini/ (reference from your own GEMINI.md)
+    if [[ -d "$HOME/.gemini" ]] || command -v gemini &> /dev/null; then
+        copy_file "$KARPATHY_DIR/gemini-cli.md" "$HOME/.gemini/KARPATHY-PRINCIPLES.md"
+        echo -e "  ${GREEN}✓${NC} Gemini CLI     → ~/.gemini/KARPATHY-PRINCIPLES.md"
+    fi
+
+    # OpenCode — append to instructions.md (idempotent)
+    if [[ -d "$HOME/.opencode" ]] || command -v opencode &> /dev/null; then
+        append_karpathy "$KARPATHY_DIR/opencode.md" \
+                        "$HOME/.opencode/instructions.md" \
+                        "^# OpenCode — Coding Principles (Karpathy-style)"
+        echo -e "  ${GREEN}✓${NC} OpenCode       → ~/.opencode/instructions.md (appended)"
+    fi
+
+    # Aider — append to conventions file (idempotent)
+    if [[ -d "$HOME/.aider" ]] || command -v aider &> /dev/null; then
+        append_karpathy "$KARPATHY_DIR/aider.md" \
+                        "$HOME/.aider.conventions.md" \
+                        "^# Aider — Coding Conventions (Karpathy-style)"
+        echo -e "  ${GREEN}✓${NC} Aider          → ~/.aider.conventions.md (appended)"
+    fi
+
+    echo "  Source:  $KARPATHY_DIR/"
+    echo ""
+fi
+
+# ============================================================
 # Eval Dashboard — deploy to ~/.bmad/eval/
 # ============================================================
 EVAL_DIR="$BASE_DIR/eval"
