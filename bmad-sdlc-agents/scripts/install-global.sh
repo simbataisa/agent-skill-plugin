@@ -991,6 +991,42 @@ EXTEOF
     echo "  Extensions:  $GEMINI_EXTENSIONS_DIR/bmad-*/"
     echo "  Invoke:      /bmad-product-owner:create-brd,  /bmad-tech-lead:code-review,  etc."
     echo "  Register:    for ext in ~/.gemini/extensions/bmad-*/; do gemini extensions install \"\$ext\"; done"
+
+    # --------------------------------------------------------
+    # Gemini CLI subagents (native subagent feature)
+    # --------------------------------------------------------
+    # Deploys 13 markdown-defined subagents to ~/.gemini/agents/.
+    # Each file has YAML frontmatter (name, description, tools, temperature,
+    # max_turns, timeout_mins) and a system-prompt body that references the
+    # installed skill files above. The main Gemini session can now delegate
+    # to them either automatically ("Gemini's main agent is instructed to use
+    # specialised subagents when a task matches their expertise") or
+    # explicitly via @<name> syntax, e.g.
+    #   @backend-engineer implement story BE-001
+    # Each subagent runs in an isolated context window — they save tokens in
+    # the main conversation but cannot call other subagents.
+    GEMINI_SUBAGENTS_SRC="$RULES_DIR/gemini/agents"
+    GEMINI_SUBAGENTS_DST="$HOME/.gemini/agents"
+    if [[ -d "$GEMINI_SUBAGENTS_SRC" ]]; then
+        if [[ "$DRY_RUN" == true ]]; then
+            for f in "$GEMINI_SUBAGENTS_SRC"/*.md; do
+                [[ -f "$f" ]] || continue
+                echo "  [DRY] subagent $(basename "$f") -> $GEMINI_SUBAGENTS_DST/"
+            done
+        else
+            mkdir -p "$GEMINI_SUBAGENTS_DST"
+            n_sub=0
+            for f in "$GEMINI_SUBAGENTS_SRC"/*.md; do
+                [[ -f "$f" ]] || continue
+                cp "$f" "$GEMINI_SUBAGENTS_DST/$(basename "$f")"
+                n_sub=$((n_sub + 1))
+            done
+            echo "  ✓ Subagents:  $GEMINI_SUBAGENTS_DST/  ($n_sub files)"
+            echo "  Invoke:       @backend-engineer …, @tech-lead …, @product-owner …"
+            echo "  Manage:       /agents  (inside gemini)"
+        fi
+    fi
+
     INSTALLED_TOOLS+=("Gemini CLI")
     echo ""
 fi

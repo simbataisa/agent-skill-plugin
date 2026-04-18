@@ -310,15 +310,15 @@ Legend: ✅ first-class · 🟡 works but with caveats · ❌ not currently supp
 | Capability | Claude Code | Cowork | Cursor | Windsurf | GitHub Copilot | Codex CLI | Gemini CLI | Kiro | OpenCode | Aider |
 |---|---|---|---|---|---|---|---|---|---|---|
 | **Init file / rules entry** | `CLAUDE.md` | `~/.skills/` + `.bmad/` | `.cursor/rules/*.mdc` | `.windsurf/rules/*.md` (+ `.windsurfrules`) | `.github/copilot-instructions.md` | `AGENTS.md` | `GEMINI.md` | `AGENTS.md` + `.kiro/steering/` | `AGENTS.md` | `.aider.conventions.md` |
-| **Agent/skill container** | `~/.claude/skills/` (folder-per-skill) | `~/.skills/skills/` | Rules only | Rules only | Rules only | `~/.codex/skills/` | `~/.gemini/skills/` (folder-per-skill) | `~/.kiro/skills/` | `~/.opencode/instructions.md` | conventions file |
+| **Agent/skill container** | `~/.claude/skills/` (folder-per-skill) | `~/.skills/skills/` | Rules only | Rules only | Rules only | `~/.codex/skills/` | `~/.gemini/skills/` (skills) + `~/.gemini/agents/` (native subagents) | `~/.kiro/skills/` | `~/.opencode/instructions.md` | conventions file |
 | **Typical model(s)** | Claude Opus / Sonnet / Haiku | Claude Opus / Sonnet | User-selected (Claude, GPT, Gemini, …) | User-selected | GPT-family + Claude option | GPT-5 / o-series | Gemini 2.5 Pro / Flash | Claude via Bedrock | User-selected | User-selected (architect + editor split) |
-| **Subagent spawning** | ✅ Agent tool | ✅ Agent tool | 🟡 Background agents / Tasks | 🟡 Cascade sub-flows | 🟡 Coding Agent (PR-scale) | 🟡 via Responses API | 🟡 extensions & roles | ✅ Agent tool | 🟡 runner-level | ❌ (single-session) |
-| **Parallel E2 engineers** (BE ∥ FE ∥ ME) | ✅ True parallel | ✅ True parallel | 🟡 Multiple background agents | 🟡 Parallel Cascade sessions | 🟡 Multiple Coding Agent PRs | 🟡 limited parallelism | 🟡 emerging | ✅ True parallel | 🟡 manual | ❌ Sequential |
+| **Subagent spawning** | ✅ Agent tool | ✅ Agent tool | 🟡 Background agents / Tasks | 🟡 Cascade sub-flows | 🟡 Coding Agent (PR-scale) | 🟡 via Responses API | ✅ Native subagents (markdown-defined) with isolated context | ✅ Agent tool | 🟡 runner-level | ❌ (single-session) |
+| **Parallel E2 engineers** (BE ∥ FE ∥ ME) | ✅ True parallel | ✅ True parallel | 🟡 Multiple background agents | 🟡 Parallel Cascade sessions | 🟡 Multiple Coding Agent PRs | 🟡 limited parallelism | 🟡 Sequential subagent calls (isolated context, not parallel) | ✅ True parallel | 🟡 manual | ❌ Sequential |
 | **Session hooks** (Pre/Post/Stop) | ✅ Full | ✅ Full | ❌ | ❌ | ❌ | 🟡 (some CLI hooks) | 🟡 (extension hooks) | ✅ Full | 🟡 limited | ❌ |
-| **Slash / invocation syntax** | `/agent-name` | `/skill-name` | `@agent` rules + Composer | `@agent` mentions in Cascade | `@workspace` / Agent Mode | `/agent-name` | `/agent-name` (version-dep.) | `@agent-name` | `@agent-name` | `/ask`, `/architect`, `/run` |
+| **Slash / invocation syntax** | `/agent-name` | `/skill-name` | `@agent` rules + Composer | `@agent` mentions in Cascade | `@workspace` / Agent Mode | `/agent-name` | `@<subagent-name>` + `/agents` manager | `@agent-name` | `@agent-name` | `/ask`, `/architect`, `/run` |
 | **Yolo / autonomous harness** | ✅ Full | ✅ Scheduled tasks + auto-run | 🟡 Background agents | 🟡 Cascade autopilot | 🟡 Coding Agent (GitHub-hosted) | 🟡 --dangerously-auto | 🟡 --yolo flag | ✅ Full | 🟡 | 🟡 --auto-commit |
 | **Sentinel-file protocol** | ✅ Reliable | ✅ Reliable | 🟡 Works; requires explicit rule | 🟡 Works; requires explicit rule | 🟡 Inconsistent outside Agent Mode | 🟡 Usually reliable post GPT-5 | 🟡 Improved on 2.5-Pro | ✅ Reliable | 🟡 | 🟡 |
-| **Protocol-step compliance** | ✅ High | ✅ High | 🟡 Good inside Composer | 🟡 Good inside Cascade | 🟡 Good in Agent Mode | 🟡 Medium–High (GPT-5) | 🟡 Medium–High (2.5-Pro) | ✅ High | 🟡 Medium | 🟡 Medium |
+| **Protocol-step compliance** | ✅ High | ✅ High | 🟡 Good inside Composer | 🟡 Good inside Cascade | 🟡 Good in Agent Mode | 🟡 Medium–High (GPT-5) | 🟡 High inside subagent context; medium in main session | ✅ High | 🟡 Medium | 🟡 Medium |
 | **MCP client support** | ✅ | ✅ | ✅ | ✅ | ✅ (Agent Mode) | ✅ | ✅ | ✅ | ✅ | 🟡 via plugins |
 | **Git worktree TL review** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **Karpathy-principles auto-install path** | `~/.claude/KARPATHY-PRINCIPLES.md` | `~/.skills/KARPATHY-PRINCIPLES.md` | `~/.cursor/rules/001-karpathy-principles.mdc` | `~/.windsurf/rules/001-karpathy-principles.md` | `~/.github/copilot-instructions.md` (appended) | `~/.codex/KARPATHY-PRINCIPLES.md` | `~/.gemini/KARPATHY-PRINCIPLES.md` | `~/.kiro/steering/karpathy-principles.md` | `~/.opencode/instructions.md` (appended) | `~/.aider.conventions.md` (appended) |
@@ -331,7 +331,7 @@ Legend: ✅ first-class · 🟡 works but with caveats · ❌ not currently supp
 - **Windsurf** — Cascade is the agentic equivalent of Composer; planning mode works well for brainstorm.md prompts. Rules files at `.windsurf/rules/` are first-class. Use its autopilot rather than the Yolo harness.
 - **GitHub Copilot** — Agent Mode (in IDE) is well-suited to individual agent roles; the asynchronous Coding Agent can run long-form work against a branch/PR. Uses `.github/copilot-instructions.md` and `.github/instructions/*.instructions.md`. Hooks/harness don't apply.
 - **Codex CLI** — GPT-5 / o-series era. Protocol compliance is much better than on GPT-4o, but sentinel chaining and multi-branch logic still drift occasionally — verify explicitly. Parallelism is improving via the Responses API but is not yet at Claude-Code parity. Each agent's Completion Protocol keeps a `### 🔧 On Codex CLI / Gemini CLI` fallback for safety.
-- **Gemini CLI** — Gemini 2.5 Pro greatly improved long-context and structured output; still reformats occasionally. Extensions system (this repo ships `gemini-extension.json`) is the cleanest install surface. Use `--yolo` selectively.
+- **Gemini CLI** — Gemini 2.5 / 3 era. Now ships **native subagents** (markdown files at `.gemini/agents/*.md` or `~/.gemini/agents/*.md`) with isolated context windows, per-subagent tool allow-lists, and `@<name>` invocation. `install-global.sh` deploys all 13 BMAD roles as subagents alongside the existing skills/extensions, so you can write `@backend-engineer implement BE-001` and the main agent delegates with token-efficient context isolation. Subagents cannot call other subagents (recursion-protected), so the BMAD orchestrator role acts as a routing advisor and the main agent is responsible for chained delegation. Manage interactively with `/agents` inside the CLI. Sequential — not yet parallel — but a major step up from the old "no subagents" baseline.
 - **Kiro (AWS)** — Spec-driven workflow with Skills, Steering, and Hooks — effectively a peer of Claude Code for BMAD. Only difference is `@agent-name` vs `/agent-name` invocation syntax.
 - **OpenCode** — Open standards (`AGENTS.md`, MCP) make install straightforward; exact capability depends on the model/runner you pair it with.
 - **Aider** — Architect+editor split is a natural fit for Karpathy-style "think before coding": use a strong model in `/architect` to produce the plan, a cheap model to apply edits. No subagents — drive the squad manually turn-by-turn.
@@ -450,9 +450,9 @@ This project uses the BMAD SDLC framework. At the start of each session, read:
 Always apply the conventions in `team-conventions.md` when generating code.
 ```
 
-### Gemini CLI — `~/.gemini/skills/` + project `GEMINI.md`
+### Gemini CLI — `~/.gemini/skills/` + `~/.gemini/agents/` + project `GEMINI.md`
 
-Global skills install to `~/.gemini/skills/<agent-name>/SKILL.md` (same folder-per-skill convention as Claude Code). Project-level wiring uses a `GEMINI.md` at the project root:
+Global skills install to `~/.gemini/skills/<agent-name>/SKILL.md` (same folder-per-skill convention as Claude Code), and 13 native subagents install to `~/.gemini/agents/<agent-name>.md` (invocable with `@<name>` and manageable via `/agents`). Project-level wiring uses a `GEMINI.md` at the project root:
 
 ```markdown
 ## BMAD Project Context
@@ -745,14 +745,27 @@ Address agents by role: "Acting as the Product Owner, …"
 
 ### Gemini CLI
 
+Gemini CLI now has **native subagent support** (markdown-defined agents under `.gemini/agents/*.md` with isolated context windows and `@<name>` invocation). BMAD installs both surfaces so you can choose per task:
+
+- **Subagents** (`~/.gemini/agents/*.md`) — invoked with `@backend-engineer …`, isolated context, per-role tool allow-list, token-efficient.
+- **Extensions / skills** (`~/.gemini/extensions/bmad-*/`) — invoked with `/bmad-<agent>:<cmd>` slash commands, share the main session's context.
+
 **Global Install (once)**
 
 ```bash
 bash scripts/install-global.sh
-# → ~/.gemini/skills/<agent-name>/SKILL.md   (one folder per agent)
-# → ~/.gemini/skills/<agent-name>/references/ (deep-dive guides)
-# → ~/.gemini/skills/<agent-name>/templates/  (output templates)
-# → ~/.gemini/BMAD-SHARED-CONTEXT.md
+# → ~/.gemini/agents/<agent>.md              (13 native subagents — NEW)
+# → ~/.gemini/extensions/bmad-<agent>/       (one extension per role)
+#     ├── gemini-extension.json
+#     ├── GEMINI.md                          @-imports the skills below
+#     └── skills/<cmd>/SKILL.md              /bmad-<agent>:<cmd> slash commands
+# → ~/.gemini/KARPATHY-PRINCIPLES.md         engineering-discipline reference
+```
+
+Register extensions after first install:
+
+```bash
+for ext in ~/.gemini/extensions/bmad-*/; do gemini extensions install "$ext"; done
 ```
 
 **Project Install (per project, run from project root)**
@@ -761,9 +774,31 @@ bash scripts/install-global.sh
 bash /path/to/bmad-sdlc-agents/scripts/scaffold-project.sh "My Project"
 # → .bmad/       project context files (commit to git)
 # → GEMINI.md    auto-loads .bmad/ at session start
+# → .gemini/agents/  (optional) project-local subagents that override ~/.gemini/agents
 ```
 
-Address agents by role: "Acting as the Enterprise Architect, …"
+**Invoking agents:**
+
+```text
+# Native subagent — isolated context, auto-delegatable
+@backend-engineer implement story BE-001
+
+# Explicit subagent for a clarifying phase
+@product-owner draft BRD for the new billing flow
+
+# Slash-command skill (shares main session context)
+/bmad-tech-lead:code-review
+
+# Manage subagents interactively
+/agents
+```
+
+**Subagent notes:**
+
+- Each subagent runs in its own context window — the main session stays lean.
+- Subagents cannot call other subagents. The BMAD orchestrator subagent (`@bmad`) gives routing advice; the main agent is responsible for chaining delegations (Wave 1 → Wave 2 → …).
+- Tool access is per-subagent (see `tools:` in each `.md` file). Engineers get write + shell; analysts get read + web + MCP.
+- The four Karpathy principles are embedded in every subagent body and cross-referenced to `~/.gemini/KARPATHY-PRINCIPLES.md`.
 
 ---
 
@@ -956,6 +991,8 @@ Propose system architecture with service boundaries, API contracts, and data mod
 
 Agents are already loaded via your global rules file. Just address the agent by role in your prompt — the tool has all agent definitions in context:
 
+> **Gemini CLI users:** you can also invoke any role as a native subagent, e.g. `@product-owner review .bmad/PROJECT-CONTEXT.md …`, which runs the role in an isolated context window.
+
 ```
 Acting as the Product Owner, review .bmad/PROJECT-CONTEXT.md. Elicit business requirements
 and create the BRD (docs/brd.md) and PRD (docs/prd.md) for this project.
@@ -974,7 +1011,7 @@ and data models. Use .bmad/tech-stack.md.
 
 ### Squad Mode: All Agents Together
 
-See the **Squad Prompt** section below to run all 10 agents in a single session.
+See the **Squad Prompt** section below to run all 13 agents in a single session.
 
 ---
 
@@ -1531,14 +1568,14 @@ All agent skills are loaded from your global rules file. Select the prompt set t
 
 #### 🏗 New Project
 
-Use when starting a project from scratch. Full 10-agent planning → multi-sprint execution.
+Use when starting a project from scratch. Full 13-agent planning → multi-sprint execution.
 
-**Prompt A — Plan (10 agents, no code):**
+**Prompt A — Plan (13 agents, no code):**
 
 ```
 # BMAD Squad: New Project Plan
 
-You are a squad of 10 specialized AI agents organized into parallel execution waves.
+You are a squad of 13 specialized AI agents organized into parallel execution waves.
 All agent skills are loaded. The project context is in .bmad/ — read it before starting.
 OUTPUT ONLY DOCUMENTATION — do NOT write any application code yet.
 
@@ -2061,6 +2098,22 @@ bmad-sdlc-agents/
 │   ├── copilot/                            # copilot-instructions.md fragments
 │   ├── cursor/                             # .cursor/rules/*.mdc
 │   ├── gemini/                             # GEMINI.md fragments
+│   │   ├── global/                         # User-level context fragments
+│   │   ├── project/                        # Project-level context fragments
+│   │   └── agents/                         # 13 native Gemini subagent definitions
+│   │       ├── bmad.md                     #   @bmad — routing advisor
+│   │       ├── product-owner.md            #   @product-owner — BRD / PRD / epics
+│   │       ├── business-analyst.md         #   @business-analyst — stories + NFRs
+│   │       ├── enterprise-architect.md     #   @enterprise-architect — EA boundaries
+│   │       ├── ux-designer.md              #   @ux-designer — wireframes + a11y
+│   │       ├── solution-architect.md       #   @solution-architect — APIs + ADRs
+│   │       ├── infosec-architect.md        #   @infosec-architect — threat model + SBOM
+│   │       ├── devsecops-engineer.md       #   @devsecops-engineer — pipelines + SLOs
+│   │       ├── tech-lead.md                #   @tech-lead — kickoff + code review
+│   │       ├── backend-engineer.md         #   @backend-engineer — services + APIs
+│   │       ├── frontend-engineer.md        #   @frontend-engineer — web UI + perf
+│   │       ├── mobile-engineer.md          #   @mobile-engineer — iOS/Android
+│   │       └── tester-qe.md                #   @tester-qe — test plan + quality gates
 │   ├── opencode/                           # AGENTS.md fragments
 │   └── windsurf/                           # .windsurf/rules/*.md
 │

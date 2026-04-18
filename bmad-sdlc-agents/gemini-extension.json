@@ -1,6 +1,21 @@
 {
   "name": "bmad-sdlc",
-  "description": "BMAD SDLC Framework — 12 AI agents for full software development lifecycle (PO, BA, InfoSec, EA, UX, SA, TL, DevSecOps, BE, FE, ME, TQE)",
-  "version": "1.0.0",
-  "contextFileName": "GEMINI.md"
+  "description": "BMAD SDLC Framework — 13 AI agents for full software development lifecycle (BMAD orchestrator + PO, BA, InfoSec, EA, UX, SA, TL, DevSecOps, BE, FE, ME, TQE). Ships native Gemini CLI subagents at ~/.gemini/agents/ for @-invocation and isolated context windows.",
+  "version": "1.1.0",
+  "contextFileName": "GEMINI.md",
+  "subagents": [
+    "rules/gemini/agents/bmad.md",
+    "rules/gemini/agents/product-owner.md",
+    "rules/gemini/agents/business-analyst.md",
+    "rules/gemini/agents/enterprise-architect.md",
+    "rules/gemini/agents/ux-designer.md",
+    "rules/gemini/agents/solution-architect.md",
+    "rules/gemini/agents/infosec-architect.md",
+    "rules/gemini/agents/devsecops-engineer.md",
+    "rules/gemini/agents/tech-lead.md",
+    "rules/gemini/agents/backend-engineer.md",
+    "rules/gemini/agents/frontend-engineer.md",
+    "rules/gemini/agents/mobile-engineer.md",
+    "rules/gemini/agents/tester-qe.md"
+  ]
 }
