@@ -7,7 +7,7 @@ Create a detailed user story with acceptance criteria, business rules, dependenc
 
 ## Steps
 
-1. Read `docs/requirements/requirements-analysis.md` (required — fail if missing).
+1. Read `docs/analysis/requirements-analysis.md` (required — fail if missing).
 
 2. Parse $ARGUMENTS to extract the requirement ID or feature name. If not provided, ask: "Which requirement or feature should I create a story for?"
 

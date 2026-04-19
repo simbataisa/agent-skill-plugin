@@ -6,6 +6,8 @@ Install the global layer once across all tools, then scaffold `.bmad/` context f
 
 Every agent is held to the same four **Karpathy-derived engineering principles** — *Think before coding · Simplicity first · Surgical changes · Goal-driven execution* — installed as tool-tailored rulebooks under [`shared/karpathy-principles/`](shared/karpathy-principles/README.md) and referenced inline at the top of every `SKILL.md` and `brainstorm.md`.
 
+The squad also ships **A2UI v0.10 authoring support** for agent-driven UIs (chat canvases, in-product assistants, agentic workflow views). Product Owner, Enterprise Architect, Solution Architect, UX Designer, and InfoSec Architect each pick up A2UI-aware sections in their SKILL and brainstorm files, backed by a shared protocol reference ([`shared/a2ui-reference.md`](shared/a2ui-reference.md)), an ADR skeleton ([`shared/templates/adr-a2ui-adoption.md`](shared/templates/adr-a2ui-adoption.md)), and a per-surface spec template ([`shared/templates/a2ui-surface-spec.md`](shared/templates/a2ui-surface-spec.md)). A2UI is advisory/authoring — no agent emits live envelopes; production adoption requires an EA ADR.
+
 ---
 
 ## Agent Team
@@ -43,8 +45,9 @@ Every agent is held to the same four **Karpathy-derived engineering principles**
 - **`shared/`** – Company-wide context, references, and templates
   - `BMAD-SHARED-CONTEXT.md` – Organization context, principles, standards
   - `karpathy-principles/` – 10 tool-tailored rulebooks + index (`README.md`). Installed per tool by `install-global.sh`.
+  - `a2ui-reference.md` – Protocol reference for agent-driven UIs (A2UI v0.10). Installed per tool by `install-global.sh`.
   - `references/technology-radar.md` – Technology choices, maturity tiers
-  - `templates/` – ADR, story, test strategy, handoff log templates (agent-specific BRD/PRD/requirements templates live in `agents/<agent>/templates/`)
+  - `templates/` – ADR, story, test strategy, handoff log templates + `adr-a2ui-adoption.md` and `a2ui-surface-spec.md` (agent-specific BRD/PRD/requirements templates live in `agents/<agent>/templates/`)
 - **`hooks/`** – Session-hook settings + scripts for Claude Code / Kiro, plus the Yolo autonomous harness
 - **`rules/`** – Per-tool rules fragments (Cursor / Windsurf / Copilot / Gemini / OpenCode / Aider) generated from agent content
 
@@ -141,6 +144,65 @@ Every agent's Completion Protocol includes a `🚀` line in the review summary p
 
 You never need to remember the agent sequence — each agent hands you off to the next one.
 
+### 🎯 EA vs. SA — Which Architect Owns This Decision?
+
+EA and SA both do architecture, but at different layers and scopes. The rule of thumb: **EA sets the guardrails; SA designs within them.** If a decision applies across systems, teams, or release trains, it's EA. If it affects only one solution, one service, or one API, it's SA.
+
+**Two-axis heuristic:**
+
+- **Scope axis** — EA = cross-system / enterprise-wide. SA = within one solution / system.
+- **Layer axis** — EA = infrastructure, platform, governance, operations. SA = application, components, contracts, code-adjacent.
+
+**Decision matrix (pick the right agent by topic):**
+
+| Topic | EA | SA | InfoSec | DevSecOps |
+|---|:-:|:-:|:-:|:-:|
+| Cloud provider / region strategy | ✅ | | | |
+| Multi-environment topology (dev / staging / prod / DR parity) | ✅ | | | |
+| Compute platform (K8s distro vs. serverless vs. hybrid) | ✅ | | | |
+| Disaster recovery strategy / RTO / RPO | ✅ | | | |
+| Compliance posture (SOC2 / GDPR / HIPAA / PCI) | ✅ | | ✅ coord | |
+| Enterprise observability stack choice | ✅ | | | |
+| CI/CD pipeline template (org-wide) | ✅ | | | ✅ impl |
+| FinOps tagging + budget envelope | ✅ | | | |
+| Shared platform services (identity, API gateway, mesh, bus) | ✅ | | | |
+| Cross-system integration contract ("Order → SAP") | ✅ | | | |
+| Technology radar governance (Adopt / Trial / Assess / Hold) | ✅ | | | |
+| A2UI adoption, version pin, catalog governance | ✅ | | | |
+| Service decomposition within a solution | | ✅ | | |
+| API contracts (OpenAPI / AsyncAPI) for a solution | | ✅ | | |
+| Data model / schema / indexes for a service | | ✅ | | |
+| Database choice (per service, from EA-approved catalog) | | ✅ | | |
+| Application framework (NestJS / FastAPI / Spring Boot) | | ✅ | | |
+| Solution-level integration patterns (saga / CQRS / outbox) | | ✅ | | |
+| Per-service auth flow (OAuth/OIDC) within EA's identity platform | | ✅ | ✅ coord | |
+| Solution-level ADRs | | ✅ | | |
+| C4 Component / Code-level diagrams | | ✅ | | |
+| A2UI per-surface spec (surfaceId, tree, action contracts) | | ✅ | | |
+| Threat models, controls catalogue, encryption choices | | | ✅ | |
+| Secret-rotation cadence, threat-modeling methodology | | | ✅ | |
+| Terraform / Helm / GitHub Actions YAML | | | | ✅ |
+| Provisioning runbooks, log-shipper wiring | | | | ✅ |
+
+**Quick triage — start here when unsure:**
+
+| If the decision... | Invoke |
+|---|---|
+| Applies to the whole estate or multiple solutions | **Enterprise Architect** |
+| Sets a standard others must follow (pipeline, stack, platform, compliance) | **Enterprise Architect** |
+| Lives inside one solution and its services | **Solution Architect** |
+| Is an API, data model, or service-boundary choice | **Solution Architect** |
+| Introduces a new technology to the organisation | **EA first** (radar update) → then SA adopts it |
+| Is about *how to defend* a system (threats, controls, crypto) | **InfoSec Architect** |
+| Is about *how to operate* a system (IaC, pipelines, runbooks) | **DevSecOps Engineer** |
+
+**Invocation order for a new project:**
+`PO → BA → EA ∥ UX (parallel) → SA → Tech Lead → engineers → Tester-QE`
+
+EA runs **before** SA because SA's component-level choices depend on EA's platform and governance decisions. If you invoke SA before EA exists, SA will block with "Requires enterprise-architecture.md" in its Autonomous Task Detection.
+
+Full scope-boundary tables with overlap-zone coordination rules live inline in each agent's `SKILL.md` under the **🚧 Scope Boundary** section.
+
 ### 📏 Agent Rules (Inline Guardrails)
 
 Every agent embeds a `## Agent Rules` section with non-negotiable guardrails across four categories:
@@ -164,7 +226,7 @@ Agents are organized into **waves** — all agents in the same wave run simultan
 | ---- | --------------------------------------------------- | ------------------------------------------------------------- |
 | W1   | Product Owner                                       | —                                                             |
 | W2   | Business Analyst                                    | PO → `docs/brd.md` + `docs/prd.md`                           |
-| W3   | Enterprise Architect ∥ UX Designer                  | BA → `docs/requirements/requirements-analysis.md`             |
+| W3   | Enterprise Architect ∥ UX Designer                  | BA → `docs/analysis/requirements-analysis.md`             |
 | W4   | Solution Architect                                  | EA → `enterprise-architecture.md` AND UX → `docs/ux/`        |
 | W5   | Tech Lead                                           | SA → `solution-architecture.md`                               |
 | W6   | Backend Eng ∥ Frontend Eng ∥ Mobile Eng (spec only) | TL → `sprint-plan.md`                                         |
@@ -322,6 +384,7 @@ Legend: ✅ first-class · 🟡 works but with caveats · ❌ not currently supp
 | **MCP client support** | ✅ | ✅ | ✅ | ✅ | ✅ (Agent Mode) | ✅ | ✅ | ✅ | ✅ | 🟡 via plugins |
 | **Git worktree TL review** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **Karpathy-principles auto-install path** | `~/.claude/KARPATHY-PRINCIPLES.md` | `~/.skills/KARPATHY-PRINCIPLES.md` | `~/.cursor/rules/001-karpathy-principles.mdc` | `~/.windsurf/rules/001-karpathy-principles.md` | `~/.github/copilot-instructions.md` (appended) | `~/.codex/KARPATHY-PRINCIPLES.md` | `~/.gemini/KARPATHY-PRINCIPLES.md` | `~/.kiro/steering/karpathy-principles.md` | `~/.opencode/instructions.md` (appended) | `~/.aider.conventions.md` (appended) |
+| **Agent-driven UI authoring (A2UI)** — reference deployed for PO/EA/SA/UX/InfoSec | `~/.claude/A2UI-REFERENCE.md` | `~/.skills/A2UI-REFERENCE.md` | `~/.cursor/rules/002-a2ui-reference.md` | `~/.windsurf/rules/002-a2ui-reference.md` | — (reference in-repo under `shared/a2ui-reference.md`) | `~/.codex/A2UI-REFERENCE.md` | `~/.gemini/A2UI-REFERENCE.md` | `~/.kiro/steering/a2ui-reference.md` | `~/.opencode/A2UI-REFERENCE.md` | `~/.aider/A2UI-REFERENCE.md` |
 
 **Practical impact by tool:**
 
@@ -565,10 +628,17 @@ conventions-file: .aider.conventions.md
 
 ```bash
 bash scripts/install-global.sh
-# → Agents → ~/.claude/skills/          (slash commands: /business-analyst, etc.)
-# → Commands → ~/.claude/commands/       (slash commands: /bmad-status, /new-story, etc.)
-# → Hooks → ~/.claude/hooks/             (PreToolUse / PostToolUse / Stop guards)
+# → Skills    → ~/.claude/skills/    (role knowledge bodies — progressive disclosure in main session)
+# → Subagents → ~/.claude/agents/    (13 BMAD roles registered for the Task/Agent tool, isolated context)
+# → Commands  → ~/.claude/commands/  (slash commands: /bmad-status, /new-story, etc.)
+# → Hooks     → ~/.claude/hooks/     (PreToolUse / PostToolUse / Stop guards)
 ```
+
+> **Skills vs. Subagents (Claude Code).** Claude Code treats these as two distinct primitives and BMAD deploys both:
+> - **`~/.claude/skills/<role>/SKILL.md`** — the full, authoritative role body. Loaded inline in the main session via progressive disclosure when a slash command runs or the model decides the skill is relevant.
+> - **`~/.claude/agents/<role>.md`** — a thin YAML-frontmatter pointer (`name`, `description`, `tools`, `model`) that registers the role as a callable subagent. This is what the `Task`/`Agent` tool looks up when Tech Lead spawns Backend Engineer, etc. The subagent runs in an **isolated context window** and, on completion, returns a summary to the main agent. Without these files you will see `Error: Agent type 'backend-engineer' not found`.
+>
+> The subagent `.md` points at the skill body (`~/.claude/skills/<role>/SKILL.md`) for its full workflow, so the two layers stay in sync.
 
 **Project Install (per project, run from project root)**
 
@@ -907,7 +977,7 @@ user stories with Given-When-Then acceptance criteria.
 **Enterprise Architect — infrastructure design:**
 
 ```
-/enterprise-architect Read docs/requirements/requirements-analysis.md. Define
+/enterprise-architect Read docs/analysis/requirements-analysis.md. Define
 cloud infrastructure, compliance controls, CI/CD pipeline, and observability.
 Save to docs/architecture/enterprise-architecture.md.
 ```
@@ -915,7 +985,7 @@ Save to docs/architecture/enterprise-architecture.md.
 **UX Designer — wireframes and design system:**
 
 ```
-/ux-designer Read docs/requirements/requirements-analysis.md and docs/ux/.
+/ux-designer Read docs/analysis/requirements-analysis.md and docs/ux/.
 Select wireframe mode when prompted, then create wireframes and a design system.
 ```
 
@@ -937,7 +1007,7 @@ Implement all backend stories assigned to you. Follow .bmad/tech-stack.md conven
 **QE test strategy:**
 
 ```
-/tester-qe Read docs/requirements/requirements-analysis.md, docs/stories/, and docs/architecture/.
+/tester-qe Read docs/analysis/requirements-analysis.md, docs/stories/, and docs/architecture/.
 Propose a comprehensive test strategy with test types, coverage goals, and security testing.
 ```
 
@@ -951,7 +1021,7 @@ $product-owner Review .bmad/PROJECT-CONTEXT.md. Create the BRD and PRD for this 
 
 ```
 $business-analyst Read docs/brd.md and docs/prd.md. Perform deep requirements analysis
-and produce docs/requirements/requirements-analysis.md.
+and produce docs/analysis/requirements-analysis.md.
 ```
 
 ```
@@ -960,7 +1030,7 @@ Propose solution architecture with service boundaries, API contracts, and data m
 ```
 
 ```
-$ux-designer Read docs/requirements/requirements-analysis.md. Select wireframe mode
+$ux-designer Read docs/analysis/requirements-analysis.md. Select wireframe mode
 when prompted, then create wireframes and a design system. Save to docs/ux/.
 ```
 
@@ -975,7 +1045,7 @@ and create the BRD and PRD for this project.
 
 ```
 As business analyst, read docs/brd.md and docs/prd.md. Perform deep requirements
-analysis and produce docs/requirements/requirements-analysis.md.
+analysis and produce docs/analysis/requirements-analysis.md.
 ```
 
 ```
@@ -1000,7 +1070,7 @@ and create the BRD (docs/brd.md) and PRD (docs/prd.md) for this project.
 
 ```
 Acting as the Business Analyst, read docs/brd.md and docs/prd.md. Perform deep
-requirements analysis and produce docs/requirements/requirements-analysis.md.
+requirements analysis and produce docs/analysis/requirements-analysis.md.
 ```
 
 ```
@@ -1051,14 +1121,14 @@ Save BRD to docs/brd.md and PRD to docs/prd.md.
 Read docs/brd.md and docs/prd.md.
 Perform deep requirements analysis: stakeholder analysis, gap analysis, business rules documentation,
 feasibility assessment, use cases, and user stories with Given-When-Then acceptance criteria.
-Save to docs/requirements/requirements-analysis.md. Save stories to docs/stories/.
+Save to docs/analysis/requirements-analysis.md. Save stories to docs/stories/.
 ```
 
 **Turn 3 — Enterprise Architect:**
 
 ```
 /enterprise-architect
-Read docs/requirements/requirements-analysis.md.
+Read docs/analysis/requirements-analysis.md.
 Define enterprise architecture: cloud infrastructure topology, multi-environment deployment,
 compliance controls, disaster recovery, CI/CD pipeline, and observability.
 Save to docs/architecture/enterprise-architecture.md.
@@ -1068,7 +1138,7 @@ Save to docs/architecture/enterprise-architecture.md.
 
 ```
 /ux-designer
-Read docs/requirements/requirements-analysis.md and docs/brd.md.
+Read docs/analysis/requirements-analysis.md and docs/brd.md.
 Select wireframe mode (ASCII / Pencil / Figma) — you will be prompted to choose.
 Create personas, user journeys, information architecture, wireframes, and a design system.
 Save to docs/ux/ and record design tool choice in .bmad/ux-design-master.md.
@@ -1089,7 +1159,7 @@ Save to docs/architecture/solution-architecture.md and ADRs to docs/architecture
 ```
 /tech-lead
 Review all planning artifacts:
-- docs/brd.md, docs/prd.md, docs/requirements/requirements-analysis.md
+- docs/brd.md, docs/prd.md, docs/analysis/requirements-analysis.md
 - docs/architecture/ (enterprise-architecture.md, solution-architecture.md, all ADRs)
 - docs/stories/, docs/ux/
 
@@ -1384,13 +1454,13 @@ Save to docs/brd.md and docs/prd.md.
 As business analyst, read docs/brd.md and docs/prd.md.
 Perform deep requirements analysis: stakeholder analysis, gap analysis, business rules,
 feasibility, use cases, and user stories with Given-When-Then acceptance criteria.
-Save to docs/requirements/requirements-analysis.md and docs/stories/.
+Save to docs/analysis/requirements-analysis.md and docs/stories/.
 ```
 
 **Turn 3 — Enterprise Architect:**
 
 ```
-As enterprise architect, read docs/requirements/requirements-analysis.md.
+As enterprise architect, read docs/analysis/requirements-analysis.md.
 Define enterprise architecture: cloud infrastructure, multi-environment deployment,
 compliance controls, DR strategy, CI/CD pipeline, and observability.
 Save to docs/architecture/enterprise-architecture.md.
@@ -1399,7 +1469,7 @@ Save to docs/architecture/enterprise-architecture.md.
 **Turn 4 — UX Designer:**
 
 ```
-As UX designer, read docs/requirements/requirements-analysis.md.
+As UX designer, read docs/analysis/requirements-analysis.md.
 Select wireframe mode when prompted (ASCII / Pencil / Figma).
 Create personas, user journeys, information architecture, wireframes, and design system.
 Record tool choice in .bmad/ux-design-master.md. Save to docs/ux/.
@@ -1597,19 +1667,19 @@ Save BRD to docs/brd.md and PRD to docs/prd.md.
 Read docs/brd.md and docs/prd.md.
 Perform deep requirements analysis: stakeholder analysis, gap analysis, business rules,
 feasibility, use cases, and user stories with Given-When-Then acceptance criteria.
-Save to docs/requirements/requirements-analysis.md. Save stories to docs/stories/.
+Save to docs/analysis/requirements-analysis.md. Save stories to docs/stories/.
 
 ## Wave 3 ∥ — Enterprise Architect + UX Designer (parallel)
-**Spawn both agents simultaneously — both read docs/requirements/requirements-analysis.md independently.**
+**Spawn both agents simultaneously — both read docs/analysis/requirements-analysis.md independently.**
 
 ### Enterprise Architect
-Read docs/requirements/requirements-analysis.md.
+Read docs/analysis/requirements-analysis.md.
 Define enterprise architecture: cloud infrastructure topology, multi-environment deployment,
 compliance controls, disaster recovery, CI/CD pipeline, and observability.
 Save to docs/architecture/enterprise-architecture.md.
 
 ### UX Designer
-Read docs/requirements/requirements-analysis.md.
+Read docs/analysis/requirements-analysis.md.
 Select wireframe mode when prompted (ASCII / Pencil / Figma — Pencil is default if connected).
 Create personas, user journeys, information architecture, wireframes, and a design system.
 Record design tool choice in .bmad/ux-design-master.md. Save design artifacts to docs/ux/.
@@ -1771,7 +1841,7 @@ Write new epics/stories at the title + MoSCoW level. Save feature brief to
 docs/features/[feature-name]-brief.md and update docs/prd.md with the new epic.
 
 ## Wave 2 — Business Analyst (impact analysis)
-Read docs/features/[feature-name]-brief.md and existing docs/requirements/ and docs/stories/.
+Read docs/features/[feature-name]-brief.md and existing docs/analysis/ and docs/stories/.
 Analyze:
 - Stakeholder impact — who is affected and what are their concerns
 - Affected systems and services — what existing functionality changes
@@ -2146,9 +2216,8 @@ bmad-sdlc-agents/
 │       ├── prd.md                          # Product Requirements Document (PO)
 │       ├── features/                       # Feature briefs (PO, one per feature)
 │       ├── epics/                          # Epic definitions (PO)
-│       ├── requirements/                   # Requirements analysis (BA)
 │       ├── stories/                        # User stories with GWT ACs (BA)
-│       ├── analysis/                       # Use cases, impact analyses (BA)
+│       ├── analysis/                       # Requirements analysis, use cases, impact analyses (BA)
 │       ├── architecture/                   # EA, SA, ADRs, sprint plans (EA + SA + TL)
 │       ├── security/                       # Threat models, controls, SBOM (InfoSec)
 │       ├── platform/                       # IaC, pipelines, runbooks, SLOs (DevSecOps)

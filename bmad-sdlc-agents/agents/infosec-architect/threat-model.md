@@ -7,7 +7,7 @@ Create a formal STRIDE threat model identifying trust boundaries, data flows, an
 
 ## Steps
 
-1. Read `docs/brd.md`, `docs/prd.md`, and `docs/requirements/requirements-analysis.md` for context (at least one required).
+1. Read `docs/brd.md`, `docs/prd.md`, and `docs/analysis/requirements-analysis.md` for context (at least one required).
 
 2. Read `docs/architecture/solution-architecture.md` and `docs/architecture/enterprise-architecture.md` if they exist.
 

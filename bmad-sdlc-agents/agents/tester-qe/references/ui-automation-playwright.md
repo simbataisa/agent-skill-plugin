@@ -253,3 +253,153 @@ E2E tests must pass before `E2-tqe-done` is written:
 - [ ] Screenshot/video artifacts uploaded for any retried tests
 - [ ] Console errors reviewed — no uncaught exceptions from app code
 - [ ] Accessibility snapshot checked for WCAG 2.2 AA violations on each new screen
+
+---
+
+## Troubleshooting
+
+### One-shot shortcut — `scripts/check-playwright-env.sh`
+
+**Before walking the manual ladder below, run the packaged diagnostic.** Available from two locations — use whichever exists on the machine:
+
+```bash
+# From a BMAD repo clone:
+bash scripts/check-playwright-env.sh                # human-readable, coloured
+bash scripts/check-playwright-env.sh --json         # machine-readable (for CI gates)
+bash scripts/check-playwright-env.sh --port 3100    # override auto-detected port
+
+# From any project after install-global.sh (script deployed to ~/.bmad/scripts/):
+bash "$HOME/.bmad/scripts/check-playwright-env.sh" --project-root "$(pwd)"
+bash "$HOME/.bmad/scripts/check-playwright-env.sh" --project-root "$(pwd)" --json
+```
+
+What it does in one pass:
+
+1. Locates `playwright.config.{ts,js,mjs,cjs}` and auto-detects the port from `url:` or `port:`.
+2. Runs a Node `bind()` test on `127.0.0.1:<port>` (Step 1 below, inline — no Playwright needed).
+3. If loopback fails, retries on `0.0.0.0:<port>` to distinguish between loopback-only blocks and full sandbox blocks.
+4. Parses `EPERM` / `EACCES` specifically to separate policy denial from other failures.
+5. Emits one of five verdicts with the exact next action:
+
+| Verdict | Exit | Meaning |
+|---|---|---|
+| `READY`  | 0 | Environment can bind; run `npx playwright test` as configured. |
+| `FIX_A`  | 1 | Port-specific block — use a different port, update `playwright.config`. See **Fix A** below. |
+| `FIX_B`  | 2 | Sandbox blocks all local listens (EPERM on loopback **and** 0.0.0.0) — drop `webServer`, run against a deployed URL. See **Fix B** — default for MCP-hosted sandboxes. |
+| `FIX_C`  | 3 | `127.0.0.1` blocked but `0.0.0.0` works — start the app with `HOST=0.0.0.0`, keep Playwright pointed at `http://127.0.0.1:<port>`. See **Fix C**. |
+| `NO_NODE`| 4 | Node not on PATH — escalate as environment setup. |
+
+Run the script once, act on the verdict, then consult the section below for the full config snippet. The rest of this troubleshooting section is the underlying manual ladder the script automates — retained for debugging, CI gate authoring, and any case where you need to reason about a non-standard failure.
+
+### `listen EPERM 127.0.0.1:3000` (or similar port) when running `playwright test`
+
+**What the error actually means.** `EPERM` is POSIX *operation not permitted* — the OS or runtime blocked the `bind()/listen()` call. It is **not** "port in use" (that would be `EADDRINUSE`). The Node process is not allowed to open a local listening socket at all.
+
+**Where it surfaces.** Almost always during `webServer.command` startup in `playwright.config.ts`: Playwright spawns your app (e.g. `npm run start` on `localhost:3000`) and waits for the URL; the bind fails, so Playwright never reaches the tests.
+
+**Most common causes, in order.**
+
+1. **Environment forbids opening local listening ports.** Common in MCP-hosted sandboxes, hardened containers, remote runners, and some corporate endpoints. No app configuration change will work — the kernel/policy won't allow the bind.
+2. **App startup itself is failing** (independent of Playwright). `webServer` faithfully runs your command; if the command can't bind, the whole run fails even though Playwright itself is fine.
+3. **Endpoint security or container policy** blocking loopback binds on specific ports (often 80, 443, <1024, or product-specific ones).
+
+**Diagnostic ladder — run these in order.**
+
+**Step 1 — is this an environment bind-block, or something else?** Run outside Playwright entirely:
+
+```bash
+node -e "require('http').createServer((_,r)=>r.end('ok')).listen(3000,'127.0.0.1',()=>console.log('listening'))"
+```
+
+- Fails with `EPERM` → the runtime/OS/container forbids the bind. Playwright cannot fix this. Jump to Fix B.
+- Listens successfully → the problem is inside your app or config. Go to Step 2.
+
+**Step 2 — enable Playwright's webServer debug logs.** Exposes whether the failure is at `webServer.command` or later.
+
+```bash
+DEBUG=pw:webserver npx playwright test
+```
+
+**Step 3 — try a different port.** If an environment or tool is blocking port 3000 specifically:
+
+```bash
+PORT=3100 npm run start   # run standalone to confirm it binds
+```
+
+Then update `playwright.config.ts` to use 3100 (see Fix A below).
+
+**Fixes, by cause.**
+
+**Fix A — app can bind locally, just needed a different port.** Move the app (and Playwright) off the blocked port:
+
+```ts
+import { defineConfig } from '@playwright/test';
+
+export default defineConfig({
+  use: { baseURL: 'http://127.0.0.1:3100' },
+  webServer: {
+    command: 'PORT=3100 npm run start',
+    url: 'http://127.0.0.1:3100',
+    reuseExistingServer: true,
+    timeout: 120_000,
+    stdout: 'pipe',
+    stderr: 'pipe',
+  },
+});
+```
+
+**Fix B — environment forbids listening sockets (MCP sandbox / restricted container).** Do NOT have Playwright start a local server at all. Point tests at an already-running deployment (staging, preview URL, ngrok tunnel into a dev host):
+
+```ts
+import { defineConfig } from '@playwright/test';
+
+export default defineConfig({
+  use: { baseURL: process.env.BASE_URL ?? 'https://staging.example.com' },
+  // no webServer block — deliberately omitted
+});
+```
+
+Then run with `BASE_URL=https://...  npx playwright test`. This is the **default recommended mode for BMAD's MCP-hosted tester-qe** — E2E in sandbox environments should always target a deployed URL, not a local dev server.
+
+**Fix C — framework binds strictly to `127.0.0.1` and the sandbox only permits `0.0.0.0`.** Force the bind host:
+
+```bash
+HOST=0.0.0.0 PORT=3100 npm run start
+```
+
+Then keep Playwright's `url` as `http://127.0.0.1:3100` (most sandboxes route loopback to `0.0.0.0` listeners).
+
+**Minimal working config that works in most sandboxes** (combines A + C with a remote fallback):
+
+```ts
+import { defineConfig } from '@playwright/test';
+
+const remote = process.env.BASE_URL;
+
+export default defineConfig({
+  use: { baseURL: remote ?? 'http://127.0.0.1:3100' },
+  webServer: remote ? undefined : {
+    command: 'HOST=0.0.0.0 PORT=3100 npm run start',
+    url: 'http://127.0.0.1:3100',
+    reuseExistingServer: true,
+    timeout: 120_000,
+    stdout: 'pipe',
+    stderr: 'pipe',
+  },
+});
+```
+
+**What tester-qe must NOT do when it sees `EPERM`.**
+
+- Do not retry the same command in a loop — `EPERM` is a policy/permission denial, not a transient error.
+- Do not rewrite Playwright internals, reinstall the browser, or bump versions — none of those touch `bind()`.
+- Do not assume the port is "in use" and try to kill processes — that's the `EADDRINUSE` playbook and is irrelevant here.
+
+**Escalation checklist.** If Fix A/B/C all fail, capture and report:
+
+1. Output of the Step 1 Node bind test.
+2. `DEBUG=pw:webserver` output up to the failure line.
+3. Contents of `playwright.config.*` and the `start` script from `package.json`.
+4. Environment signals: Docker/devcontainer? MCP sandbox? CI runner brand? OS + Node version (`node -v && uname -a`).
+
+File this as a DevSecOps / infrastructure ticket, not a Playwright bug — the resolution is almost always environmental.

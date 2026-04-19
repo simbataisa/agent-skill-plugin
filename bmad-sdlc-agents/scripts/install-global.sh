@@ -402,11 +402,13 @@ if [[ -d "$HOME/.claude" ]] || command -v claude &> /dev/null; then
     echo -e "${GREEN}✓ Claude Code${NC} found"
     CLAUDE_SKILLS="$HOME/.claude/skills"
     CLAUDE_COMMANDS="$HOME/.claude/commands"
+    CLAUDE_AGENTS="$HOME/.claude/agents"
     CLAUDE_HOOKS_DIR="$HOME/.claude"
 
     if [[ "$DRY_RUN" == false ]]; then
         mkdir -p "$CLAUDE_SKILLS"
         mkdir -p "$CLAUDE_COMMANDS"
+        mkdir -p "$CLAUDE_AGENTS"
     fi
 
     # Copy shared context to ~/.claude/
@@ -456,6 +458,23 @@ if [[ -d "$HOME/.claude" ]] || command -v claude &> /dev/null; then
         fi
     done
 
+    # Deploy Claude Code subagent definitions to ~/.claude/agents/
+    # These YAML-frontmatter .md files register the 13 BMAD roles as Task-tool
+    # subagents (e.g. tech-lead can spawn backend-engineer). Without them, Claude
+    # Code errors with "Agent type 'backend-engineer' not found".
+    if [[ -d "$RULES_DIR/claude/agents" ]]; then
+        for agent_file in "$RULES_DIR/claude/agents"/*.md; do
+            [[ -f "$agent_file" ]] || continue
+            agent_name="$(basename "$agent_file" .md)"
+            if [[ "$DRY_RUN" == true ]]; then
+                echo "  [DRY] cp $agent_file -> $CLAUDE_AGENTS/${agent_name}.md"
+            else
+                cp "$agent_file" "$CLAUDE_AGENTS/${agent_name}.md"
+                echo "  ✓ Installed subagent: $agent_name"
+            fi
+        done
+    fi
+
     # Copy slash commands to ~/.claude/commands/
     # Install commands preserving agent/cmd subdirectory structure → /agent:cmd
     walk_sub_agents install_native "$CLAUDE_COMMANDS"
@@ -478,9 +497,10 @@ if [[ -d "$HOME/.claude" ]] || command -v claude &> /dev/null; then
         fi
     fi
 
-    echo "  Agents:   $CLAUDE_SKILLS/"
-    echo "  Commands: $CLAUDE_COMMANDS/"
-    echo "  Hooks:    $CLAUDE_HOOKS_DIR/hooks/"
+    echo "  Skills:    $CLAUDE_SKILLS/"
+    echo "  Subagents: $CLAUDE_AGENTS/"
+    echo "  Commands:  $CLAUDE_COMMANDS/"
+    echo "  Hooks:     $CLAUDE_HOOKS_DIR/hooks/"
     INSTALLED_TOOLS+=("Claude Code")
     echo ""
 fi
@@ -1247,6 +1267,76 @@ if [[ -d "$KARPATHY_DIR" ]]; then
 fi
 
 # ============================================================
+# A2UI Reference — deploy per detected tool
+# ============================================================
+# Shared authoring reference for agent-driven UIs (A2UI v0.10 protocol).
+# All tools get the same file — agents pull it in via explicit links from
+# their SKILL.md / brainstorm.md. See shared/a2ui-reference.md for contents.
+# ============================================================
+A2UI_REF="$BASE_DIR/shared/a2ui-reference.md"
+
+if [[ -f "$A2UI_REF" ]]; then
+    echo -e "${BLUE}Installing A2UI reference...${NC}"
+
+    # Claude Code
+    if [[ -d "$HOME/.claude" ]] || command -v claude &> /dev/null; then
+        copy_file "$A2UI_REF" "$HOME/.claude/A2UI-REFERENCE.md"
+        echo -e "  ${GREEN}✓${NC} Claude Code    → ~/.claude/A2UI-REFERENCE.md"
+    fi
+
+    # Cowork
+    if [[ -d "$HOME/.skills" ]]; then
+        copy_file "$A2UI_REF" "$HOME/.skills/A2UI-REFERENCE.md"
+        echo -e "  ${GREEN}✓${NC} Cowork         → ~/.skills/A2UI-REFERENCE.md"
+    fi
+
+    # Codex CLI
+    if [[ -d "$HOME/.codex" ]] || command -v codex &> /dev/null; then
+        copy_file "$A2UI_REF" "$HOME/.codex/A2UI-REFERENCE.md"
+        echo -e "  ${GREEN}✓${NC} Codex CLI      → ~/.codex/A2UI-REFERENCE.md"
+    fi
+
+    # Kiro — steering file
+    if [[ -d "$HOME/.kiro" ]] || command -v kiro &> /dev/null; then
+        copy_file "$A2UI_REF" "$HOME/.kiro/steering/a2ui-reference.md"
+        echo -e "  ${GREEN}✓${NC} Kiro           → ~/.kiro/steering/a2ui-reference.md"
+    fi
+
+    # Cursor — rule file
+    if [[ -d "$HOME/.cursor" ]] || command -v cursor &> /dev/null; then
+        copy_file "$A2UI_REF" "$HOME/.cursor/rules/002-a2ui-reference.md"
+        echo -e "  ${GREEN}✓${NC} Cursor         → ~/.cursor/rules/002-a2ui-reference.md"
+    fi
+
+    # Windsurf — rule file
+    if [[ -d "$HOME/.windsurf" ]]; then
+        copy_file "$A2UI_REF" "$HOME/.windsurf/rules/002-a2ui-reference.md"
+        echo -e "  ${GREEN}✓${NC} Windsurf       → ~/.windsurf/rules/002-a2ui-reference.md"
+    fi
+
+    # Gemini CLI
+    if [[ -d "$HOME/.gemini" ]] || command -v gemini &> /dev/null; then
+        copy_file "$A2UI_REF" "$HOME/.gemini/A2UI-REFERENCE.md"
+        echo -e "  ${GREEN}✓${NC} Gemini CLI     → ~/.gemini/A2UI-REFERENCE.md"
+    fi
+
+    # OpenCode
+    if [[ -d "$HOME/.opencode" ]] || command -v opencode &> /dev/null; then
+        copy_file "$A2UI_REF" "$HOME/.opencode/A2UI-REFERENCE.md"
+        echo -e "  ${GREEN}✓${NC} OpenCode       → ~/.opencode/A2UI-REFERENCE.md"
+    fi
+
+    # Aider
+    if [[ -d "$HOME/.aider" ]] || command -v aider &> /dev/null; then
+        copy_file "$A2UI_REF" "$HOME/.aider/A2UI-REFERENCE.md"
+        echo -e "  ${GREEN}✓${NC} Aider          → ~/.aider/A2UI-REFERENCE.md"
+    fi
+
+    echo "  Source:  $A2UI_REF"
+    echo ""
+fi
+
+# ============================================================
 # Eval Dashboard — deploy to ~/.bmad/eval/
 # ============================================================
 EVAL_DIR="$BASE_DIR/eval"
@@ -1261,6 +1351,39 @@ if [[ -d "$EVAL_DIR" ]]; then
         fi
     done
     echo "  Open $BMAD_HOME/eval/bmad-agent-eval-dashboard.html in a browser to view."
+    echo ""
+fi
+
+# ============================================================
+# BMAD Diagnostic Scripts — deploy to ~/.bmad/scripts/
+# ============================================================
+# Agent-invokable diagnostics (currently: Playwright environment check).
+# Deployed to a stable $HOME path so globally-installed agents can call them
+# without depending on the BMAD repo being present on disk.
+SCRIPTS_SRC_DIR="$BASE_DIR/scripts"
+BMAD_SCRIPTS_DIR="$BMAD_HOME/scripts"
+DIAGNOSTIC_SCRIPTS=(check-playwright-env.sh)
+
+# Only proceed if at least one diagnostic script exists in source
+_has_diag_script="false"
+for s in "${DIAGNOSTIC_SCRIPTS[@]}"; do
+    [[ -f "$SCRIPTS_SRC_DIR/$s" ]] && _has_diag_script="true"
+done
+
+if [[ "$_has_diag_script" == "true" ]]; then
+    echo -e "${BLUE}Installing BMAD diagnostic scripts...${NC}"
+    for s in "${DIAGNOSTIC_SCRIPTS[@]}"; do
+        src="$SCRIPTS_SRC_DIR/$s"
+        dest="$BMAD_SCRIPTS_DIR/$s"
+        if [[ -f "$src" ]]; then
+            copy_file "$src" "$dest"
+            if [[ "$DRY_RUN" != "true" ]]; then
+                chmod +x "$dest" 2>/dev/null || true
+            fi
+            echo -e "  ${GREEN}✓${NC} $s → $BMAD_SCRIPTS_DIR/"
+        fi
+    done
+    echo "  Invoke from any project: bash $BMAD_SCRIPTS_DIR/check-playwright-env.sh"
     echo ""
 fi
 

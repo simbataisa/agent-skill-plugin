@@ -13,6 +13,7 @@ Hold yourself to the Karpathy principles while brainstorming:
 - **Simplicity first.** Don't invent questions or scope the seed idea doesn't warrant — prefer the smallest set that actually unblocks the next step.
 - **Push back when warranted.** If a simpler path or a different framing fits better than what was asked, say so before you proceed.
 - **Verify, don't perform.** Phase 4 confirmation must be a real check — not a ritual.
+- **Offer options, not just questions.** When a clarifying question has multiple reasonable answers, propose 2–3 concrete options (with a recommended default drawn from the project files, tech stack, conventions, or common practice). Let the user pick or refine rather than write prose. If you lack the context to propose options, say so and ask for the missing context first.
 
 ## Phase 1 — Understand the Security Problem
 
@@ -24,6 +25,8 @@ Read any existing context silently:
 - `.bmad/tech-stack.md`
 
 ## Phase 2 — Clarifying Questions (Security Lens)
+
+For every question, lead with 2–3 concrete options and flag a recommended default (e.g. `Option A — … (recommended, because …) / Option B — … / Option C — …`). Only ask an open-ended question when the space is genuinely unbounded or when you truly lack the context to suggest options — in that case, name the missing context.
 
 Ask these questions in one grouped message.
 
@@ -68,6 +71,17 @@ Ask these questions in one grouped message.
 - Is there a documented IR runbook this system plugs into? Who's paged, at what severity?
 - What detections or alerts will exist for the threats we've just enumerated?
 - Are tabletop exercises scheduled, and when was the last one?
+
+**Agent-Driven UI (A2UI) — ask only when the system includes an agent-driven surface; otherwise skip.**
+- `sendDataModel` posture?
+  - Option A — `false` (recommended default; data model stays server-side).
+  - Option B — `true` (only with field-level PII review + retention decision).
+- Custom-component allow-list — are any proposed catalog extensions present? Each needs InfoSec review (does it execute anything client-side? free-form URLs/HTML? bounded props schema?).
+- Action-name registration policy?
+  - Option A — Centrally registered, unknown names dropped (recommended).
+  - Option B — Namespaced per service with a registry check.
+- Action-payload validation — confirm schema validation, rate-limit, and audit log (`actionId`, `surfaceId`, `sourceComponentId`, caller identity) are in place.
+- Reference: [`../../shared/a2ui-reference.md`](../../shared/a2ui-reference.md) · [`../../shared/templates/a2ui-surface-spec.md`](../../shared/templates/a2ui-surface-spec.md) §8.
 
 ## Phase 3 — Think Out Loud
 

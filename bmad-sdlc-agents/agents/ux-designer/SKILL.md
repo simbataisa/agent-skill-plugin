@@ -241,6 +241,25 @@ Load the appropriate template from `templates/` when producing each deliverable:
 | [`templates/accessibility-audit-template.md`](templates/accessibility-audit-template.md) | Conducting an accessibility audit |
 | [`templates/ui-spec-template.md`](templates/ui-spec-template.md) | Writing a UI spec |
 
+## A2UI Catalog Mapping
+
+When the project includes an **agent-driven surface** (A2UI — an agent that emits UI at runtime rather than shipping fixed screens), your job shifts from "design every screen" to "define the vocabulary the agent is allowed to speak." The visual design flows through a **catalog**, not through static screens.
+
+For each agent-driven surface:
+
+- **Catalog choice (recommend one to the EA).**
+  - `basic` — stick to the v0.10 bootstrap of 18 components (`Text`, `Image`, `Icon`, `Video`, `AudioPlayer`, `Row`, `Column`, `List`, `Card`, `Tabs`, `Modal`, `Divider`, `Button`, `TextField`, `CheckBox`, `ChoicePicker`, `Slider`, `DateTimeInput`). Use for prototypes and internal tools.
+  - `custom` — map the design system 1:1 onto catalog components. Use once more than ~two surfaces exist; it's the sustainable default for a product with its own brand.
+  - `hybrid` — basic + a handful of custom extensions. Good when 80% is generic and a few domain widgets are needed.
+- **Visual-to-component mapping.** Every UI pattern in the design system gets an entry: design-system component → catalog `component` type + variant props. If the pattern doesn't map cleanly, that's a catalog extension request — escalate to the EA.
+- **Catalog extension proposals.** New custom components need (a) a name, (b) the props schema, (c) default props/theme, (d) accessibility contract, (e) at least one existing screen that motivates it. No string-typed child references — use `ComponentId` / `ChildList` refs.
+- **Theme params.** Document which design tokens (colours, spacing, radii, type scale) are passed as A2UI `theme` params vs. baked into the renderer. Tokens surface as `theme: { primaryColor, … }` in `createSurface`.
+- **Accessibility at catalog level.** Every interactive catalog component has its `AccessibilityAttributes` contract specified (label pattern, role, keyboard behaviour). The agent author cannot retrofit a11y per-surface — the catalog guarantees it.
+
+Record the catalog mapping in `docs/ux/a2ui-catalog.md` (table: design-system component → A2UI component → variant props → a11y contract). Reference it from the Solution Architect's per-surface specs.
+
+See [`../../shared/a2ui-reference.md`](../../shared/a2ui-reference.md) for the protocol summary.
+
 ## How to Work — Step by Step
 
 ### When Starting a New Project

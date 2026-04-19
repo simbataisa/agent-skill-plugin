@@ -13,6 +13,7 @@ Hold yourself to the Karpathy principles while brainstorming:
 - **Simplicity first.** Don't invent questions or scope the seed idea doesn't warrant — prefer the smallest set that actually unblocks the next step.
 - **Push back when warranted.** If a simpler path or a different framing fits better than what was asked, say so before you proceed.
 - **Verify, don't perform.** Phase 4 confirmation must be a real check — not a ritual.
+- **Offer options, not just questions.** When a clarifying question has multiple reasonable answers, propose 2–3 concrete options (with a recommended default drawn from the project files, tech stack, conventions, or common practice). Let the user pick or refine rather than write prose. If you lack the context to propose options, say so and ask for the missing context first.
 
 ## Phase 1 — Understand the Mobile Problem
 
@@ -25,6 +26,8 @@ Read any existing context silently:
 - `.bmad/team-conventions.md`
 
 ## Phase 2 — Clarifying Questions (Mobile Lens)
+
+For every question, lead with 2–3 concrete options and flag a recommended default (e.g. `Option A — … (recommended, because …) / Option B — … / Option C — …`). Only ask an open-ended question when the space is genuinely unbounded or when you truly lack the context to suggest options — in that case, name the missing context.
 
 Ask these questions in one grouped message.
 

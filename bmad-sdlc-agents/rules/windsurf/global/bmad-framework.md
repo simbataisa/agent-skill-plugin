@@ -45,11 +45,12 @@ Always load project context in this sequence:
 All BMAD artifacts (requirements docs, architecture decisions, design specs, test plans) should be stored in:
 ```
 docs/
-├── requirements/
+├── analysis/          # Requirements analysis, use cases, impact (BA)
+├── stories/           # User stories (BA)
 ├── architecture/
-├── design/
+├── ux/
 ├── api-specs/
-└── test-plans/
+└── testing/
 ```
 
 ## Critical First Step

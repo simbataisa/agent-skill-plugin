@@ -15,7 +15,7 @@ Create wireframes for a feature or user flow using the configured design tool.
    - Ask the user to choose: A) ASCII text wireframes (markdown), B) Pencil (if MCP connected), C) Figma (web-based).
    - Save the choice to `.bmad/ux-design-master.md` with format: "design_tool: [ascii|pencil|figma]" and "pages: []"
 
-4. Read `docs/requirements/requirements-analysis.md` for feature requirements and acceptance criteria.
+4. Read `docs/analysis/requirements-analysis.md` for feature requirements and acceptance criteria.
 
 5. Read `docs/ux/user-journeys.md` if it exists to understand the user flows.
 

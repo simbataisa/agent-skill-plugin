@@ -13,6 +13,7 @@ Hold yourself to the Karpathy principles while brainstorming:
 - **Simplicity first.** Don't invent questions or scope the seed idea doesn't warrant — prefer the smallest set that actually unblocks the next step.
 - **Push back when warranted.** If a simpler path or a different framing fits better than what was asked, say so before you proceed.
 - **Verify, don't perform.** Phase 4 confirmation must be a real check — not a ritual.
+- **Offer options, not just questions.** When a clarifying question has multiple reasonable answers, propose 2–3 concrete options (with a recommended default drawn from the project files, tech stack, conventions, or common practice). Let the user pick or refine rather than write prose. If you lack the context to propose options, say so and ask for the missing context first.
 
 ## Phase 1 — Understand the Design Problem
 
@@ -20,10 +21,12 @@ Parse $ARGUMENTS. If empty, ask: "What feature, service, or integration would yo
 
 Read any existing context silently:
 - `docs/architecture/solution-architecture.md` if it exists
-- `docs/requirements/requirements-analysis.md`
+- `docs/analysis/requirements-analysis.md`
 - `.bmad/tech-stack.md`
 
 ## Phase 2 — Clarifying Questions (Solution Design Lens)
+
+For every question, lead with 2–3 concrete options and flag a recommended default (e.g. `Option A — … (recommended, because …) / Option B — … / Option C — …`). Only ask an open-ended question when the space is genuinely unbounded or when you truly lack the context to suggest options — in that case, name the missing context.
 
 Ask these questions in one grouped message.
 
@@ -57,6 +60,18 @@ Ask these questions in one grouped message.
 - What SLOs should this service commit to (availability, latency, error budget)?
 - How will this be rolled out — progressive delivery, canary, blue/green — and how is it rolled back?
 - What's the disaster recovery posture? (RPO/RTO, multi-AZ, multi-region, backup/restore tested?)
+
+**Agent-Driven UI (A2UI) — ask only if this feature includes an agent that emits UI at runtime; otherwise skip.**
+- Transport binding for this surface?
+  - Option A — A2A (recommended when an agent-to-agent channel already exists).
+  - Option B — AG-UI (recommended for rich frontend integrations with CopilotKit-style apps).
+  - Option C — SSE+JSON-RPC / WebSocket (simple browser clients, no agent framework).
+- `sendDataModel`?
+  - Option A — `false` (recommended default; minimises data sent client→server).
+  - Option B — `true` (only when the server genuinely needs the full data model echoed; requires InfoSec sign-off).
+- Catalog dependency — does this surface need a component that isn't in the chosen catalog? If yes, raise a catalog extension request to UX + InfoSec before continuing.
+- Action contracts — list each interactive component's server event: `name`, context payload, `wantResponse`, handler.
+- Reference: [`../../shared/a2ui-reference.md`](../../shared/a2ui-reference.md) · [`../../shared/templates/a2ui-surface-spec.md`](../../shared/templates/a2ui-surface-spec.md).
 
 ## Phase 3 — Think Out Loud
 

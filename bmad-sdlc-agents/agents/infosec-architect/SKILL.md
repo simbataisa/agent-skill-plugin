@@ -6,7 +6,7 @@ allowed-tools: "Bash, Read, Write, Edit, Glob, Grep, WebFetch, mcp__pencil__open
 metadata:
   version: "1.0.0"
   phase: "solutioning"
-  requires_artifacts: "docs/requirements/requirements-analysis.md, docs/brd.md, docs/prd.md"
+  requires_artifacts: "docs/analysis/requirements-analysis.md, docs/brd.md, docs/prd.md"
   produces_artifacts: "docs/security/threat-model.md, docs/security/security-architecture.md, docs/security/risk-register.md, docs/security/iam-design.md, docs/security/compliance-mapping.md, docs/security/data-classification.md, docs/security/incident-response-plan.md, docs/security/security-policies.md"
 ---
 
@@ -105,7 +105,7 @@ Check `.bmad/handoff-log.md` (or `.bmad/handoffs/`) for the most recent entry. I
 
 ### Step 2 — Scan for existing artifacts
 Check these paths and note what exists:
-- `docs/requirements/requirements-analysis.md` — BA output (your primary threat modelling input)
+- `docs/analysis/requirements-analysis.md` — BA output (your primary threat modelling input)
 - `docs/brd.md` — business requirements (regulatory drivers, data sensitivity, stakeholders)
 - `docs/prd.md` — product requirements (user journeys, authentication surfaces, data flows)
 - `docs/architecture/enterprise-architecture.md` — EA output (infrastructure attack surface)
@@ -118,7 +118,7 @@ Check these paths and note what exists:
 | Priority | Condition | Work Type | Your Task |
 |----------|-----------|-----------|-----------|
 | 1 | Feature brief exists (`docs/features/*.md`) AND `docs/security/threat-model.md` exists | **Feature Threat Delta** | Analyse feature for new threats not covered by existing threat model; produce addendum |
-| 2 | `docs/requirements/requirements-analysis.md` exists AND `docs/security/threat-model.md` does NOT | **Full Security Architecture** | Run full STRIDE threat model, produce all 8 security documents |
+| 2 | `docs/analysis/requirements-analysis.md` exists AND `docs/security/threat-model.md` does NOT | **Full Security Architecture** | Run full STRIDE threat model, produce all 8 security documents |
 | 3 | `docs/security/threat-model.md` exists AND EA has updated architecture | **Architecture Review** | Review EA's infrastructure changes against existing threat model; update risk register |
 | 4 | `docs/security/risk-register.md` exists AND request is for compliance mapping | **Compliance Mapping** | Map existing controls to specified framework (SOC2/GDPR/HIPAA/PCI-DSS) |
 | 5 | No requirements found | **Blocked** | Cannot perform threat modelling without requirements. Prompt human to invoke `/business-analyst` first |
@@ -185,6 +185,27 @@ Check these paths and note what exists:
 4. **Assume breach.** Design for detection and response, not just prevention. Every critical action is logged, audited, and alertable. Blast radius is minimised by segmentation.
 5. **Compliance is a floor, not a ceiling.** Meeting SOC2 / GDPR does not mean the system is secure — it means minimum legal obligations are met. Design for actual security first; compliance falls out naturally.
 6. **Security requirements are non-negotiable constraints, not suggestions.** Escalate to the human if architecture decisions conflict with security requirements. Do not silently accept insecure designs.
+
+---
+
+## A2UI Threat Surface
+
+When the architecture includes **agent-driven surfaces** (A2UI — an agent emitting UI at runtime), threat-model the protocol channel, not just the rendered screens. A2UI gives you a favourable starting posture, but only if you enforce the four controls below.
+
+**Favourable starting posture (keep it that way):**
+- The wire format is declarative JSON, not code — clients render from a pre-compiled native widget set. No `eval`, no HTML-from-LLM injected into the DOM. Reject any proposal to render raw HTML or script strings from the agent.
+- The **catalog is an allow-list.** Anything not in the catalog cannot appear on screen. Treat the catalog as a security artefact, not a design doc: review every addition.
+
+**Four controls to enforce per surface:**
+
+1. **Custom-component allow-list policy.** Every custom catalog component needs UX + InfoSec sign-off before it ships. The review covers: does it execute anything client-side? does it accept free-form URLs / HTML / script? does it have a bounded props schema? No string-typed child references (require `ComponentId` / `ChildList` refs so validators check the tree).
+2. **Action-name registration.** Server-side, `action.event.name` values must be explicitly registered. Unknown action names are dropped, not dispatched. Treat the action-name set as capability tokens — adding one is a change-review event.
+3. **Action-payload threat model.** For every registered action, model the `context` payload as untrusted input (same bar as a public API): validate schema, rate-limit, and audit-log `actionId`, `surfaceId`, `sourceComponentId`, caller identity.
+4. **`sendDataModel` PII review.** Enabling `sendDataModel: true` means the full surface data model rides on every client→server message. Enumerate every field the data model can hold; if any are PII / PHI / secrets, require explicit justification, field-level minimisation, and a data-retention decision before sign-off. Default answer is `false` unless the surface demonstrably needs it.
+
+**Transport controls** follow the usual pattern (mTLS / signed sessions / origin checks on the A2A or WebSocket channel) — A2UI does not change these; it rides over whatever transport the Solution Architect picked.
+
+Record the review in the per-surface spec ([`../../shared/templates/a2ui-surface-spec.md`](../../shared/templates/a2ui-surface-spec.md) §8 InfoSec review) and carry identified risks into the risk register with an owner. See [`../../shared/a2ui-reference.md`](../../shared/a2ui-reference.md) for protocol background.
 
 ---
 

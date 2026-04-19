@@ -24,6 +24,6 @@ Perform detailed requirements analysis that decomposes features into functional 
 
 7. Fill the requirements analysis template with: Requirements Overview, Functional Requirements (organized by feature), Non-Functional Requirements (by category), Traceability Matrix, Gap Analysis (if applicable).
 
-8. Save to `docs/requirements/requirements-analysis.md`.
+8. Save to `docs/analysis/requirements-analysis.md`.
 
-9. Confirm: "Requirements analysis completed → `docs/requirements/requirements-analysis.md`. Next, run `/create-user-story` to break requirements into stories."
+9. Confirm: "Requirements analysis completed → `docs/analysis/requirements-analysis.md`. Next, run `/create-user-story` to break requirements into stories."

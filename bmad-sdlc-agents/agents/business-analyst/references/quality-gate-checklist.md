@@ -8,7 +8,7 @@ Before handing off to EA + UX Designer (parallel), verify:
 ## Business Analyst Quality Gate
 
 ### Requirements Analysis Document
-- [ ] Requirements Analysis document exists at docs/requirements/requirements-analysis.md
+- [ ] Requirements Analysis document exists at docs/analysis/requirements-analysis.md
 - [ ] All sections completed — no placeholder text remaining
 - [ ] Traces back to PO's BRD and PRD (BRQ-# and feature references present)
 - [ ] Handoff Notes section completed for BOTH EA and UX Designer
@@ -65,13 +65,15 @@ Before handing off to EA + UX Designer (parallel), verify:
 - [ ] Boundary conditions included (minimum values, maximum values, empty states)
 - [ ] Security acceptance criteria on stories involving auth, payments, PII, or data export
 
-### Feasibility & Risk
-- [ ] Technical feasibility assessed for all major requirements
-- [ ] Timeline feasibility assessed
-- [ ] Budget feasibility assessed
-- [ ] Organizational feasibility assessed (skills, change management)
-- [ ] Top risks documented with likelihood, impact, and mitigation
+### Business Viability & Risk (BA scope — technical feasibility is EA/SA's call)
+- [ ] Timeline viability assessed from a business perspective (is the business deadline realistic for the stated scope?)
+- [ ] Budget viability assessed (is funding secured for the stated scope?)
+- [ ] Organizational readiness assessed (stakeholder alignment, user-adoption readiness, change-management, training budget)
+- [ ] Regulatory/policy blockers surfaced (anything that could kill the project regardless of implementation)
+- [ ] Top **business** risks documented with likelihood, impact, and business mitigation
+- [ ] **Flag-for-EA/SA list** present: technical open questions (integration, scale, legacy, novel-tech) named as questions — NOT answered with technology recommendations
 - [ ] Unknowns listed — items that need resolution before EA or UX can proceed flagged
+- [ ] No technical solutions proposed in this document (no framework choices, DB schemas, integration patterns, rules-engine recommendations, etc.)
 
 ### Data & Integration
 - [ ] Data dictionary complete (all entities with classification, retention, regulatory flag)

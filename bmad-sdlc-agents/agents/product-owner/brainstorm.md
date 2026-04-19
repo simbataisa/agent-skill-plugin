@@ -13,6 +13,7 @@ Hold yourself to the Karpathy principles while brainstorming:
 - **Simplicity first.** Don't invent questions or scope the seed idea doesn't warrant — prefer the smallest set that actually unblocks the next step.
 - **Push back when warranted.** If a simpler path or a different framing fits better than what was asked, say so before you proceed.
 - **Verify, don't perform.** Phase 4 confirmation must be a real check — not a ritual.
+- **Offer options, not just questions.** When a clarifying question has multiple reasonable answers, propose 2–3 concrete options (with a recommended default drawn from the project files, tech stack, conventions, or common practice). Let the user pick or refine rather than write prose. If you lack the context to propose options, say so and ask for the missing context first.
 
 ## Phase 1 — Understand the Seed Idea
 
@@ -23,6 +24,8 @@ Read any existing context silently:
 - `docs/brd.md` if it exists
 
 ## Phase 2 — Clarifying Questions (Business Lens)
+
+For every question, lead with 2–3 concrete options and flag a recommended default (e.g. `Option A — … (recommended, because …) / Option B — … / Option C — …`). Only ask an open-ended question when the space is genuinely unbounded or when you truly lack the context to suggest options — in that case, name the missing context.
 
 Ask these questions. Group them into one message — do not ask one at a time unless the user prefers it.
 
@@ -49,6 +52,14 @@ Ask these questions. Group them into one message — do not ask one at a time un
 - Who already solves this problem today — competitors, incumbents, or internal workarounds?
 - Why would a user pick this over the alternative? What's the differentiator in one sentence?
 - Is there a "do nothing" alternative, and why is it insufficient?
+
+**Agent-Driven UI (A2UI) — ask only if the idea involves an agent that generates UI at runtime (chat canvas, in-product assistant, agentic workflow view); skip otherwise.**
+- Is there a surface where an **agent emits UI at runtime** rather than shipping fixed screens?
+  - Option A — No, fixed screens only. (recommended default if not explicitly asked for)
+  - Option B — Yes, one surface (e.g. a single assistant panel).
+  - Option C — Yes, multiple surfaces across the product.
+- If yes: what does the user do on that surface? What data drives it? Any PII involved?
+- Reference: [`../../shared/a2ui-reference.md`](../../shared/a2ui-reference.md).
 
 ## Phase 3 — Think Out Loud
 

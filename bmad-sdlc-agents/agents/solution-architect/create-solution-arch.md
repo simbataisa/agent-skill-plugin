@@ -7,7 +7,7 @@ Create the solution architecture defining service boundaries, API contracts, dat
 
 ## Steps
 
-1. Read `docs/requirements/requirements-analysis.md` (required).
+1. Read `docs/analysis/requirements-analysis.md` (required).
 
 2. Read `docs/architecture/enterprise-architecture.md` if it exists (EA constraints and infrastructure).
 

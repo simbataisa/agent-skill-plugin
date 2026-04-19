@@ -13,17 +13,20 @@ Hold yourself to the Karpathy principles while brainstorming:
 - **Simplicity first.** Don't invent questions or scope the seed idea doesn't warrant — prefer the smallest set that actually unblocks the next step.
 - **Push back when warranted.** If a simpler path or a different framing fits better than what was asked, say so before you proceed.
 - **Verify, don't perform.** Phase 4 confirmation must be a real check — not a ritual.
+- **Offer options, not just questions.** When a clarifying question has multiple reasonable answers, propose 2–3 concrete options (with a recommended default drawn from the project files, tech stack, conventions, or common practice). Let the user pick or refine rather than write prose. If you lack the context to propose options, say so and ask for the missing context first.
 
 ## Phase 1 — Understand the Context
 
 Parse $ARGUMENTS. If empty, ask: "What system, domain, or architectural decision would you like to brainstorm?"
 
 Read any existing context silently:
-- `docs/requirements/requirements-analysis.md`
+- `docs/analysis/requirements-analysis.md`
 - `docs/architecture/` directory if it exists
 - `.bmad/tech-stack.md` if it exists
 
 ## Phase 2 — Clarifying Questions (Architecture Lens)
+
+For every question, lead with 2–3 concrete options and flag a recommended default (e.g. `Option A — … (recommended, because …) / Option B — … / Option C — …`). Only ask an open-ended question when the space is genuinely unbounded or when you truly lack the context to suggest options — in that case, name the missing context.
 
 Ask these questions in one grouped message.
 
@@ -51,6 +54,22 @@ Ask these questions in one grouped message.
 **Team & Delivery**
 - What are the team's current skills and technology comfort zones?
 - Are there constraints on the number of new technologies we can introduce?
+
+**Agent-Driven UI (A2UI) — ask only when the architecture exposes an agent-driven surface; otherwise skip.**
+- Do we need an A2UI adoption ADR for this system?
+  - Option A — Yes, adopt A2UI v0.10 (recommended when agent-driven UI is in scope).
+  - Option B — Defer; use bespoke JSON for one pilot surface, revisit after.
+  - Option C — No; render everything as fixed UI.
+- Catalog strategy?
+  - Option A — `custom` (recommended once >~2 surfaces exist; maps to the design system).
+  - Option B — `basic` (bootstrap only, v0.10's 18 components).
+  - Option C — `hybrid` (basic + allow-listed extensions).
+- Transport standard?
+  - Option A — A2A primary, AG-UI secondary (recommended default).
+  - Option B — AG-UI primary (if the stack is already CopilotKit / React-heavy).
+  - Option C — MCP / SSE / WebSocket / REST (only by exception).
+- Versioning policy? (default: pin to one A2UI version per release train; bumps via ADR addendum.)
+- Reference: [`../../shared/a2ui-reference.md`](../../shared/a2ui-reference.md) · [`../../shared/templates/adr-a2ui-adoption.md`](../../shared/templates/adr-a2ui-adoption.md).
 
 ## Phase 3 — Think Out Loud
 
