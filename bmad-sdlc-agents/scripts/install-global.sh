@@ -110,7 +110,7 @@ append_file() {
 #   Claude Code  → /agent:cmd        (native subdir commands)
 #   Gemini CLI   → skills/<agent>/   (folder copy via contextFileName)
 #   Codex        → skills/<agent>/<cmd>.md
-#   Cursor/Windsurf/Kiro/Others → adapted per tool
+#   Cursor/Windsurf/Trae/Kiro/Others → adapted per tool
 
 # Walk agents/<agent>/<cmd>.md (non-SKILL.md siblings) and call a handler for each.
 # Handler receives: agent_name  cmd_name  src_file  [extra_args...]
@@ -227,6 +227,30 @@ adapt_for_windsurf() {
     arg_hint="$(extract_frontmatter_field "$src" "argument-hint")"
     if [[ "$DRY_RUN" == true ]]; then
         echo "  [DRY] windsurf /$agent:$cmd -> $dst"
+        return
+    fi
+    mkdir -p "$(dirname "$dst")"
+    {
+        echo "# Rule: ${agent}:${cmd}"
+        echo ""
+        echo "**Trigger:** When the user asks to run \`${agent}:${cmd}\` or \"${cmd//-/ }\"."
+        [[ -n "$description" ]] && echo "" && echo "$description"
+        [[ -n "$arg_hint"    ]] && echo "" && echo "**Arguments:** ${arg_hint}"
+        echo ""
+        strip_frontmatter "$src"
+    } > "$dst"
+}
+
+# Trae IDE: same rules-based paradigm as Windsurf; one file per command under bmad-commands/<agent>/
+# Trae reads markdown under ~/.trae/rules/ (user) and .trae/rules/ (project) as always-on guidelines.
+adapt_for_trae() {
+    local agent="$1" cmd="$2" src="$3" base="$4"
+    local dst="$base/$agent/$cmd.md"
+    local description arg_hint
+    description="$(extract_frontmatter_field "$src" "description")"
+    arg_hint="$(extract_frontmatter_field "$src" "argument-hint")"
+    if [[ "$DRY_RUN" == true ]]; then
+        echo "  [DRY] trae /$agent:$cmd -> $dst"
         return
     fi
     mkdir -p "$(dirname "$dst")"
@@ -840,6 +864,69 @@ if [[ -d "$HOME/.windsurf" ]]; then
 fi
 
 # ============================================================
+# Trae IDE (ByteDance) — rules-based, same paradigm as Windsurf/Cursor.
+# User rules: ~/.trae/rules/ (markdown files auto-loaded as always-on guidelines)
+# Trae installs user_rules.md by default but will pick up other .md files in ~/.trae/rules/
+# as well. We deploy each BMAD agent as its own rule file, plus the framework overview.
+# ============================================================
+if [[ -d "$HOME/.trae" ]] || command -v trae &> /dev/null; then
+    echo -e "${GREEN}✓ Trae IDE${NC} found"
+    TRAE_RULES="$HOME/.trae/rules"
+    TRAE_SKILLS="$HOME/.trae/skills"
+
+    if [[ "$DRY_RUN" == false ]]; then
+        mkdir -p "$TRAE_RULES"
+        mkdir -p "$TRAE_SKILLS"
+    fi
+
+    # Copy shared context to ~/.trae/ for fallback loading
+    copy_file "$SHARED_CONTEXT" "$HOME/.trae/BMAD-SHARED-CONTEXT.md"
+
+    # Deploy each BMAD agent as a rule file with shared context prepended
+    for agent_dir in "$AGENTS_DIR"/*; do
+        if [[ -d "$agent_dir" ]]; then
+            agent_name="$(basename "$agent_dir")"
+            prepend_shared_context "$agent_dir/SKILL.md" "$TRAE_RULES/${agent_name}.md"
+            # Copy references/ and templates/ so agents can read them via relative paths
+            if [[ "$DRY_RUN" == false ]]; then
+                mkdir -p "$TRAE_SKILLS/$agent_name"
+                if [[ -d "$agent_dir/references" ]]; then
+                    cp -r "$agent_dir/references" "$TRAE_SKILLS/$agent_name/"
+                fi
+                if [[ -d "$agent_dir/templates" ]]; then
+                    cp -r "$agent_dir/templates" "$TRAE_SKILLS/$agent_name/"
+                fi
+            fi
+        fi
+    done
+
+    # Copy Trae-specific global rules (framework overview)
+    # Deployed twice: (1) user_rules.md — the path Trae auto-loads in every version,
+    # (2) 000-bmad-framework.md — sorts first for Trae versions that read the whole rules/ dir.
+    if [[ -d "$RULES_DIR/trae/global" ]]; then
+        for rule_file in "$RULES_DIR/trae/global"/*.md; do
+            if [[ -f "$rule_file" ]]; then
+                copy_file "$rule_file" "$TRAE_RULES/000-$(basename "$rule_file")"
+                # Also install the framework as user_rules.md (Trae's canonical user-rules path)
+                if [[ "$(basename "$rule_file")" == "bmad-framework.md" ]]; then
+                    copy_file "$rule_file" "$TRAE_RULES/user_rules.md"
+                fi
+            fi
+        done
+    fi
+
+    # Adapt commands for Trae rules format (same adapter shape as Windsurf)
+    TRAE_COMMANDS="$HOME/.trae/rules/bmad-commands"
+    walk_sub_agents adapt_for_trae "$TRAE_COMMANDS"
+
+    echo "  Rules:    $TRAE_RULES/"
+    echo "  Skills:   $TRAE_SKILLS/"
+    echo "  Commands: $TRAE_COMMANDS/"
+    INSTALLED_TOOLS+=("Trae IDE")
+    echo ""
+fi
+
+# ============================================================
 # GitHub Copilot
 # ============================================================
 if [[ -d "$HOME/.github" ]]; then
@@ -1232,6 +1319,12 @@ if [[ -d "$KARPATHY_DIR" ]]; then
         echo -e "  ${GREEN}✓${NC} Windsurf       → ~/.windsurf/rules/001-karpathy-principles.md"
     fi
 
+    # Trae IDE — rule file (windsurf format works identically)
+    if [[ -d "$HOME/.trae" ]] || command -v trae &> /dev/null; then
+        copy_file "$KARPATHY_DIR/windsurf.md" "$HOME/.trae/rules/001-karpathy-principles.md"
+        echo -e "  ${GREEN}✓${NC} Trae IDE       → ~/.trae/rules/001-karpathy-principles.md"
+    fi
+
     # GitHub Copilot — append to copilot-instructions.md (idempotent)
     if [[ -d "$HOME/.github" ]]; then
         append_karpathy "$KARPATHY_DIR/copilot-instructions.md" \
@@ -1312,6 +1405,12 @@ if [[ -f "$A2UI_REF" ]]; then
     if [[ -d "$HOME/.windsurf" ]]; then
         copy_file "$A2UI_REF" "$HOME/.windsurf/rules/002-a2ui-reference.md"
         echo -e "  ${GREEN}✓${NC} Windsurf       → ~/.windsurf/rules/002-a2ui-reference.md"
+    fi
+
+    # Trae IDE — rule file
+    if [[ -d "$HOME/.trae" ]] || command -v trae &> /dev/null; then
+        copy_file "$A2UI_REF" "$HOME/.trae/rules/002-a2ui-reference.md"
+        echo -e "  ${GREEN}✓${NC} Trae IDE       → ~/.trae/rules/002-a2ui-reference.md"
     fi
 
     # Gemini CLI
@@ -1407,6 +1506,7 @@ if [[ -d "$MCP_CONFIGS_DIR" ]]; then
     echo "  Kiro:         ~/.kiro/settings/mcp.json"
     echo "  Cursor:       ~/.cursor/mcp.json"
     echo "  Windsurf:     ~/.windsurf/mcp_config.json"
+    echo "  Trae IDE:     ~/.trae/mcp.json          (Settings → MCP & Agents, or edit the file)"
     echo "  Gemini CLI:   ~/.gemini/settings.json  (tools section)"
     echo ""
     echo "  See $BASE_DIR/mcp-configs/README.md for merge instructions."
@@ -1440,6 +1540,11 @@ fi
 if ! [[ -d "$HOME/.windsurf" ]]; then
     echo -e "${RED}✗ Windsurf${NC} — not installed"
     SKIPPED_TOOLS+=("Windsurf")
+fi
+
+if ! [[ -d "$HOME/.trae" ]] && ! command -v trae &> /dev/null; then
+    echo -e "${RED}✗ Trae IDE${NC} — not installed"
+    SKIPPED_TOOLS+=("Trae IDE")
 fi
 
 if ! [[ -d "$HOME/.github" ]]; then

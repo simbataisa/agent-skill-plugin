@@ -49,7 +49,7 @@ The squad also ships **A2UI v0.10 authoring support** for agent-driven UIs (chat
   - `references/technology-radar.md` – Technology choices, maturity tiers
   - `templates/` – ADR, story, test strategy, handoff log templates + `adr-a2ui-adoption.md` and `a2ui-surface-spec.md` (agent-specific BRD/PRD/requirements templates live in `agents/<agent>/templates/`)
 - **`hooks/`** – Session-hook settings + scripts for Claude Code / Kiro, plus the Yolo autonomous harness
-- **`rules/`** – Per-tool rules fragments (Cursor / Windsurf / Copilot / Gemini / OpenCode / Aider) generated from agent content
+- **`rules/`** – Per-tool rules fragments (Cursor / Windsurf / Trae / Copilot / Gemini / OpenCode / Aider) generated from agent content
 
 ### Project Layer
 
@@ -251,7 +251,7 @@ Agents are organized into **waves** — all agents in the same wave run simultan
 | W5   | Tech Lead                           | SA → updated `solution-architecture.md`                 |
 | W6   | Tester & QE                         | TL → `[feature]-plan.md`                                |
 
-**How to spawn parallel waves:** In Claude Code, use the `Agent` tool to launch multiple sub-agents in a single message. In Cursor/Windsurf, open parallel composer windows. The key rule: **never start the next wave until ALL agents in the current wave have printed their ✅ summary.** Each agent knows its topology — if it finishes before a parallel peer, it reports completion and notes which peer to wait for.
+**How to spawn parallel waves:** In Claude Code, use the `Agent` tool to launch multiple sub-agents in a single message. In Cursor/Windsurf/Trae, open parallel composer/Builder windows. The key rule: **never start the next wave until ALL agents in the current wave have printed their ✅ summary.** Each agent knows its topology — if it finishes before a parallel peer, it reports completion and notes which peer to wait for.
 
 ### 🤖 Autonomous Orchestration (Claude Code)
 
@@ -297,7 +297,7 @@ claude --agent tech-lead
 
 TL becomes the **team lead**; BE/FE/ME become **teammates** with a shared task list and mailbox. Engineers can message each other directly — without routing through TL. The sentinel file protocol still applies as the E2→E3 completion gate. Requires Claude Code v2.1.32+.
 
-**Other AI tools:** Kiro, Codex CLI, Cursor, and Windsurf do not support sub-agent spawning. In those environments the wave structure is **human-orchestrated** — the `🚀` suggestion lines in each agent's Completion Protocol guide you to spawn the next wave manually. The sentinel files still work the same way; you just write them yourself (or check for them) rather than having TL do it automatically.
+**Other AI tools:** Kiro, Codex CLI, Cursor, Windsurf, and Trae IDE do not support sub-agent spawning. In those environments the wave structure is **human-orchestrated** — the `🚀` suggestion lines in each agent's Completion Protocol guide you to spawn the next wave manually. The sentinel files still work the same way; you just write them yourself (or check for them) rather than having TL do it automatically.
 
 ### 🤖 Autonomous Orchestration (Claude Code)
 
@@ -369,22 +369,22 @@ Agent behaviour is not identical across AI coding tools — and the gap has narr
 
 Legend: ✅ first-class · 🟡 works but with caveats · ❌ not currently supported.
 
-| Capability | Claude Code | Cowork | Cursor | Windsurf | GitHub Copilot | Codex CLI | Gemini CLI | Kiro | OpenCode | Aider |
-|---|---|---|---|---|---|---|---|---|---|---|
-| **Init file / rules entry** | `CLAUDE.md` | `~/.skills/` + `.bmad/` | `.cursor/rules/*.mdc` | `.windsurf/rules/*.md` (+ `.windsurfrules`) | `.github/copilot-instructions.md` | `AGENTS.md` | `GEMINI.md` | `AGENTS.md` + `.kiro/steering/` | `AGENTS.md` | `.aider.conventions.md` |
-| **Agent/skill container** | `~/.claude/skills/` (folder-per-skill) | `~/.skills/skills/` | Rules only | Rules only | Rules only | `~/.codex/skills/` | `~/.gemini/skills/` (skills) + `~/.gemini/agents/` (native subagents) | `~/.kiro/skills/` | `~/.opencode/instructions.md` | conventions file |
-| **Typical model(s)** | Claude Opus / Sonnet / Haiku | Claude Opus / Sonnet | User-selected (Claude, GPT, Gemini, …) | User-selected | GPT-family + Claude option | GPT-5 / o-series | Gemini 2.5 Pro / Flash | Claude via Bedrock | User-selected | User-selected (architect + editor split) |
-| **Subagent spawning** | ✅ Agent tool | ✅ Agent tool | 🟡 Background agents / Tasks | 🟡 Cascade sub-flows | 🟡 Coding Agent (PR-scale) | 🟡 via Responses API | ✅ Native subagents (markdown-defined) with isolated context | ✅ Agent tool | 🟡 runner-level | ❌ (single-session) |
-| **Parallel E2 engineers** (BE ∥ FE ∥ ME) | ✅ True parallel | ✅ True parallel | 🟡 Multiple background agents | 🟡 Parallel Cascade sessions | 🟡 Multiple Coding Agent PRs | 🟡 limited parallelism | 🟡 Sequential subagent calls (isolated context, not parallel) | ✅ True parallel | 🟡 manual | ❌ Sequential |
-| **Session hooks** (Pre/Post/Stop) | ✅ Full | ✅ Full | ❌ | ❌ | ❌ | 🟡 (some CLI hooks) | 🟡 (extension hooks) | ✅ Full | 🟡 limited | ❌ |
-| **Slash / invocation syntax** | `/agent-name` | `/skill-name` | `@agent` rules + Composer | `@agent` mentions in Cascade | `@workspace` / Agent Mode | `/agent-name` | `@<subagent-name>` + `/agents` manager | `@agent-name` | `@agent-name` | `/ask`, `/architect`, `/run` |
-| **Yolo / autonomous harness** | ✅ Full | ✅ Scheduled tasks + auto-run | 🟡 Background agents | 🟡 Cascade autopilot | 🟡 Coding Agent (GitHub-hosted) | 🟡 --dangerously-auto | 🟡 --yolo flag | ✅ Full | 🟡 | 🟡 --auto-commit |
-| **Sentinel-file protocol** | ✅ Reliable | ✅ Reliable | 🟡 Works; requires explicit rule | 🟡 Works; requires explicit rule | 🟡 Inconsistent outside Agent Mode | 🟡 Usually reliable post GPT-5 | 🟡 Improved on 2.5-Pro | ✅ Reliable | 🟡 | 🟡 |
-| **Protocol-step compliance** | ✅ High | ✅ High | 🟡 Good inside Composer | 🟡 Good inside Cascade | 🟡 Good in Agent Mode | 🟡 Medium–High (GPT-5) | 🟡 High inside subagent context; medium in main session | ✅ High | 🟡 Medium | 🟡 Medium |
-| **MCP client support** | ✅ | ✅ | ✅ | ✅ | ✅ (Agent Mode) | ✅ | ✅ | ✅ | ✅ | 🟡 via plugins |
-| **Git worktree TL review** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Karpathy-principles auto-install path** | `~/.claude/KARPATHY-PRINCIPLES.md` | `~/.skills/KARPATHY-PRINCIPLES.md` | `~/.cursor/rules/001-karpathy-principles.mdc` | `~/.windsurf/rules/001-karpathy-principles.md` | `~/.github/copilot-instructions.md` (appended) | `~/.codex/KARPATHY-PRINCIPLES.md` | `~/.gemini/KARPATHY-PRINCIPLES.md` | `~/.kiro/steering/karpathy-principles.md` | `~/.opencode/instructions.md` (appended) | `~/.aider.conventions.md` (appended) |
-| **Agent-driven UI authoring (A2UI)** — reference deployed for PO/EA/SA/UX/InfoSec | `~/.claude/A2UI-REFERENCE.md` | `~/.skills/A2UI-REFERENCE.md` | `~/.cursor/rules/002-a2ui-reference.md` | `~/.windsurf/rules/002-a2ui-reference.md` | — (reference in-repo under `shared/a2ui-reference.md`) | `~/.codex/A2UI-REFERENCE.md` | `~/.gemini/A2UI-REFERENCE.md` | `~/.kiro/steering/a2ui-reference.md` | `~/.opencode/A2UI-REFERENCE.md` | `~/.aider/A2UI-REFERENCE.md` |
+| Capability | Claude Code | Cowork | Cursor | Windsurf | Trae IDE | GitHub Copilot | Codex CLI | Gemini CLI | Kiro | OpenCode | Aider |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| **Init file / rules entry** | `CLAUDE.md` | `~/.skills/` + `.bmad/` | `.cursor/rules/*.mdc` | `.windsurf/rules/*.md` (+ `.windsurfrules`) | `.trae/rules/*.md` (+ `user_rules.md`) | `.github/copilot-instructions.md` | `AGENTS.md` | `GEMINI.md` | `AGENTS.md` + `.kiro/steering/` | `AGENTS.md` | `.aider.conventions.md` |
+| **Agent/skill container** | `~/.claude/skills/` (folder-per-skill) | `~/.skills/skills/` | Rules only | Rules only | `~/.trae/rules/` (+ `~/.trae/skills/` refs) | Rules only | `~/.codex/skills/` | `~/.gemini/skills/` (skills) + `~/.gemini/agents/` (native subagents) | `~/.kiro/skills/` | `~/.opencode/instructions.md` | conventions file |
+| **Typical model(s)** | Claude Opus / Sonnet / Haiku | Claude Opus / Sonnet | User-selected (Claude, GPT, Gemini, …) | User-selected | User-selected (Claude, GPT, Gemini, DeepSeek, …) | GPT-family + Claude option | GPT-5 / o-series | Gemini 2.5 Pro / Flash | Claude via Bedrock | User-selected | User-selected (architect + editor split) |
+| **Subagent spawning** | ✅ Agent tool | ✅ Agent tool | 🟡 Background agents / Tasks | 🟡 Cascade sub-flows | ❌ (single-session; routing-advisor model) | 🟡 Coding Agent (PR-scale) | 🟡 via Responses API | ✅ Native subagents (markdown-defined) with isolated context | ✅ Agent tool | 🟡 runner-level | ❌ (single-session) |
+| **Parallel E2 engineers** (BE ∥ FE ∥ ME) | ✅ True parallel | ✅ True parallel | 🟡 Multiple background agents | 🟡 Parallel Cascade sessions | 🟡 Multiple Trae windows | 🟡 Multiple Coding Agent PRs | 🟡 limited parallelism | 🟡 Sequential subagent calls (isolated context, not parallel) | ✅ True parallel | 🟡 manual | ❌ Sequential |
+| **Session hooks** (Pre/Post/Stop) | ✅ Full | ✅ Full | ❌ | ❌ | ❌ | ❌ | 🟡 (some CLI hooks) | 🟡 (extension hooks) | ✅ Full | 🟡 limited | ❌ |
+| **Slash / invocation syntax** | `/agent-name` | `/skill-name` | `@agent` rules + Composer | `@agent` mentions in Cascade | `@agent` rules + Builder | `@workspace` / Agent Mode | `/agent-name` | `@<subagent-name>` + `/agents` manager | `@agent-name` | `@agent-name` | `/ask`, `/architect`, `/run` |
+| **Yolo / autonomous harness** | ✅ Full | ✅ Scheduled tasks + auto-run | 🟡 Background agents | 🟡 Cascade autopilot | 🟡 Builder autopilot | 🟡 Coding Agent (GitHub-hosted) | 🟡 --dangerously-auto | 🟡 --yolo flag | ✅ Full | 🟡 | 🟡 --auto-commit |
+| **Sentinel-file protocol** | ✅ Reliable | ✅ Reliable | 🟡 Works; requires explicit rule | 🟡 Works; requires explicit rule | 🟡 Works; requires explicit rule | 🟡 Inconsistent outside Agent Mode | 🟡 Usually reliable post GPT-5 | 🟡 Improved on 2.5-Pro | ✅ Reliable | 🟡 | 🟡 |
+| **Protocol-step compliance** | ✅ High | ✅ High | 🟡 Good inside Composer | 🟡 Good inside Cascade | 🟡 Good inside Builder | 🟡 Good in Agent Mode | 🟡 Medium–High (GPT-5) | 🟡 High inside subagent context; medium in main session | ✅ High | 🟡 Medium | 🟡 Medium |
+| **MCP client support** | ✅ | ✅ | ✅ | ✅ | ✅ (`~/.trae/mcp.json`) | ✅ (Agent Mode) | ✅ | ✅ | ✅ | ✅ | 🟡 via plugins |
+| **Git worktree TL review** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Karpathy-principles auto-install path** | `~/.claude/KARPATHY-PRINCIPLES.md` | `~/.skills/KARPATHY-PRINCIPLES.md` | `~/.cursor/rules/001-karpathy-principles.mdc` | `~/.windsurf/rules/001-karpathy-principles.md` | `~/.trae/rules/001-karpathy-principles.md` | `~/.github/copilot-instructions.md` (appended) | `~/.codex/KARPATHY-PRINCIPLES.md` | `~/.gemini/KARPATHY-PRINCIPLES.md` | `~/.kiro/steering/karpathy-principles.md` | `~/.opencode/instructions.md` (appended) | `~/.aider.conventions.md` (appended) |
+| **Agent-driven UI authoring (A2UI)** — reference deployed for PO/EA/SA/UX/InfoSec | `~/.claude/A2UI-REFERENCE.md` | `~/.skills/A2UI-REFERENCE.md` | `~/.cursor/rules/002-a2ui-reference.md` | `~/.windsurf/rules/002-a2ui-reference.md` | `~/.trae/rules/002-a2ui-reference.md` | — (reference in-repo under `shared/a2ui-reference.md`) | `~/.codex/A2UI-REFERENCE.md` | `~/.gemini/A2UI-REFERENCE.md` | `~/.kiro/steering/a2ui-reference.md` | `~/.opencode/A2UI-REFERENCE.md` | `~/.aider/A2UI-REFERENCE.md` |
 
 **Practical impact by tool:**
 
@@ -392,6 +392,7 @@ Legend: ✅ first-class · 🟡 works but with caveats · ❌ not currently supp
 - **Cowork (Claude Desktop)** — The desktop/agentic surface with skills, scheduled tasks, and MCP. Strong for document-producing roles (PO/BA/UX/EA) and for long-running orchestration of the squad. Shares Claude Code's compliance profile.
 - **Cursor** — Composer / Agent Mode + background agents cover multi-file changes and long-running work; rules system (`.cursor/rules/*.mdc`) is the right home for persistent BMAD guidance. No Claude-Code-style hooks, so harness features don't apply.
 - **Windsurf** — Cascade is the agentic equivalent of Composer; planning mode works well for brainstorm.md prompts. Rules files at `.windsurf/rules/` are first-class. Use its autopilot rather than the Yolo harness.
+- **Trae IDE (ByteDance)** — Rules-based paradigm similar to Cursor/Windsurf. `install-global.sh` deploys the 13 role bodies to `~/.trae/rules/<role>.md` (always-on guidelines), mirrors the framework seed to `~/.trae/rules/user_rules.md` for Trae versions that only auto-load that single file, and drops the per-command rules under `~/.trae/rules/bmad-commands/<agent>/<cmd>.md`. Reference files (templates/, references/) are copied to `~/.trae/skills/<role>/` so you can `Read` them from inside a session. Single-session like Windsurf — no native subagent spawning; use parallel Trae windows for Wave E2. MCP servers are configured at `~/.trae/mcp.json` (Settings → MCP & Agents).
 - **GitHub Copilot** — Agent Mode (in IDE) is well-suited to individual agent roles; the asynchronous Coding Agent can run long-form work against a branch/PR. Uses `.github/copilot-instructions.md` and `.github/instructions/*.instructions.md`. Hooks/harness don't apply.
 - **Codex CLI** — GPT-5 / o-series era. Protocol compliance is much better than on GPT-4o, but sentinel chaining and multi-branch logic still drift occasionally — verify explicitly. Parallelism is improving via the Responses API but is not yet at Claude-Code parity. Each agent's Completion Protocol keeps a `### 🔧 On Codex CLI / Gemini CLI` fallback for safety.
 - **Gemini CLI** — Gemini 2.5 / 3 era. Now ships **native subagents** (markdown files at `.gemini/agents/*.md` or `~/.gemini/agents/*.md`) with isolated context windows, per-subagent tool allow-lists, and `@<name>` invocation. `install-global.sh` deploys all 13 BMAD roles as subagents alongside the existing skills/extensions, so you can write `@backend-engineer implement BE-001` and the main agent delegates with token-efficient context isolation. Subagents cannot call other subagents (recursion-protected), so the BMAD orchestrator role acts as a routing advisor and the main agent is responsible for chained delegation. Manage interactively with `/agents` inside the CLI. Sequential — not yet parallel — but a major step up from the old "no subagents" baseline.
@@ -399,7 +400,7 @@ Legend: ✅ first-class · 🟡 works but with caveats · ❌ not currently supp
 - **OpenCode** — Open standards (`AGENTS.md`, MCP) make install straightforward; exact capability depends on the model/runner you pair it with.
 - **Aider** — Architect+editor split is a natural fit for Karpathy-style "think before coding": use a strong model in `/architect` to produce the plan, a cheap model to apply edits. No subagents — drive the squad manually turn-by-turn.
 
-> **Recommendation:** if you want the fully autonomous BMAD pipeline (sentinels, parallel engineers, hooks, Yolo), pick **Claude Code**, **Kiro**, or **Cowork**. For IDE-integrated workflows with agentic modes, pick **Cursor**, **Windsurf**, or **GitHub Copilot**. For CLI-first teams, **Codex CLI** or **Gemini CLI** are solid — just budget for the occasional sentinel-verification step. **Aider** is excellent for disciplined single-threaded work where you want tight human control.
+> **Recommendation:** if you want the fully autonomous BMAD pipeline (sentinels, parallel engineers, hooks, Yolo), pick **Claude Code**, **Kiro**, or **Cowork**. For IDE-integrated workflows with agentic modes, pick **Cursor**, **Windsurf**, **Trae IDE**, or **GitHub Copilot**. For CLI-first teams, **Codex CLI** or **Gemini CLI** are solid — just budget for the occasional sentinel-verification step. **Aider** is excellent for disciplined single-threaded work where you want tight human control.
 
 ---
 
@@ -792,6 +793,45 @@ Address agents by role in your prompt: "Acting as the Backend Engineer, …"
 
 ---
 
+### Trae IDE (ByteDance)
+
+Trae's rules system is the closest analogue to Cursor/Windsurf: markdown files in `~/.trae/rules/` (user scope) and `.trae/rules/` (project scope) are auto-loaded by the AI as always-on guidelines. BMAD installs every role body as its own rule file so you can address any agent by role.
+
+**Global Install (once)**
+
+```bash
+bash scripts/install-global.sh
+# → ~/.trae/rules/<role>.md                       13 agent bodies + shared context (one per role)
+# → ~/.trae/rules/000-bmad-framework.md           Framework overview (roster + phases + artifacts)
+# → ~/.trae/rules/user_rules.md                   Mirror of the framework (for Trae versions
+#                                                  that only auto-load user_rules.md)
+# → ~/.trae/rules/001-karpathy-principles.md      Engineering-discipline rulebook
+# → ~/.trae/rules/002-a2ui-reference.md           Agent-driven UI reference (PO/EA/SA/UX/InfoSec)
+# → ~/.trae/rules/bmad-commands/<agent>/<cmd>.md  Per-agent commands as rules
+# → ~/.trae/skills/<role>/                        references/ + templates/ copied alongside
+# → ~/.trae/BMAD-SHARED-CONTEXT.md                Fallback shared context
+```
+
+**Project Install (per project, run from project root)**
+
+```bash
+bash /path/to/bmad-sdlc-agents/scripts/scaffold-project.sh "My Project"
+# → .bmad/                project context files (commit to git)
+# → .trae/rules/          project-scope rules (generated if your scaffold targets Trae)
+```
+
+**Invoking agents:**
+
+- Address agents by role in your prompt: *"Acting as the Backend Engineer, implement BE-001…"*
+- Or reference a command file directly: *"Run the `backend-engineer:implement-story` rule on story BE-001."*
+- The 13 role rule files stay resident across every Trae session, so the agent always knows which role it's playing.
+
+**MCP servers:** edit `~/.trae/mcp.json` (or use Settings → MCP & Agents) to connect MCP servers such as Playwright, GitHub, Linear, etc. Trae supports both stdio and SSE transports.
+
+> **Single-session caveat.** Trae is single-session like Windsurf — there is no native subagent spawning. For Wave E2 (BE ∥ FE ∥ ME parallelism) open multiple Trae windows and let Tech Lead coordinate via `.bmad/signals/` sentinel files.
+
+---
+
 ### GitHub Copilot
 
 **Global Install (once)**
@@ -926,6 +966,7 @@ conventions-file: .aider.conventions.md
 | Cowork         | `~/.skills/skills/`                 | `.bmad/` (auto-detected)          |
 | Cursor         | `~/.cursor/rules/`                  | `.cursor/rules/`                  |
 | Windsurf       | `~/.windsurf/rules/`                | `.windsurfrules`                  |
+| Trae IDE       | `~/.trae/rules/`                    | `.trae/rules/`                    |
 | GitHub Copilot | `~/.github/copilot-instructions.md` | `.github/copilot-instructions.md` |
 | Gemini CLI     | `~/.gemini/skills/`                 | `GEMINI.md`                       |
 | OpenCode       | `~/.opencode/instructions.md`       | `AGENTS.md`                       |
@@ -1057,7 +1098,7 @@ Propose system architecture with service boundaries, API contracts, and data mod
 /bmad-status
 ```
 
-### Using a Single Agent (Cursor / Windsurf / Copilot / Gemini / OpenCode / Aider)
+### Using a Single Agent (Cursor / Windsurf / Trae / Copilot / Gemini / OpenCode / Aider)
 
 Agents are already loaded via your global rules file. Just address the agent by role in your prompt — the tool has all agent definitions in context:
 
@@ -1626,7 +1667,7 @@ story list. Read docs/testing/test-strategy.md for quality gates.
 Write and run tests. Flag unmet criteria. Save to docs/testing/sprint-N+1-results.md.
 ```
 
-### Cursor / Windsurf / Copilot / Gemini / OpenCode / Aider
+### Cursor / Windsurf / Trae / Copilot / Gemini / OpenCode / Aider
 
 All agent skills are loaded from your global rules file. Select the prompt set that matches your work type below. Each agent follows its built-in Completion Protocol — it prints a `✅` review summary and waits. Reply `next` to advance or `refine: [feedback]` to iterate.
 
@@ -2185,7 +2226,10 @@ bmad-sdlc-agents/
 │   │       ├── mobile-engineer.md          #   @mobile-engineer — iOS/Android
 │   │       └── tester-qe.md                #   @tester-qe — test plan + quality gates
 │   ├── opencode/                           # AGENTS.md fragments
-│   └── windsurf/                           # .windsurf/rules/*.md
+│   ├── windsurf/                           # .windsurf/rules/*.md
+│   └── trae/                               # .trae/rules/*.md (framework seed)
+│       └── global/
+│           └── bmad-framework.md           # Deployed as user_rules.md + 000-bmad-framework.md
 │
 ├── mcp-configs/                            # MCP server configuration files
 │   └── global/
@@ -2363,7 +2407,7 @@ After each sprint the Tester-QE agent prints a `✅` review summary and waits. O
 
 **Claude Code / Codex CLI** — invoke each agent individually with the Sprint Continuation prompts from the Squad Prompt section. The sprint plan (produced by Tech Lead in Turn 6) already contains all sprint batches, so you only need to pull the next batch from it.
 
-**Cursor / Windsurf / Kiro** — paste **Prompt C** (Sprint N+1 Continuation) from the Squad Prompt section, replacing `N` with the completed sprint number.
+**Cursor / Windsurf / Trae / Kiro** — paste **Prompt C** (Sprint N+1 Continuation) from the Squad Prompt section, replacing `N` with the completed sprint number.
 
 The key steps for every sprint boundary are the same regardless of tool:
 
