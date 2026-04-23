@@ -99,7 +99,7 @@ export async function searchIssues(
   ].join(",");
 
   return request(
-    `/search/jql?jql=${encodeURIComponent(jql)}&maxResults=${limit}&startAt=${startAt}&fields=${fields}`
+    `/search?jql=${encodeURIComponent(jql)}&maxResults=${limit}&startAt=${startAt}&fields=${fields}`
   );
 }
 
