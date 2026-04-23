@@ -203,6 +203,9 @@ elif [[ -d "$HOME/.cursor" ]] || command -v cursor &> /dev/null; then
 elif [[ -d "$HOME/.windsurf" ]]; then
     DETECTED_TOOL="windsurf"
     echo -e "${GREEN}✓ Windsurf detected${NC}"
+elif [[ -d "$HOME/.trae" ]] || command -v trae &> /dev/null; then
+    DETECTED_TOOL="trae"
+    echo -e "${GREEN}✓ Trae IDE detected${NC}"
 elif [[ -d "$HOME/.skills" ]]; then
     DETECTED_TOOL="cowork"
     echo -e "${GREEN}✓ Cowork detected${NC}"
@@ -417,6 +420,35 @@ if [[ "$DETECTED_TOOL" != "none" ]]; then
                     if [[ -f "$rule_file" ]]; then
                         cp "$rule_file" "$PROJECT_RULES/$(basename "$rule_file")"
                         echo "  ✓ rule: $(basename "$rule_file")"
+                    fi
+                done
+            fi
+
+            echo "  Rules: $PROJECT_RULES/"
+            ;;
+
+        trae)
+            PROJECT_RULES=".trae/rules"
+            mkdir -p "$PROJECT_RULES"
+
+            for agent_dir in "$BASE_DIR/agents"/*; do
+                if [[ -d "$agent_dir" ]]; then
+                    agent_name="$(basename "$agent_dir")"
+                    {
+                        cat "$BASE_DIR/shared/BMAD-SHARED-CONTEXT.md"
+                        echo ""
+                        cat "$agent_dir/SKILL.md"
+                    } > "$PROJECT_RULES/${agent_name}.md"
+                    echo "  ✓ agent: $agent_name"
+                fi
+            done
+
+            # Mirror the framework seed into the project-scope rules dir
+            if [[ -d "$RULES_DIR_SRC/trae/global" ]]; then
+                for rule_file in "$RULES_DIR_SRC/trae/global"/*.md; do
+                    if [[ -f "$rule_file" ]]; then
+                        cp "$rule_file" "$PROJECT_RULES/000-$(basename "$rule_file")"
+                        echo "  ✓ rule: 000-$(basename "$rule_file")"
                     fi
                 done
             fi
@@ -745,6 +777,19 @@ Skills activate by description match. You can also invoke commands with / prefix
         fi
         ;;
 
+    trae)
+        # Trae reads .trae/rules/*.md as always-on guidelines and also picks up user_rules.md.
+        mkdir -p ".trae/rules"
+        {
+            echo "$BMAD_CONTEXT_BLOCK"
+            echo "$RULE_BASED_AGENT_NOTE"
+        } > ".trae/rules/000-bmad-project-context.md"
+        echo "  ✓ Created .trae/rules/000-bmad-project-context.md"
+        # Mirror to user_rules.md for Trae versions that only auto-load that file
+        cp ".trae/rules/000-bmad-project-context.md" ".trae/rules/user_rules.md"
+        echo "  ✓ Created .trae/rules/user_rules.md"
+        ;;
+
     cowork)
         # Cowork reads CLAUDE.md when present and uses the same /slash-command syntax as Claude Code
         INSTRUCTION_FILE="CLAUDE.md"
@@ -770,7 +815,7 @@ Skills activate by description match. You can also invoke commands with / prefix
         # No tool detected — create all instruction files so the user can commit whichever they need.
         # Each file gets tool-appropriate content (correct agent invocation syntax per tool).
         echo "  Creating all tool instruction files (no tool detected)..."
-        mkdir -p ".cursor/rules" ".github" ".kiro/steering"
+        mkdir -p ".cursor/rules" ".github" ".kiro/steering" ".trae/rules"
 
         # CLAUDE.md — Claude Code and Cowork (/slash-command syntax)
         {
@@ -832,6 +877,14 @@ Skills activate by description match. You can also invoke commands with / prefix
             echo "$RULE_BASED_AGENT_NOTE"
         } > ".windsurfrules"
         echo "  ✓ .windsurfrules (Windsurf)"
+
+        # .trae/rules/ — Trae IDE (rule-based, auto-loaded)
+        {
+            echo "$BMAD_CONTEXT_BLOCK"
+            echo "$RULE_BASED_AGENT_NOTE"
+        } > ".trae/rules/000-bmad-project-context.md"
+        cp ".trae/rules/000-bmad-project-context.md" ".trae/rules/user_rules.md"
+        echo "  ✓ .trae/rules/000-bmad-project-context.md + user_rules.md (Trae IDE)"
 
         # .github/copilot-instructions.md — GitHub Copilot (rule-based invocation)
         {
@@ -929,7 +982,8 @@ case "$DETECTED_TOOL" in
     kiro)          echo "  • AGENTS.md + .kiro/steering/  — auto-loads .bmad/ context on session start" ;;
     cursor)        echo "  • .cursor/rules/001-project-context.mdc — auto-loads .bmad/ context" ;;
     windsurf)      echo "  • .windsurfrules               — auto-loads .bmad/ context on session start" ;;
-    none)          echo "  • CLAUDE.md (Claude/Cowork) / AGENTS.md (Codex/Kiro) / .cursor/rules/ (Cursor) / .windsurfrules (Windsurf) / .github/copilot-instructions.md / GEMINI.md — each with correct tool syntax" ;;
+    trae)          echo "  • .trae/rules/000-bmad-project-context.md + user_rules.md — auto-loads .bmad/ context" ;;
+    none)          echo "  • CLAUDE.md (Claude/Cowork) / AGENTS.md (Codex/Kiro) / .cursor/rules/ (Cursor) / .windsurfrules (Windsurf) / .trae/rules/ (Trae) / .github/copilot-instructions.md / GEMINI.md — each with correct tool syntax" ;;
 esac
 echo ""
 echo -e "${GREEN}Next steps:${NC}"
