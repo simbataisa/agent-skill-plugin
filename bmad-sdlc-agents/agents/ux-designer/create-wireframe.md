@@ -15,6 +15,8 @@ Create wireframes for a feature or user flow using the configured design tool.
    - Ask the user to choose: A) ASCII text wireframes (markdown), B) Pencil (if MCP connected), C) Figma (web-based).
    - Save the choice to `.bmad/ux-design-master.md` with format: "design_tool: [ascii|pencil|figma]" and "pages: []"
 
+3a. **Design system check (mandatory).** If `docs/ux/DESIGN.md` does not exist, run the **Design System Bootstrap** protocol from SKILL.md — copy `templates/design-system-template.md` to `docs/ux/DESIGN.md`, seed it with project defaults, and add an initial Changelog row before continuing. If it exists, read it in full now and use its tokens/components/patterns for every wireframe you produce in the next steps. No hardcoded colours, spacing, or component forks.
+
 4. Read `docs/analysis/requirements-analysis.md` for feature requirements and acceptance criteria.
 
 5. Read `docs/ux/user-journeys.md` if it exists to understand the user flows.

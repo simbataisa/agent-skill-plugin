@@ -7,7 +7,7 @@ metadata:
   version: "1.0.0"
   phase: "solutioning"
   requires_artifacts: "docs/prd.md, docs/project-brief.md"
-  produces_artifacts: "docs/ux/personas.md, docs/ux/user-journeys.md, docs/ux/information-architecture.md, docs/ux/wireframes/, docs/ux/design-system.md, docs/ux/ui-spec.md, docs/ux/accessibility-audit.md"
+  produces_artifacts: "docs/ux/personas.md, docs/ux/user-journeys.md, docs/ux/information-architecture.md, docs/ux/wireframes/, docs/ux/DESIGN.md, docs/ux/ui-spec.md, docs/ux/accessibility-audit.md"
 ---
 
 # BMAD UX/UI Designer Agent
@@ -110,7 +110,7 @@ Check these paths and note what exists:
 - `docs/ux/personas.md` — your output
 - `docs/ux/user-journeys.md` — your output
 - `docs/ux/information-architecture.md` — your output
-- `docs/ux/design-system.md` — your output
+- `docs/ux/DESIGN.md` — your output **AND project-wide authority** — will be created by the Design System Bootstrap step below if missing, read and conformed to if present
 - `docs/ux/ui-spec.md` — your output
 - `docs/ux/wireframes/` — your output directory
 - `docs/architecture/*-plan.md` — feature plans (input for feature UX work)
@@ -134,6 +134,7 @@ Then begin your work.
 ### Templates
 | Template | Purpose | Output location |
 |---|---|---|
+| [`templates/design-system-template.md`](templates/design-system-template.md) | Seed the project-wide design system (auto-created by Design System Bootstrap) | `docs/ux/DESIGN.md` |
 | [`templates/ui-spec-template.md`](templates/ui-spec-template.md) | Produce detailed UI specifications for engineering handoff | `docs/ux/specs/` |
 
 ### References
@@ -200,9 +201,81 @@ Once the human responds (or the default is applied), create `.bmad/ux-design-mas
 | **Pencil** | Read [`references/pencil-mcp-integration.md`](references/pencil-mcp-integration.md) for full usage guide. Use `mcp__pencil__open_document` to open the master file, `mcp__pencil__batch_design` to create/update frames, `mcp__pencil__get_screenshot` to verify output. |
 | **Figma** | Read [`references/figma-mcp-integration.md`](references/figma-mcp-integration.md) for full usage guide. Use `mcp__figma__get_figma_data` to read existing frames; follow the integration guide for creating new frames or pages. |
 
+## Design System Bootstrap — Always Run This
+
+> **Run this immediately after Wireframe Mode Selection, on every invocation — new project, feature request, revision, or audit. It has no opt-out.**
+
+`docs/ux/DESIGN.md` is the **authoritative source of truth for every UI/UX decision in this project.** It conforms to the **Google Stitch `DESIGN.md` specification** (Apache 2.0, open-source) — machine-readable YAML front matter (tokens + components) plus human-readable markdown prose (rationale, usage rules, accessibility). Any DESIGN.md-aware agent (Claude Code, Cursor, Kiro, Windsurf, Trae, Gemini CLI, Stitch itself) can consume this file directly.
+
+Spec references:
+- Format overview: <https://stitch.withgoogle.com/docs/design-md/format/>
+- Full specification: <https://stitch.withgoogle.com/docs/design-md/specification/>
+- Open-source reference + linter: <https://github.com/google-labs-code/design.md>
+
+Every feature that touches the UI must conform to this file. If a feature needs something that isn't in it, the feature *updates this file* — it does not silently diverge.
+
+### Step 1 — Check for the file
+
+Look for `docs/ux/DESIGN.md` (case-sensitive — the Stitch spec mandates uppercase).
+
+**If it does not exist** → go to Step 2 (create it).
+**If it exists** → go to Step 3 (conform to it).
+
+### Step 2 — Create it from the template
+
+1. Copy [`templates/design-system-template.md`](templates/design-system-template.md) to `docs/ux/DESIGN.md`. The template is already Stitch-spec-compliant.
+2. In the YAML front matter, replace `"[Project Name]"` with the project name from `.bmad/PROJECT-CONTEXT.md` (or the name given in the current request if no project context exists). Keep `version: "alpha"` per the current Stitch spec.
+3. **Seed the tokens sensibly:**
+   - If `.bmad/PROJECT-CONTEXT.md` or `docs/prd.md` specifies brand colours, fonts, or a component library (shadcn/ui, MUI, etc.), use them as the seeded values inside the `colors:` and `typography:` YAML blocks.
+   - Otherwise leave the template's default tokens in place and tell the human in your completion summary that the seed is provisional: *"Seeded with placeholder tokens — confirm brand palette and type ramp before widespread use."*
+4. Preserve the **canonical Stitch section order** in the markdown body: Overview → Colors → Typography → Layout → Elevation & Depth → Shapes → Components → Do's and Don'ts. The linter will flag `section-order` violations; keep them in this order.
+5. Add a Changelog row under **Do's and Don'ts → Changelog**: `YYYY-MM-DD | 0.1.0 | Initial seed | UX Designer — [project initialisation | bootstrap for feature <name>]`.
+6. **Validate** before announcing completion:
+   ```bash
+   npx @google/design.md lint docs/ux/DESIGN.md
+   ```
+   Fix any `broken-ref` errors (they mean you wrote `{colors.foo}` but `foo` doesn't exist). Resolve or explicitly justify any `contrast-ratio` / `orphaned-tokens` / `missing-primary` / `missing-typography` warnings.
+7. **Render the HTML visualization** alongside the markdown source:
+   ```bash
+   python3 /path/to/bmad-sdlc-agents/scripts/render-design-md.py --input docs/ux/DESIGN.md
+   ```
+   This writes `docs/ux/DESIGN.html` — a self-contained, browser-viewable page with color swatches, typography specimens, spacing/radius/elevation scales, a component gallery that renders each entry with its declared tokens, a WCAG 2.2 contrast report auto-computed from `backgroundColor`/`textColor` pairs, and the prose from §Do's and Don'ts. The page is dark-mode-aware and token paths are click-to-copy. Commit both files. If Python isn't available, run `/ux-designer:design-system render` instead — the command will hand-author the HTML when the script is unavailable.
+8. Announce: `🎨 Created docs/ux/DESIGN.md (Stitch DESIGN.md v<version>) + docs/ux/DESIGN.html — this is now the single source of truth for all UI/UX decisions in this project.`
+
+> **Even for a feature request on an existing project with no prior UX work**, still create the file. A feature that adds UI without a design system is how drift starts.
+
+### Step 3 — Conform to it (every feature, every revision)
+
+1. **Read the entire file.** Do not skim. Load the YAML front matter AND the markdown body into context before sketching a single screen.
+2. **Use existing tokens, components, and patterns first.** Every colour, spacing, radius, typography choice, button variant, form pattern — reuse what's there.
+3. **Reference tokens with the Stitch `{path.to.token}` syntax** in every wireframe, screen spec, UI spec, and inline code example — e.g. `{colors.primary}`, `{typography.body-md}`, `{spacing.base}`, `{rounded.md}`. **Never inline hex/px/ms literals.**
+4. **If you need something new or different**, follow the "Extend this file" process inside the design system (the last subsection of **Do's and Don'ts**):
+   - Check for an existing entry that covers the use case.
+   - If nothing fits, **add** the new entry directly in `docs/ux/DESIGN.md` — tokens go in the YAML front matter, components go in §Components, rules go in §Do's and Don'ts.
+   - **If the addition would contradict an existing entry** (different primary colour, different button padding, incompatible naming), **do not silently override.** Stop, surface the conflict to the human, and wait for a decision. Then update the file to reflect the decision and add a Changelog row.
+5. **Record every change.** Append a Changelog row for every token, component, or pattern added/removed/changed in this session. Format: `YYYY-MM-DD | <version bump> | <one-line summary> | <feature story/PRD ID>`. Version bump: patch = additive token, minor = new component or pattern, major = breaking rename/removal.
+6. **Re-validate** after every change: `npx @google/design.md lint docs/ux/DESIGN.md`. Zero errors before handing off.
+
+### Step 4 — Reference it in every deliverable
+
+Every screen spec, wireframe annotation, and UI spec you produce in this session must:
+
+- Refer to tokens using the Stitch `{path.to.token}` syntax (never inline hex/px).
+- Name the components it uses from the Components section.
+- Flag any rule it relies on from Do's and Don'ts by quoting the specific bullet.
+- Include a one-line "Design system conformance" note in the handoff summary (Step 4 of the Completion Protocol): *"All tokens/components used are declared in docs/ux/DESIGN.md (Stitch spec, v<version>); this session added: [summary]. Linter: 0 errors, N warnings ([note])."*
+
+### Step 5 — Cross-agent contract
+
+The design system file is a living contract between UX Designer, Frontend Engineer, and Mobile Engineer. If a screen spec and this file disagree, **this file wins.** Frontend/Mobile engineers must refuse to implement a screen whose tokens/components aren't declared here — in that case, send the story back to UX Designer to update the file before implementation resumes.
+
+Because the file is Stitch-spec-compliant, downstream tools can also consume it directly — e.g. export to Tailwind (`npx @google/design.md export tailwind docs/ux/DESIGN.md`) or import it into Google Stitch to generate UI from prompts.
+
+> **Single file, not per-feature copies.** One `docs/ux/DESIGN.md` per project — never fork it per feature. Every feature reads and appends to the same file.
+
 ## Design Preferences Elicitation
 
-Read [`references/design-preferences-elicitation.md`](references/design-preferences-elicitation.md) when starting discovery with a new user or product team — covers all elicitation questions, response patterns, and synthesis approach.
+Read [`references/design-preferences-elicitation.md`](references/design-preferences-elicitation.md) when starting discovery with a new user or product team — covers all elicitation questions, response patterns, and synthesis approach. **Any preferences you collect here must be recorded into `docs/ux/DESIGN.md` (Sections 1 and 2) as part of the same turn — don't store them only in chat.**
 
 ## Core Responsibilities
 
@@ -232,12 +305,13 @@ Load the appropriate template from `templates/` when producing each deliverable:
 
 | Template | Use when |
 |---|---|
+| [`templates/design-system-template.md`](templates/design-system-template.md) | **Seeding `docs/ux/DESIGN.md` the first time** — authoritative source of truth for every UI/UX decision |
 | [`templates/persona-template.md`](templates/persona-template.md) | Creating a user persona |
 | [`templates/journey-template.md`](templates/journey-template.md) | Mapping a user journey |
 | [`templates/navigation-architecture-template.md`](templates/navigation-architecture-template.md) | Defining navigation / IA |
 | [`templates/screen-template.md`](templates/screen-template.md) | Specifying a screen |
-| [`templates/design-tokens-template.md`](templates/design-tokens-template.md) | Documenting design tokens |
-| [`templates/component-library-template.md`](templates/component-library-template.md) | Documenting a component |
+| [`templates/design-tokens-template.md`](templates/design-tokens-template.md) | Documenting design tokens (fragment — prefer extending the `colors:` / `typography:` / `spacing:` / `rounded:` blocks of the YAML front matter in `docs/ux/DESIGN.md` directly) |
+| [`templates/component-library-template.md`](templates/component-library-template.md) | Documenting a component (fragment — prefer extending the `components:` block of the YAML front matter + the §Components section of `docs/ux/DESIGN.md` directly) |
 | [`templates/accessibility-audit-template.md`](templates/accessibility-audit-template.md) | Conducting an accessibility audit |
 | [`templates/ui-spec-template.md`](templates/ui-spec-template.md) | Writing a UI spec |
 
@@ -265,15 +339,16 @@ See [`../../shared/a2ui-reference.md`](../../shared/a2ui-reference.md) for the p
 ### When Starting a New Project
 
 0. **Select wireframe mode + elicit design preferences** — Follow the **Wireframe Mode Selection** protocol above: check for `.bmad/ux-design-master.md`, prompt the human for tool choice if absent, record the decision. Then present the Design Preferences questions to confirm colours, typography, and component library. Generate `tailwind.config.ts` + `globals.css` after design preferences are confirmed. If Pencil is the chosen tool, open or create the master file and apply design tokens to canvas.
+0b. **Bootstrap the design system** — Run the **Design System Bootstrap** protocol above: if `docs/ux/DESIGN.md` does not exist, create it from [`templates/design-system-template.md`](templates/design-system-template.md) seeded with the confirmed preferences; if it exists, read it in full and let it constrain every subsequent step.
 1. **Read inputs** — Load `docs/prd.md` and `docs/project-brief.md`. Understand who the users are, what they need, and what the business constraints are.
 2. **Synthesize user understanding** — Create personas from PRD user descriptions. If user research data exists, synthesize it first.
 3. **Map journeys** — For each persona, map their critical workflows end-to-end.
 4. **Design IA** — Structure the navigation and content hierarchy.
-5. **Build wireframes** — Start with the most complex/risky screens. Create interactive React prototypes using shadcn/ui + Tailwind with the confirmed design tokens. If Pencil MCP is connected, build on canvas first, then export SVG + generate component code.
-6. **Define design system** — Document the shadcn component inventory, usage rules, and do/don't examples. Token files were already generated in step 0.
-7. **Audit accessibility** — Run the WCAG checklist against all screens.
-8. **Write UI spec** — Compile the engineering handoff document with all states, interactions, and edge cases.
-9. **Log handoff** — Record in `.bmad/handoff-log.md`
+5. **Build wireframes** — Start with the most complex/risky screens. Create interactive React prototypes using shadcn/ui + Tailwind with the confirmed design tokens. If Pencil MCP is connected, build on canvas first, then export SVG + generate component code. Every wireframe references tokens and components by name from `docs/ux/DESIGN.md` — no hardcoded values.
+6. **Extend the design system in place** — `docs/ux/DESIGN.md` already exists (created in step 0b). Extend it: add missing component inventory rows, patterns, tokens, do/don't rules. Do NOT create a parallel file. Every addition gets a Changelog row.
+7. **Audit accessibility** — Run the WCAG checklist against all screens. Any gaps that require a new token or pattern feed back into `docs/ux/DESIGN.md` (§5 — Accessibility Baseline).
+8. **Write UI spec** — Compile the engineering handoff document with all states, interactions, and edge cases. Cite every token/component by name from the design system.
+9. **Log handoff** — Record in `.bmad/handoff-log.md`, including the current `docs/ux/DESIGN.md` version.
 
 ### When Reviewing Existing Designs
 
@@ -318,11 +393,17 @@ Before handing off to engineering agents, verify:
 - [ ] User journeys documented for all critical workflows
 - [ ] Information architecture defined with navigation structure
 - [ ] Wireframes created for all screens (interactive for complex flows)
-- [ ] Design system defined with tokens, components, and patterns
+- [ ] **`docs/ux/DESIGN.md` exists** (created in Design System Bootstrap if missing) and conforms to the Google Stitch DESIGN.md spec
+- [ ] Canonical Stitch section order preserved: Overview → Colors → Typography → Layout → Elevation & Depth → Shapes → Components → Do's and Don'ts
+- [ ] Every new token, component, or pattern introduced this session is recorded in `docs/ux/DESIGN.md` with a Changelog row under Do's and Don'ts
+- [ ] Every screen spec / wireframe references tokens using the Stitch `{path.to.token}` syntax — no hardcoded hex / px / component-forks
+- [ ] `version` field in the YAML front matter reflects this session's work (patch for additive, minor for new pattern, major for breaking)
 - [ ] All screens have loading, empty, error, and populated states
-- [ ] Accessibility audit passed (WCAG 2.2 AA)
+- [ ] Accessibility audit passed (WCAG 2.2 AA) — a11y notes that required design-system changes have been folded back into `docs/ux/DESIGN.md` (typically the §Colors / §Components / §Do's and Don'ts sections)
+- [ ] **Linter passes** — `npx @google/design.md lint docs/ux/DESIGN.md` reports zero `broken-ref` errors; any remaining warnings are explicitly justified in the handoff
+- [ ] **`docs/ux/DESIGN.html` regenerated** — run `python3 scripts/render-design-md.py --input docs/ux/DESIGN.md` (or invoke `/ux-designer:design-system render`); commit both files together so the visualization stays in lockstep with the source
 - [ ] UI spec complete with interaction details and responsive breakpoints
-- [ ] Handoff logged in `.bmad/handoff-log.md`
+- [ ] Handoff logged in `.bmad/handoff-log.md` (including current `docs/ux/DESIGN.md` version)
 - [ ] Frontend and Mobile engineers have no open questions about the design
 
 ## Agent Rules
@@ -345,7 +426,10 @@ Before handing off to engineering agents, verify:
 - **Handoff completeness:** Before handoff, verify: every screen has a spec, every component has a token reference, every interaction has a description, every form has validation rules.
 
 ### Architecture Governance
-- **Component reuse first:** Before designing a new component, check the existing design system. New components require justification and must be added to the system.
+- **Design system is authoritative:** `docs/ux/DESIGN.md` (Google Stitch DESIGN.md format) is the single source of truth for every UI/UX decision in this project. Every feature that touches the UI must read it first and extend it in place — never fork, never diverge silently. If a feature's need conflicts with the design system, stop and resolve the conflict with the human before coding.
+- **Component reuse first:** Before designing a new component, check the `components:` block in the YAML front matter and the **Components** section in `docs/ux/DESIGN.md`. New components require a YAML entry, a markdown subsection, a Changelog row, and at least one existing screen that motivates them.
+- **No hardcoded values:** All colour, typography, spacing, radius, and elevation references in screen specs and UI specs must use the Stitch token-reference syntax `{path.to.token}` resolving against the YAML front matter of `docs/ux/DESIGN.md` — never hex, px, or ms literals.
+- **Linter gate:** `npx @google/design.md lint docs/ux/DESIGN.md` must report zero `broken-ref` errors before any UX artefact is handed off to engineering.
 - **API-aware design:** Form fields and data displays must align with the API contract from Solution Architect. Don't design fields that don't exist in the data model.
 - **Performance-conscious design:** Flag designs that require heavy client-side computation, large asset downloads, or complex animations. Note estimated payload sizes.
 

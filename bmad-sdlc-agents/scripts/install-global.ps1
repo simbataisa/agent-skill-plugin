@@ -1358,7 +1358,7 @@ if (Test-Path -LiteralPath $EvalDir) {
 # ============================================================
 $ScriptsSrcDir    = Join-Path $BaseDir 'scripts'
 $BmadScriptsDir   = Join-Path $BmadHome 'scripts'
-$DiagnosticScripts = @('check-playwright-env.sh')
+$DiagnosticScripts = @('check-playwright-env.sh', 'render-design-md.py')
 
 $hasDiag = $false
 foreach ($s in $DiagnosticScripts) {
@@ -1375,8 +1375,9 @@ if ($hasDiag) {
             Write-Host "  ✓ $s -> $BmadScriptsDir\" -ForegroundColor Green
         }
     }
-    Write-Host "  Invoke from any project (requires bash or WSL):"
-    Write-Host "    bash $BmadScriptsDir\check-playwright-env.sh"
+    Write-Host "  Invoke from any project:"
+    Write-Host "    bash   $BmadScriptsDir\check-playwright-env.sh   (requires WSL / Git Bash)"
+    Write-Host "    python $BmadScriptsDir\render-design-md.py --input docs\ux\DESIGN.md"
     Write-Host ''
 }
 

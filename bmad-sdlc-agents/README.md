@@ -8,6 +8,10 @@ Every agent is held to the same four **Karpathy-derived engineering principles**
 
 The squad also ships **A2UI v0.10 authoring support** for agent-driven UIs (chat canvases, in-product assistants, agentic workflow views). Product Owner, Enterprise Architect, Solution Architect, UX Designer, and InfoSec Architect each pick up A2UI-aware sections in their SKILL and brainstorm files, backed by a shared protocol reference ([`shared/a2ui-reference.md`](shared/a2ui-reference.md)), an ADR skeleton ([`shared/templates/adr-a2ui-adoption.md`](shared/templates/adr-a2ui-adoption.md)), and a per-surface spec template ([`shared/templates/a2ui-surface-spec.md`](shared/templates/a2ui-surface-spec.md)). A2UI is advisory/authoring — no agent emits live envelopes; production adoption requires an EA ADR.
 
+**Design system as a first-class, cross-agent contract.** The UX Designer maintains `docs/ux/DESIGN.md` in the [**Google Stitch `DESIGN.md` format**](https://github.com/google-labs-code/design.md) (Apache 2.0, open-source spec) — machine-readable YAML front matter (tokens + components) plus human-readable markdown prose (rationale, usage rules, accessibility). On every invocation the UX Designer bootstraps this file if it's missing, reads and conforms to it if it exists, and extends it in place when a feature introduces a new token, component, or pattern. Frontend and Mobile engineers refuse to implement screens whose tokens/components aren't declared in `DESIGN.md` — they send the story back to UX to update the file first. The file is linted via `npx @google/design.md lint docs/ux/DESIGN.md`. A dedicated cross-tool command (`/ux-designer:design-system`) supports `create` / `audit` / `extend` / `validate` / `sync` / `render` workflows, auto-regenerates a browser-viewable HTML visualization at `docs/ux/DESIGN.html` (see [`scripts/render-design-md.py`](scripts/render-design-md.py) — stdlib-only Python, no dependencies) every time the markdown source changes, and ships to all 11 tools automatically through the installer.
+
+**Cross-platform installer.** The install script exists in two equivalent forms: `scripts/install-global.sh` (bash — macOS / Linux / WSL / Git Bash) and `scripts/install-global.ps1` (PowerShell 5.1+ or 7+ — Windows 11 native, no python3 dependency). Same for the project scaffolder: `scripts/scaffold-project.sh` and `scripts/scaffold-project.ps1`. Both cover every supported tool (Claude Code, Cowork, Codex CLI, Kiro, Cursor, Windsurf, Trae IDE, GitHub Copilot, Gemini CLI, OpenCode, Aider).
+
 ---
 
 ## Agent Team
@@ -18,7 +22,7 @@ The squad also ships **A2UI v0.10 authoring support** for agent-driven UIs (chat
 | **Product Owner**         | `agents/product-owner/SKILL.md`         | Analysis       | Voice of the Business — BRD, high-level PRD, MVP scope (runs first)      |
 | **Business Analyst**      | `agents/business-analyst/SKILL.md`      | Analysis       | Requirements analyst — deep-dives BRD/PRD, produces requirements analysis |
 | **Enterprise Architect**  | `agents/enterprise-architect/SKILL.md`  | Solutioning    | High-level enterprise arch BEFORE SA — cloud infra, compliance, CI/CD    |
-| **UX/UI Designer**        | `agents/ux-designer/SKILL.md`           | Solutioning    | Personas, journeys, wireframes, design system, a11y (parallel with EA)   |
+| **UX/UI Designer**        | `agents/ux-designer/SKILL.md`           | Solutioning    | Personas, journeys, wireframes, **`docs/ux/DESIGN.md` (Google Stitch format)**, a11y (parallel with EA) |
 | **Solution Architect**    | `agents/solution-architect/SKILL.md`    | Solutioning    | Detailed solution design using EA + UX outputs — APIs, data models, ADRs |
 | **InfoSec Architect**     | `agents/infosec-architect/SKILL.md`     | Solutioning    | Threat modelling, controls, privacy-by-design, supply-chain, IR readiness |
 | **DevSecOps Engineer**    | `agents/devsecops-engineer/SKILL.md`    | All Phases     | Pipelines, IaC, SLOs, FinOps, reliability & recovery                     |
@@ -408,16 +412,37 @@ Legend: ✅ first-class · 🟡 works but with caveats · ❌ not currently supp
 
 ### Step 1: Install Global Layer
 
+**macOS / Linux / WSL / Git Bash:**
+
 ```bash
 bash scripts/install-global.sh
+# Add --dry-run to preview without writing files
 ```
 
-Copies all agent skills, commands, hooks, and shared resources to tool-specific global directories. Runs once per machine.
+**Windows 11 (PowerShell 5.1+ or PowerShell 7+):**
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\install-global.ps1
+# or, with -DryRun to preview
+.\scripts\install-global.ps1 -DryRun
+```
+
+Copies all agent skills, subagents, commands, hooks, and shared resources to tool-specific global directories. Runs once per machine. The PowerShell version is feature-for-feature equivalent with the bash version — no python3 required (hook-settings merges use native PowerShell JSON cmdlets) and UTF-8 output is written without BOM to stay byte-compatible with the bash-generated files.
 
 ### Step 2: Scaffold New Project
 
+**Bash:**
+
 ```bash
 bash /path/to/bmad-sdlc-agents/scripts/scaffold-project.sh "My Project Name"
+# Add --force to overwrite an existing .bmad/ directory
+```
+
+**PowerShell (Windows 11):**
+
+```powershell
+& "C:\path\to\bmad-sdlc-agents\scripts\scaffold-project.ps1" "My Project Name"
+# -Force to overwrite an existing .bmad/ directory
 ```
 
 Creates `.bmad/` context files, installs project-level agents, and generates a tool-specific instruction file (e.g. `CLAUDE.md`) that tells your AI tool to auto-load `.bmad/` at the start of every session.
@@ -2334,6 +2359,122 @@ Pencil and Figma MCP config files are included in `mcp-configs/global/`:
 - `mcp-configs/global/figma.json` — Figma MCP
 
 Merge the config for your chosen design tool into your AI tool's MCP settings. See `mcp-configs/README.md` for merge instructions.
+
+---
+
+## Design System — `docs/ux/DESIGN.md` (Google Stitch Format)
+
+The UX Designer maintains a **single, authoritative design system file** at `docs/ux/DESIGN.md` in the [**Google Stitch `DESIGN.md` format**](https://github.com/google-labs-code/design.md). It is the cross-agent contract that keeps UI/UX from drifting across features.
+
+### Why the Stitch format
+
+Stitch's `DESIGN.md` is an open-source (Apache 2.0) spec that combines:
+
+- **YAML front matter** — machine-readable tokens (`colors`, `typography`, `spacing`, `rounded`, `components`) with `{path.to.token}` reference syntax. Any Stitch-aware agent (Claude Code, Cursor, Kiro, Windsurf, Trae, Gemini CLI, and Stitch itself) can consume the file and apply the exact brand values instead of guessing.
+- **Markdown prose** — canonical sections in a fixed order (Overview → Colors → Typography → Layout → Elevation & Depth → Shapes → Components → Do's and Don'ts) giving humans the rationale, usage rules, and accessibility notes.
+- **A linter** — `npx @google/design.md lint docs/ux/DESIGN.md` validates structure, catches `broken-ref` errors, flags `contrast-ratio` warnings (WCAG AA, 4.5:1), and surfaces orphaned tokens / missing sections.
+
+### Lifecycle
+
+1. **Bootstrap.** On its first invocation on a project, the UX Designer runs the **Design System Bootstrap** protocol — if `docs/ux/DESIGN.md` doesn't exist, it copies [`agents/ux-designer/templates/design-system-template.md`](agents/ux-designer/templates/design-system-template.md) (pre-conformed to the Stitch spec), patches the YAML with project-specific brand values from `.bmad/PROJECT-CONTEXT.md` + `docs/prd.md`, seeds the Changelog, and announces `🎨 Created docs/ux/DESIGN.md (Stitch DESIGN.md v<version>)`.
+2. **Conform.** On every subsequent invocation (feature request, revision, audit), the agent reads the full file before sketching any screen and references tokens by `{path.to.token}` — never hex/px/ms literals.
+3. **Extend in place.** A feature that needs a new token, component, or pattern **updates this file** — never forks into a per-feature copy. Additions go in the right YAML block (for tokens/components) or Do's and Don'ts section (for rules), with a version bump (patch = additive, minor = new pattern, major = breaking) and a Changelog row referencing the feature story / PRD ID.
+4. **Resolve conflicts explicitly.** If a feature's need contradicts an existing entry, the agent stops and surfaces the conflict to the human — it never silently overrides.
+5. **Validate.** Every edit ends with `npx @google/design.md lint docs/ux/DESIGN.md`. Zero `broken-ref` errors before handing off to engineering.
+
+### Cross-agent contract
+
+| Agent                    | Responsibility                                                                                                            |
+|--------------------------|---------------------------------------------------------------------------------------------------------------------------|
+| **UX Designer**          | Creates, reads, and extends `docs/ux/DESIGN.md`. Owns token/component/pattern decisions. Runs the linter before handoff. |
+| **Frontend / Mobile Engineer** | Reads the file in full before writing a screen. **Refuses** to implement specs that reference tokens/components not declared in the YAML — sends the story back to UX Designer to update DESIGN.md first. Resolves tokens via `{path.to.token}` refs, never inline values. |
+| **Tech Lead**            | Verifies `docs/ux/DESIGN.md` version is current before opening the sprint kickoff; blocks stories whose UI spec cites undeclared tokens. |
+| **Tester & QE**          | Cross-checks implemented UI against the tokens in DESIGN.md during the quality gate.                                      |
+
+If a UI spec and `docs/ux/DESIGN.md` disagree, **the DESIGN.md wins.** Engineering sends the story back to UX.
+
+### The `/ux-designer:design-system` command
+
+A dedicated cross-tool command manages the file in every supported AI tool. It supports six modes via `$ARGUMENTS` (auto-detected if empty):
+
+| Argument                | Action                                                                                                                                    |
+|-------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|
+| `create`                | Bootstrap a new `docs/ux/DESIGN.md` from the Stitch-compliant template **and** regenerate `docs/ux/DESIGN.html`.                           |
+| `audit`                 | Read the existing file, check Stitch spec compliance, list issues. Refreshes `docs/ux/DESIGN.html` so the audit reflects live tokens.     |
+| `extend <thing>`        | Add a new token / component / pattern, bump version, add Changelog row **and** regenerate `docs/ux/DESIGN.html`.                           |
+| `validate`              | Run `npx @google/design.md lint docs/ux/DESIGN.md` and report.                                                                            |
+| `sync`                  | Reconcile the file against the latest wireframes, UI spec, and PRD. Regenerates HTML after changes.                                      |
+| `render` (alias `html`) | Regenerate `docs/ux/DESIGN.html` from the existing `docs/ux/DESIGN.md` — no markdown edits.                                               |
+| *(empty)*               | Auto-detect: `create` if missing, `audit` if it exists.                                                                                   |
+
+The command ships to all 11 tools via the installer walker with zero per-tool configuration:
+
+| Tool             | Invocation                                    | Destination                                                              |
+|------------------|-----------------------------------------------|--------------------------------------------------------------------------|
+| Claude Code      | `/ux-designer:design-system`                  | `~/.claude/commands/ux-designer/design-system.md` (native YAML frontmatter) |
+| Cowork           | `/ux-designer:design-system`                  | `~/.skills/commands/ux-designer/design-system.md`                         |
+| Codex CLI        | `$ux-designer-design-system` (skill)          | `~/.codex/skills/ux-designer-design-system/SKILL.md` (flat)              |
+| Kiro             | `/ux-designer-design-system` (skill)          | `~/.kiro/skills/ux-designer-design-system/SKILL.md` (flat)               |
+| Cursor           | `/ux-designer:design-system`                  | `~/.cursor/commands/ux-designer/design-system.md` (adapted header)       |
+| Windsurf         | prompt-triggered rule                         | `~/.windsurf/rules/bmad-commands/ux-designer/design-system.md`           |
+| Trae IDE         | prompt-triggered rule                         | `~/.trae/rules/bmad-commands/ux-designer/design-system.md`               |
+| GitHub Copilot   | `/ux-designer:design-system`                  | `~/.github/bmad-commands/ux-designer/design-system.md`                   |
+| Gemini CLI       | `/bmad-ux-designer:design-system`             | `~/.gemini/extensions/bmad-ux-designer/skills/design-system/SKILL.md`    |
+| OpenCode         | `/ux-designer:design-system`                  | `~/.opencode/commands/ux-designer/design-system.md`                      |
+| Aider            | "Workflow: ux-designer:design-system" section | appended to `~/.aider.conventions.md`                                    |
+
+### Browser-viewable HTML visualization (`docs/ux/DESIGN.html`)
+
+Alongside the markdown source, the command maintains a **self-contained HTML visualization** at `docs/ux/DESIGN.html` that renders the design system in a browser. It's regenerated automatically on every `create` / `extend` / `sync` / `render` invocation. The HTML page uses a **dual-column layout** — fixed left sidebar + scrollable main — and contains:
+
+- **Brand sidebar** — sticky left nav with the project's name, version, and a brand-gradient mark. Navigation is grouped into **Foundations** (Colors, Typography, Spacing, Radius, Shadows, Motion), **Components** (one jumpable link per component), **Patterns** (auto-extracted from `## Patterns` subheadings in the markdown body), and **Principles** (Design principles, Accessibility). A scroll-spy highlights the active section as you scroll.
+- **Dark-mode toggle** — explicit button in the page header; persists choice to `localStorage` and respects system preference on first visit.
+- **Page header** — project name, description, version, source path, generation timestamp.
+- **Brand gradient hero** — if the YAML has a `gradients:` block, the first gradient is rendered as a full-width hero with the CSS gradient string shown inline. Otherwise, a gradient is synthesized from the first three palette colors.
+- **Color palette, auto-grouped by scale** — the renderer detects `primary-50…primary-900` or nested `primary: {50: …}` patterns and emits them as cohesive ramps ("Brand — Primary", "Brand — Neutral", etc.), with flat non-scale tokens collected into a "Tokens" group. Each swatch card shows the chip, label, hex, click-to-copy token path, and WCAG AA grade vs. a detected background.
+- **Typography specimens** — each `typography:` entry rendered at its declared font/size/weight/line-height with the pangram.
+- **Spacing scale** — proportional bars for each `spacing:` value with token path and measurement.
+- **Radius scale** — live corner previews for each `rounded:` token.
+- **Shadows ramp** — four elevation levels (0–3) rendered as sample cards.
+- **Motion tokens** — if the YAML has a `motion:` block, each easing/duration is shown as a card; otherwise a placeholder prompt to add the block.
+- **Component gallery** — every `components:` entry renders with its declared tokens *applied* (buttons render as buttons, inputs as inputs, cards as cards); variants appear inline as pills; a full props table shows raw reference (`{colors.primary-500}`) + resolved value (`#E31B8E`) side-by-side. Each component gets its own `<section id="{component-name}">` so the sidebar links jump directly to it.
+- **Patterns** — each `### <name>` under a `## Patterns` markdown section is rendered as a standalone card with its own anchor id.
+- **Accessibility contrast report** — auto-computed WCAG 2.2 ratios for every `backgroundColor`/`textColor` pair, with AAA / AA / AA-Large / Fail badges.
+- **Design principles** — rendered prose from the §Do's and Don'ts section (Do / Don't bullets + Changelog table).
+
+The renderer ships as [`scripts/render-design-md.py`](scripts/render-design-md.py) — stdlib-only Python (no PyYAML, no build step), works on Windows 11 / macOS / Linux with any Python 3.8+. Invoke directly:
+
+```bash
+# From project root (after install-global.*)
+python3 ~/.bmad/scripts/render-design-md.py --input docs/ux/DESIGN.md
+# or from the repo source
+python3 /path/to/bmad-sdlc-agents/scripts/render-design-md.py --input docs/ux/DESIGN.md
+```
+
+Output summary: `✓ Rendered docs/ux/DESIGN.md -> docs/ux/DESIGN.html — 12 colors · 6 type tokens · 6 components`.
+
+Commit `docs/ux/DESIGN.html` alongside `DESIGN.md` — GitHub/GitLab/Bitbucket all render HTML previews directly in the repo browser, so reviewers can jump straight to the visualization without a build step.
+
+### Validator and exporters
+
+Because the file conforms to the Stitch spec, downstream tools consume it directly:
+
+```bash
+# Lint — run after every edit; zero broken-ref errors required
+npx @google/design.md lint docs/ux/DESIGN.md
+
+# Export tokens to Tailwind
+npx @google/design.md export tailwind docs/ux/DESIGN.md
+
+# Print the spec (useful for prompt injection into other agents)
+npx @google/design.md spec
+```
+
+The same `docs/ux/DESIGN.md` can be imported into [Google Stitch](https://stitch.withgoogle.com/) directly, which will generate Gemini-designed UIs from prompts that respect the file's tokens and constraints.
+
+### Single file, not per-feature copies
+
+One `docs/ux/DESIGN.md` per project — never fork it per feature. Every feature reads and appends to the same file. This is how the system stays coherent as the product grows.
 
 ---
 

@@ -37,7 +37,7 @@
 | PRD | `docs/prd.md` | [ ] draft [ ] final |
 | Solution Architecture | `docs/architecture/solution-architecture.md` | [ ] draft [ ] final |
 | Enterprise Architecture | `docs/architecture/enterprise-architecture.md` | [ ] draft [ ] final |
-| UX Design System | `docs/ux/design-system.md` | [ ] draft [ ] final |
+| UX Design System | `docs/ux/DESIGN.md` | [ ] draft [ ] final |
 
 ## Stakeholders
 | Name | Role | Availability |

@@ -1461,7 +1461,7 @@ fi
 # without depending on the BMAD repo being present on disk.
 SCRIPTS_SRC_DIR="$BASE_DIR/scripts"
 BMAD_SCRIPTS_DIR="$BMAD_HOME/scripts"
-DIAGNOSTIC_SCRIPTS=(check-playwright-env.sh)
+DIAGNOSTIC_SCRIPTS=(check-playwright-env.sh render-design-md.py)
 
 # Only proceed if at least one diagnostic script exists in source
 _has_diag_script="false"
@@ -1482,7 +1482,9 @@ if [[ "$_has_diag_script" == "true" ]]; then
             echo -e "  ${GREEN}✓${NC} $s → $BMAD_SCRIPTS_DIR/"
         fi
     done
-    echo "  Invoke from any project: bash $BMAD_SCRIPTS_DIR/check-playwright-env.sh"
+    echo "  Invoke from any project:"
+    echo "    bash   $BMAD_SCRIPTS_DIR/check-playwright-env.sh"
+    echo "    python $BMAD_SCRIPTS_DIR/render-design-md.py --input docs/ux/DESIGN.md"
     echo ""
 fi
 

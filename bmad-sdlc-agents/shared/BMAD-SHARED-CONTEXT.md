@@ -69,7 +69,7 @@ project-root/
 │   │   ├── personas.md
 │   │   ├── user-journeys.md
 │   │   ├── information-architecture.md
-│   │   ├── design-system.md
+│   │   ├── DESIGN.md             # Google Stitch DESIGN.md — authoritative design system
 │   │   ├── ui-spec.md
 │   │   ├── accessibility-audit.md
 │   │   └── wireframes/

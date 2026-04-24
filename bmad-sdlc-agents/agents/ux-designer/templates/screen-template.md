@@ -29,7 +29,7 @@ Define the reusable component library that ensures consistency across all screen
 **For shadcn/ui projects, the design system output is:**
 1. `docs/ux/tokens/tailwind.config.ts` — generated from Design Preferences (see above)
 2. `docs/ux/tokens/globals.css` — shadcn CSS variables for chosen theme + accent
-3. `docs/ux/design-system.md` — component inventory, usage rules, and do/don't examples
+3. `docs/ux/DESIGN.md` — component inventory, usage rules, and do/don't examples
 
 The `tailwind.config.ts` and `globals.css` are generated during Design Preferences Elicitation. This section focuses on the component inventory and usage rules.
 

@@ -50,7 +50,7 @@ for f in \
   docs/prd.md \
   docs/architecture/solution-architecture.md \
   docs/architecture/enterprise-architecture.md \
-  docs/ux/design-system.md \
+  docs/ux/DESIGN.md \
   docs/testing/test-strategy.md \
   docs/architecture/sprint-plan.md; do
   if [ -f "$f" ]; then
@@ -153,7 +153,7 @@ grep -qi "vault\|secrets manager\|kms\|key management" \
   echo "✅ Secrets management defined" || echo "❌ No secrets strategy"
 
 # WCAG / accessibility defined?
-grep -qi "wcag\|accessibility\|aria\|a11y" docs/ux/design-system.md 2>/dev/null && \
+grep -qi "wcag\|accessibility\|aria\|a11y" docs/ux/DESIGN.md 2>/dev/null && \
   echo "✅ Accessibility standards defined" || echo "❌ No accessibility spec"
 ```
 
@@ -195,7 +195,7 @@ echo "Total risk mentions: $risk_count"
 **Stakeholder Scenarios** — Count scenarios/use-cases:
 ```bash
 scenario_count=0
-for f in docs/prd.md docs/ux/design-system.md docs/analysis/*.md; do
+for f in docs/prd.md docs/ux/DESIGN.md docs/analysis/*.md; do
   if [ -f "$f" ]; then
     sc=$(grep -ci "scenario\|use.case\|user.story\|workflow\|journey\|persona" "$f" 2>/dev/null)
     scenario_count=$((scenario_count + sc))
@@ -217,7 +217,7 @@ echo "=== Parallel Wave Health ==="
 # W4 (EA + UX) — new project plan
 ea_done=0; ux_done=0
 [ -f docs/architecture/enterprise-architecture.md ] && ea_done=1
-[ -f docs/ux/design-system.md ] && ux_done=1
+[ -f docs/ux/DESIGN.md ] && ux_done=1
 echo "W4 (EA ∥ UX): EA=$ea_done UX=$ux_done | Complete=$([ $ea_done -eq 1 ] && [ $ux_done -eq 1 ] && echo yes || echo no)"
 
 # W6 (BE ∥ FE ∥ ME specs) — new project plan

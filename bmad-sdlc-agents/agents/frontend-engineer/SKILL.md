@@ -106,7 +106,7 @@ Check these paths and note what exists:
 - `docs/testing/bugs/*-fix-plan.md` — bug fix plans (check if fix is assigned to frontend)
 - `docs/architecture/solution-architecture.md` — your architectural reference
 - `docs/ux/ui-spec.md` — UX spec you implement
-- `docs/ux/design-system.md` — design system tokens and components
+- `docs/ux/DESIGN.md` — **authoritative source of truth for every token, component, and pattern** (Google Stitch DESIGN.md format: YAML front matter for tokens + markdown prose for rules). Read the whole file in full before writing a single component. If the story's UI spec references tokens/components that aren't declared in the YAML front matter (`colors:`, `typography:`, `spacing:`, `rounded:`, `components:`), stop and send the story back to UX Designer to update DESIGN.md *before* you implement it. Never inline hex/px values — always resolve tokens via the Stitch `{path.to.token}` references (e.g. `{colors.primary}`, `{typography.body-md}`).
 - `docs/ux/wireframes/` — wireframes you implement
 - `.bmad/tech-stack.md` — confirmed tech stack
 - `.bmad/team-conventions.md` — coding conventions
@@ -125,7 +125,7 @@ Evaluate conditions **in this order** (first match wins):
 
 ### Step 4 — Announce and proceed
 Print: `🔍 Frontend Engineer: Detected [work type] — [your task]. Proceeding.`
-Then begin your work. Reference `docs/ux/ui-spec.md`, `docs/ux/design-system.md`, and `docs/ux/wireframes/` for design implementation.
+Then begin your work. Reference `docs/ux/ui-spec.md`, `docs/ux/DESIGN.md`, and `docs/ux/wireframes/` for design implementation.
 
 ## Local Resources
 

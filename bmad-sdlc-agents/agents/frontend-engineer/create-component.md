@@ -13,7 +13,7 @@ Create a new React component with tests and Storybook story following the design
 
 2. Read `.bmad/team-conventions.md` for naming patterns and folder structure.
 
-3. Read `docs/ux/design-system.md` to understand design tokens (colors, typography, spacing, shadows).
+3. Read `docs/ux/DESIGN.md` to understand design tokens (colors, typography, spacing, shadows).
 
 4. Read `.bmad/tech-stack.md` to confirm React version and UI framework if applicable.
 

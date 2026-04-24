@@ -887,7 +887,7 @@ New-EmptyFile 'docs\project-brief.md';                       Write-Host '  ✓ d
 New-EmptyFile 'docs\prd.md';                                 Write-Host '  ✓ docs\prd.md'
 New-EmptyFile 'docs\architecture\solution-architecture.md';  Write-Host '  ✓ docs\architecture\solution-architecture.md'
 New-EmptyFile 'docs\architecture\enterprise-architecture.md';Write-Host '  ✓ docs\architecture\enterprise-architecture.md'
-New-EmptyFile 'docs\ux\design-system.md';                    Write-Host '  ✓ docs\ux\design-system.md'
+New-EmptyFile 'docs\ux\DESIGN.md';                           Write-Host '  ✓ docs\ux\DESIGN.md (Google Stitch DESIGN.md format — UX Designer populates on first invocation)'
 New-EmptyFile 'docs\architecture\adr\ADR-INDEX.md';          Write-Host '  ✓ docs\architecture\adr\ADR-INDEX.md'
 New-EmptyFile 'docs\analysis\.gitkeep';                      Write-Host '  ✓ docs\analysis\ (BA impact & requirements analyses)'
 

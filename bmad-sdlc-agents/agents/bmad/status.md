@@ -66,7 +66,7 @@ Based on the active work type, check which agents have produced their outputs:
 [ -f docs/architecture/solution-architecture.md ] && echo "W3 SA ✅" || echo "W3 SA ❌"
 # W4 EA + UX (parallel) — both must be done before W5
 [ -f docs/architecture/enterprise-architecture.md ] && echo "W4 EA ✅" || echo "W4 EA ❌ (parallel)"
-[ -f docs/ux/design-system.md ] && echo "W4 UX ✅" || echo "W4 UX ❌ (parallel)"
+[ -f docs/ux/DESIGN.md ] && echo "W4 UX ✅" || echo "W4 UX ❌ (parallel)"
 # W5 TL done?
 [ -f docs/architecture/sprint-plan.md ] && echo "W5 TL ✅" || echo "W5 TL ❌"
 # W6 specs (parallel) — all three needed
@@ -190,7 +190,7 @@ echo "Fix/hotfix markers: $fix_count"
 | PRD | `docs/prd.md` | ✅ / ❌ |
 | Solution Architecture | `docs/architecture/solution-architecture.md` | ✅ / ❌ |
 | Enterprise Architecture | `docs/architecture/enterprise-architecture.md` | ✅ / ❌ |
-| UX / Design System | `docs/ux/design-system.md` | ✅ / ❌ |
+| UX / Design System | `docs/ux/DESIGN.md` | ✅ / ❌ |
 | ADRs | `docs/architecture/adr/` | [N files] / ❌ |
 | Backend Impl Spec | `docs/architecture/backend-implementation-spec.md` | ✅ / ❌ |
 | Frontend Impl Spec | `docs/architecture/frontend-implementation-spec.md` | ✅ / ❌ |

@@ -48,7 +48,7 @@
 - Spinner: Indeterminate loading (use only when duration unknown)
 ```
 
-**Output:** `docs/ux/design-system.md`
+**Output:** `docs/ux/DESIGN.md`
 
 ### 7. Accessibility Compliance (WCAG 2.2 AA)
 

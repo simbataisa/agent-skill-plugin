@@ -934,8 +934,8 @@ echo "  ✓ docs/architecture/solution-architecture.md"
 touch "docs/architecture/enterprise-architecture.md"
 echo "  ✓ docs/architecture/enterprise-architecture.md"
 
-touch "docs/ux/design-system.md"
-echo "  ✓ docs/ux/design-system.md"
+touch "docs/ux/DESIGN.md"
+echo "  ✓ docs/ux/DESIGN.md (Google Stitch DESIGN.md format — UX Designer populates on first invocation)"
 
 touch "docs/architecture/adr/ADR-INDEX.md"
 echo "  ✓ docs/architecture/adr/ADR-INDEX.md"

@@ -10,7 +10,7 @@ Run a comprehensive WCAG 2.2 AA accessibility audit against design artifacts or 
 1. Parse $ARGUMENTS to determine the audit target: 'designs' (audit UX files) or a URL (live site audit).
 
 2. If target is 'designs':
-   - Read `docs/ux/design-system.md` and `docs/ux/ui-spec.md` if they exist.
+   - Read `docs/ux/DESIGN.md` and `docs/ux/ui-spec.md` if they exist.
    - Identify all wireframe files in `docs/ux/wireframes/` directory.
    - Review each wireframe for WCAG violations:
      - **Color Contrast**: text contrast ratio 4.5:1 (normal text), 3:1 (large text >= 18pt)
@@ -41,4 +41,6 @@ Run a comprehensive WCAG 2.2 AA accessibility audit against design artifacts or 
 
 6. Save to `docs/ux/accessibility-audit.md`.
 
-7. Confirm: "Accessibility audit completed → `docs/ux/accessibility-audit.md`. [N] violations found ([C] critical, [H] high)."
+7. **Fold systemic fixes back into the design system.** For any Critical/High finding that reflects a gap in the baseline (e.g. missing focus ring on a component variant, insufficient target size on icon buttons, contrast ratio of a named token), open `docs/ux/DESIGN.md` and update §5 Accessibility Baseline (or the relevant component/token entry) to close the gap system-wide. Add a Changelog row referencing this audit. One-off screen fixes stay in the audit report; patterns that affect more than one screen belong in the design system.
+
+8. Confirm: "Accessibility audit completed → `docs/ux/accessibility-audit.md`. [N] violations found ([C] critical, [H] high). Design system updated: [yes/no]."

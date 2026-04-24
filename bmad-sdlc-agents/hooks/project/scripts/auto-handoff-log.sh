@@ -13,7 +13,7 @@ case "${file_path}" in
   docs/prd.md|\
   docs/architecture/solution-architecture.md|\
   docs/architecture/enterprise-architecture.md|\
-  docs/ux/design-system.md|\
+  docs/ux/DESIGN.md|\
   docs/architecture/adr/*.md|\
   docs/testing/test-strategy.md)
     : # fall through to logging
@@ -44,7 +44,7 @@ case "${file_path}" in
   docs/prd.md)                        from="po"; to="sa" ;;
   docs/architecture/solution-*.md)    from="sa"; to="ea" ;;
   docs/architecture/enterprise-*.md)  from="ea"; to="tl" ;;
-  docs/ux/design-system.md)           from="ux"; to="tl" ;;
+  docs/ux/DESIGN.md)           from="ux"; to="tl" ;;
   docs/architecture/adr/*.md)         from="sa"; to="hu" ;;
   docs/testing/test-strategy.md)      from="qe"; to="hu" ;;
   *)                                  from="hu"; to="hu" ;;
