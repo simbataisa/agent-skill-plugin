@@ -43,4 +43,10 @@ Run a comprehensive WCAG 2.2 AA accessibility audit against design artifacts or 
 
 7. **Fold systemic fixes back into the design system.** For any Critical/High finding that reflects a gap in the baseline (e.g. missing focus ring on a component variant, insufficient target size on icon buttons, contrast ratio of a named token), open `docs/ux/DESIGN.md` and update §5 Accessibility Baseline (or the relevant component/token entry) to close the gap system-wide. Add a Changelog row referencing this audit. One-off screen fixes stay in the audit report; patterns that affect more than one screen belong in the design system.
 
-8. Confirm: "Accessibility audit completed → `docs/ux/accessibility-audit.md`. [N] violations found ([C] critical, [H] high). Design system updated: [yes/no]."
+8. **DESIGN.html sync (mandatory).** If step 7 wrote anything to `docs/ux/DESIGN.md`, regenerate the HTML visualization:
+   ```bash
+   python3 ~/.bmad/scripts/render-design-md.py --input docs/ux/DESIGN.md
+   ```
+   Claude Code / Kiro PostToolUse hooks will already have fired; verify the file mtimes match and re-run the script manually if they don't. See SKILL.md §"🔒 Non-negotiable: DESIGN.html stays in lockstep with DESIGN.md".
+
+9. Confirm: "Accessibility audit completed → `docs/ux/accessibility-audit.md`. [N] violations found ([C] critical, [H] high). Design system updated: [yes/no]. DESIGN.html regenerated: [yes/no/not needed]."

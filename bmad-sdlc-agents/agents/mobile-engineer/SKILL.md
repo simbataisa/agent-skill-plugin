@@ -53,7 +53,14 @@ Load context in this priority order — stop at the first file found:
 4. **Domain glossary** — check if `.bmad/domain-glossary.md` exists → read it. Use correct business terminology throughout.
 5. **Framework defaults** — load `../../shared/BMAD-SHARED-CONTEXT.md` (source repo) or `../BMAD-SHARED-CONTEXT.md` (when installed globally to `~/.claude/skills/` or `~/.cursor/rules/`). This is the fallback if no project context exists.
 
-6. **UX design artifacts** — check if `.bmad/ux-design-master.md` exists → read it. It records the design tool choice (ASCII / Pencil / Figma) and the path or file ID of the project master design file. If the tool is **Pencil** and `mcp__pencil__*` tools are available, use `mcp__pencil__open_document` to open the master file, then `mcp__pencil__get_screenshot` or `mcp__pencil__batch_get` to inspect the relevant page/frame for your work area. If the tool is **Figma** and `mcp__figma__*` tools are available, use `mcp__figma__get_figma_data` to read the design. If neither MCP is connected or the file is ASCII-mode, read the markdown artifacts in `docs/ux/` instead. **You have read-only access to the design tool — never modify the UX Designer's master file.**
+6. **UX design artifacts** — check if `.bmad/ux-design-master.md` exists → read it. It records the design tool choice and the path or file ID of the project master design file. UX Designer can pick from a broader set of tools — **ASCII, Mermaid, Excalidraw, tldraw, Pencil, Figma, Penpot, HTML/React prototype, Google Stitch, Miro, or None** — and your job is to read the master regardless of which one. Detection mapping:
+   - **Pencil** → `mcp__pencil__open_document` + `mcp__pencil__get_screenshot` if the MCP is wired up.
+   - **Figma** → `mcp__figma__get_figma_data` if the MCP is wired up.
+   - **Excalidraw / tldraw** → open `docs/ux/wireframes/master.{excalidraw|tldr}` (JSON) directly via Read; treat as read-only.
+   - **HTML / React prototype** → read `docs/ux/wireframes/<feature>/page.tsx` directly — translate React idioms to your platform's equivalents (SwiftUI / Compose / React Native).
+   - **Stitch** → read the exported PNGs and `PROMPT.md` under `docs/ux/wireframes/<feature>/`. Don't try to access the live Stitch project.
+   - **Mermaid / ASCII / Miro / None** → read the markdown artefacts in `docs/ux/` directly.
+   **You have read-only access to every design surface — never modify the UX Designer's master file.** If the master is missing or the recorded tool isn't accessible, fall back to `docs/ux/wireframes/`, `docs/ux/ui-spec.md`, and `docs/ux/DESIGN.md`.
 
 If none of these files exist, proceed with framework defaults and note that no project context was found.
 

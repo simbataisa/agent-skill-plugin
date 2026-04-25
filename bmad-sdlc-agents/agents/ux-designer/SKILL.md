@@ -158,48 +158,137 @@ Check if `.bmad/ux-design-master.md` exists:
 - **Exists** → Read it. It records the design tool choice and master file reference for this project. Use the recorded tool — do not re-prompt the human. Skip to **Design Tool Setup** below.
 - **Does not exist** → This is the first UX design session for this project. Proceed to Step 2.
 
-### Step 2 — Prompt the human (first session only)
+### Step 2 — Detect which design MCPs are connected
 
-Ask the human the following question before doing any design work:
+Before presenting options, silently probe which design-tool MCPs the human has wired up (this informs which choices you mark as "✓ connected" — never guess). Try each of the following — a fast success on any tool flags it as available:
 
-> **Which wireframe format should I use for this project?**
->
-> **A) ASCII / Text** — Simple text-based wireframes embedded in markdown files. No design tool required. Fast to produce, portable, but limited visual fidelity. Best for teams without Pencil or Figma access, or when speed matters more than fidelity.
->
-> **B) Pencil — recommended** _(default if Pencil MCP is connected)_ — Full visual wireframes in the Pencil desktop app. I will create a **master Pencil file** for this project with one page per feature/epic. All UX work lives in a single source of truth that every agent can open read-only.
->
-> **C) Figma** _(if Figma MCP is connected)_ — Full visual wireframes in Figma. I will create or use a **master Figma file** for this project with one page/section per feature/epic. Same single-source-of-truth principle.
->
-> _Default if no answer is given: **B (Pencil)** if `mcp__pencil__get_editor_state` responds, otherwise **A (ASCII)**._
+| Probe                                             | Detects           |
+|---------------------------------------------------|-------------------|
+| `mcp__pencil__get_editor_state` (best-effort)     | **Pencil**        |
+| `mcp__figma__get_figma_data` (best-effort)        | **Figma**         |
+| `mcp__excalidraw__*` or any `*excalidraw*` tool   | **Excalidraw**    |
+| `mcp__tldraw__*` or any `*tldraw*` tool           | **tldraw**        |
+| `mcp__penpot__*` or any `*penpot*` tool           | **Penpot**        |
+| `mcp__miro__*`                                    | **Miro**          |
 
-### Step 3 — Record the choice
+Record the detection result in memory — you'll reference it when ranking the options below.
+
+### Step 3 — Prompt the human (first session only)
+
+Use the AskUserQuestion tool when it's available; otherwise address the human in plain text with the same options. **Mark connected MCPs with ✓ "connected" and unconnected ones with "manual / external" so the human can see the effort trade-off at a glance.**
+
+> **Which design tool should I use for wireframes, flows, and visual mocks in this project?** (Pick one — you can switch later, but the master file only lives in one tool.)
+>
+> **A) ASCII / Text** — Markdown-embedded wireframes using box characters and fenced blocks. No tool required. *Best for:* fast prototypes, docs-heavy projects, or teams without any design-tool access.
+>
+> **B) Mermaid diagrams** — Text-based user flows, sequence diagrams, and navigation trees rendered by GitHub / GitLab / docs engines. No MCP required. *Best for:* flows and IA — not pixel mocks.
+>
+> **C) Excalidraw** _(✓ if Excalidraw MCP connected; else manual file-drop)_ — Hand-drawn / whiteboard feel. Good fidelity, fast iteration, feels approachable. *Best for:* early exploration, architecture sketches, flows, low-fi wireframes. Renders natively in GitHub/GitLab via `.excalidraw` embeds.
+>
+> **D) tldraw** _(✓ if tldraw MCP connected)_ — Infinite-canvas whiteboard with strong AI-agent integration. *Best for:* collaborative sessions and AI-driven iteration.
+>
+> **E) Pencil** _(✓ if Pencil MCP connected — previous BMAD default)_ — Open-source desktop wireframing app. Full visual fidelity, offline, local `.pencil` file you can commit. *Best for:* teams who want visual fidelity without a Figma license.
+>
+> **F) Figma** _(✓ if Figma MCP connected)_ — Industry-standard collaborative design tool. *Best for:* teams that already live in Figma; strongest real-time collaboration.
+>
+> **G) Penpot** _(✓ if Penpot MCP connected; else manual via penpot.app)_ — Open-source Figma alternative. Good for GDPR-sensitive / on-prem shops.
+>
+> **H) HTML / React prototype** — Interactive prototypes built directly with shadcn/ui + Tailwind inside `docs/ux/wireframes/`. Highest fidelity, exercises real components. *Best for:* complex interactions, a11y verification, design-to-code handoff. Requires Tailwind + a React host in the repo.
+>
+> **I) Google Stitch** — AI-generated UIs driven by your `docs/ux/DESIGN.md` + a prompt. Stitch reads DESIGN.md directly; the generated UIs respect your tokens and constraints. *Best for:* rapid concepting when the design system is already mature.
+>
+> **J) Miro** _(✓ if Miro MCP connected)_ — Digital whiteboard for flows, journey maps, and collaborative affinity diagrams. Not a pixel wireframe tool — pair with A/C/E/F for pixel work.
+>
+> **K) None / defer** — Skip the visual layer for now; I'll produce text-only specs in `docs/ux/` and we'll revisit the tool choice when the first interactive screen is needed.
+>
+> _Default if no answer is given:_ the first of **E → F → C → D → A** that has a connected MCP. If none are connected, default to **A (ASCII)**.
+
+### Step 4 — Record the choice
 
 Once the human responds (or the default is applied), create `.bmad/ux-design-master.md` with this structure:
 
 ```markdown
 # UX Design Master Reference
-**Design Tool:** [ASCII | Pencil | Figma]
-**Master File:** [path to .pencil file | Figma file ID | N/A for ASCII]
+**Design Tool:** [ASCII | Mermaid | Excalidraw | tldraw | Pencil | Figma | Penpot | HTML-React | Stitch | Miro | None]
+**Master File:** [path or file ID — see per-tool conventions below; N/A for ASCII / Mermaid / Stitch]
+**Fallback Tool:** [optional — secondary tool used for flows only, e.g. Mermaid alongside a Figma master]
 **Page/Frame Convention:** One page per epic or feature — name format: `[EPIC-ID] Feature Name`
 **Created:** [YYYY-MM-DD]
 **Last Updated:** [YYYY-MM-DD]
 
+## Per-tool master file conventions
+| Tool        | Master file path / ID                                           |
+|-------------|-----------------------------------------------------------------|
+| ASCII       | `docs/ux/wireframes/` (one markdown file per feature)            |
+| Mermaid     | `docs/ux/flows/*.mmd` (one per flow)                             |
+| Excalidraw  | `docs/ux/wireframes/master.excalidraw`                           |
+| tldraw      | `docs/ux/wireframes/master.tldr`                                 |
+| Pencil      | `docs/ux/wireframes/master.pencil`                               |
+| Figma       | Figma file URL (record file key in Master File)                  |
+| Penpot      | Penpot project URL                                               |
+| HTML-React  | `docs/ux/wireframes/<feature>/page.tsx`                          |
+| Stitch      | Stitch project URL (DESIGN.md drives the prompt)                 |
+| Miro        | Miro board URL                                                   |
+
 ## Page Index
-| Page / Frame        | Feature / Epic         | Status         |
-|---------------------|------------------------|----------------|
+| Page / Frame        | Feature / Epic           | Status         |
+|---------------------|--------------------------|----------------|
 | Overview            | Information Architecture | ✅ Done        |
-| [EPIC-ID] [Feature] | [Short description]    | ⏳ In Progress |
+| [EPIC-ID] [Feature] | [Short description]      | ⏳ In Progress |
 ```
 
-> **Master file principle:** ONE master file per project — not one file per feature. Every new feature or epic adds a new page or frame to the same file. This means the entire team — Enterprise Architect, Solution Architect, Tech Lead, Frontend, Mobile, Tester-QE — can open one file to see all UX work, past and current. For feature requests and enhancements, always update the existing master file (add a page) rather than creating a new file.
+> **Master file principle:** ONE master file per project — not one file per feature. Every new feature or epic adds a new page or frame to the same file. For a few tools (HTML-React, Mermaid, ASCII) the "master" is a folder of per-feature files — in those cases, treat the folder as the master. For feature requests and enhancements, always update the existing master (add a page / file) rather than forking a new master.
 
-### Design Tool Setup
+### Step 5 — Design Tool Setup
 
-| Mode | What to do |
-|---|---|
-| **ASCII** | Produce wireframes as fenced code blocks inside markdown files in `docs/ux/wireframes/`. No MCP needed. Load the standard markdown `templates/` for all other UX artifacts. |
-| **Pencil** | Read [`references/pencil-mcp-integration.md`](references/pencil-mcp-integration.md) for full usage guide. Use `mcp__pencil__open_document` to open the master file, `mcp__pencil__batch_design` to create/update frames, `mcp__pencil__get_screenshot` to verify output. |
-| **Figma** | Read [`references/figma-mcp-integration.md`](references/figma-mcp-integration.md) for full usage guide. Use `mcp__figma__get_figma_data` to read existing frames; follow the integration guide for creating new frames or pages. |
+| Mode              | What to do |
+|-------------------|-----------|
+| **ASCII**         | Produce wireframes as fenced code blocks inside markdown files in `docs/ux/wireframes/`. No MCP needed. Load the standard markdown `templates/` for all other UX artifacts. |
+| **Mermaid**       | Write user flows and state diagrams as `.mmd` files under `docs/ux/flows/` or as fenced ` ```mermaid ` blocks inside the feature's UI spec. GitHub/GitLab render them automatically. Read [`references/mermaid-integration.md`](references/mermaid-integration.md). |
+| **Excalidraw**    | Save the master as `docs/ux/wireframes/master.excalidraw`. If the Excalidraw MCP is connected, use it to read/add frames; otherwise instruct the human to edit in [excalidraw.com](https://excalidraw.com/) or the VS Code extension and commit back. Read [`references/excalidraw-integration.md`](references/excalidraw-integration.md). |
+| **tldraw**        | Save the master as `docs/ux/wireframes/master.tldr`. Use the tldraw MCP if connected, or the web app otherwise. Read [`references/tldraw-integration.md`](references/tldraw-integration.md). |
+| **Pencil**        | Read [`references/pencil-mcp-integration.md`](references/pencil-mcp-integration.md) for full usage guide. Use `mcp__pencil__open_document` → `mcp__pencil__batch_design` → `mcp__pencil__get_screenshot`. |
+| **Figma**         | Read [`references/figma-mcp-integration.md`](references/figma-mcp-integration.md) for full usage guide. Use `mcp__figma__get_figma_data` to read existing frames; follow the integration guide for creating new frames. |
+| **Penpot**        | Record the Penpot project URL in the master reference. Penpot MCP is optional — manual export/import works too. |
+| **HTML-React**    | Build interactive prototypes with shadcn/ui + Tailwind inside `docs/ux/wireframes/<feature>/`. Reference tokens by name from `docs/ux/DESIGN.md` via the `{path.to.token}` → CSS-variable mapping. Read [`references/html-prototype-integration.md`](references/html-prototype-integration.md). |
+| **Stitch**        | Record the Stitch project URL. Stitch consumes `docs/ux/DESIGN.md` directly — prompt it with "generate [screen]; respect tokens in the attached DESIGN.md" and import the resulting screens as reference. Read [`references/stitch-integration.md`](references/stitch-integration.md). |
+| **Miro**          | Miro works best for flows and journey maps. Pair with one of the pixel-fidelity tools above. |
+| **None / defer**  | Skip visual artefacts. Produce text-only specs and mark the master as "None" — re-prompt when the first interactive screen is needed. |
+
+## 🔒 Non-negotiable: DESIGN.html stays in lockstep with DESIGN.md
+
+> **This rule applies to every UX Designer invocation, regardless of which tool you are running in or which sub-command (brainstorm / create-wireframe / accessibility-audit / design-system) triggered you.**
+
+**If this session has modified `docs/ux/DESIGN.md` in any way, you MUST regenerate `docs/ux/DESIGN.html` before printing your ✅ review summary.** Not just when `/ux-designer:design-system` was explicitly invoked — also after:
+
+- A wireframe session introduced a new token/component/pattern and you added it to `docs/ux/DESIGN.md`.
+- An accessibility audit surfaced a systemic issue and you updated §Do's and Don'ts, a component contract, or `{colors.*}` contrast pairs.
+- A brainstorm session produced design-system deltas (new tokens, pattern proposals, etc.) that you committed.
+- A manual tweak — *any* tool-call that wrote to `docs/ux/DESIGN.md`.
+
+**How to regenerate (in order of preference):**
+
+1. **Python script (preferred — deterministic, CI-safe):**
+   ```bash
+   python3 ~/.bmad/scripts/render-design-md.py --input docs/ux/DESIGN.md
+   ```
+   The installer deploys this script to `~/.bmad/scripts/` alongside `check-playwright-env.sh`. It's stdlib-only (no pip install needed). Output: `docs/ux/DESIGN.html`.
+
+2. **Claude Code / Kiro hook (automatic):** both tools ship a PostToolUse hook (`hooks/global/scripts/render-design-md.sh`) that detects any Write/Edit/MultiEdit to `docs/ux/DESIGN.md` and auto-runs the renderer. If you're in Claude Code or Kiro the regeneration **already happened** after your last edit — confirm by checking the file mtimes of DESIGN.md and DESIGN.html are within a few seconds of each other. If the hook fires twice in a single session it's idempotent; zero harm.
+
+3. **Agent-authored fallback (other tools):** if `python3` and the hook are both unavailable (e.g. constrained sandbox, Aider on Windows without Python), emit `docs/ux/DESIGN.html` directly via Write using the structure the script produces as reference. **Never skip the regeneration** — it is part of the deliverable.
+
+**Include the regeneration in your ✅ summary:**
+
+```
+✅ UX Designer complete
+📄 Saved: docs/ux/[wireframes, DESIGN.md, DESIGN.html, ui-spec, accessibility-audit]
+   DESIGN.md → DESIGN.html: regenerated (<N> colors · <M> type tokens · <K> components)
+```
+
+If the mtimes disagree (DESIGN.md newer than DESIGN.html), your handoff is incomplete — regenerate and re-commit.
+
+---
 
 ## Design System Bootstrap — Always Run This
 

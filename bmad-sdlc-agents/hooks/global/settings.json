@@ -41,6 +41,15 @@
             "command": "bash -c 'HOOKS=\"${CLAUDE_HOOKS_DIR:-$HOME/.claude/hooks}\"; [ -f \"$HOOKS/post-security-artifact.sh\" ] && bash \"$HOOKS/post-security-artifact.sh\" || exit 0'"
           }
         ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'HOOKS=\"${CLAUDE_HOOKS_DIR:-$HOME/.claude/hooks}\"; [ -f \"$HOOKS/render-design-md.sh\" ] && bash \"$HOOKS/render-design-md.sh\" \"$CLAUDE_TOOL_INPUT_PATH\" || exit 0'"
+          }
+        ]
       }
     ]
   }

@@ -2317,19 +2317,29 @@ bmad-sdlc-agents/
 
 ---
 
-## Design Tool Integration (Pencil / Figma)
+## Design Tool Integration
 
-BMAD supports three wireframing modes, selected once per project by the UX Designer on first invocation.
+BMAD supports **eleven** wireframing modes, selected once per project by the UX Designer on first invocation. The UX Designer **always asks the human** before doing any design work — and the question is presented with auto-detected MCP availability so the human can see the effort trade-off at a glance. The choice is recorded once in `.bmad/ux-design-master.md`; all subsequent invocations reuse the same tool and master file without re-prompting.
 
 ### Wireframe Modes
 
-| Mode | When to choose | Output |
-|---|---|---|
-| **ASCII / Text** | No design tool available, or speed over fidelity | Text wireframes in `docs/ux/wireframes/*.md` |
-| **Pencil** _(default if connected)_ | Pencil desktop app is installed and Pencil MCP is connected | Visual wireframes in a master `.pencil` file |
-| **Figma** | Figma MCP is connected | Visual wireframes in a master Figma file |
+| Mode | When to choose | Master file | Integration ref |
+|------|----------------|-------------|-----------------|
+| **A) ASCII / Text** | No tool available, speed over fidelity, docs-heavy projects | `docs/ux/wireframes/*.md` | (built-in) |
+| **B) Mermaid** | User flows, state diagrams, IA — *not* pixel mocks | `docs/ux/flows/*.mmd` | [`agents/ux-designer/references/mermaid-integration.md`](agents/ux-designer/references/mermaid-integration.md) |
+| **C) Excalidraw** | Hand-drawn / whiteboard feel; early exploration | `docs/ux/wireframes/master.excalidraw` | [`agents/ux-designer/references/excalidraw-integration.md`](agents/ux-designer/references/excalidraw-integration.md) |
+| **D) tldraw** | Infinite-canvas with strong AI-agent integration | `docs/ux/wireframes/master.tldr` | [`agents/ux-designer/references/tldraw-integration.md`](agents/ux-designer/references/tldraw-integration.md) |
+| **E) Pencil** | Open-source desktop wireframing (Pencil MCP) | `docs/ux/wireframes/master.pencil` | [`agents/ux-designer/references/pencil-mcp-integration.md`](agents/ux-designer/references/pencil-mcp-integration.md) |
+| **F) Figma** | Industry-standard collaborative design (Figma MCP) | Figma file URL | [`agents/ux-designer/references/figma-mcp-integration.md`](agents/ux-designer/references/figma-mcp-integration.md) |
+| **G) Penpot** | Open-source Figma alternative; GDPR / on-prem | Penpot project URL | (manual export) |
+| **H) HTML / React prototype** | Highest fidelity; design-to-code handoff via shadcn/ui + Tailwind | `docs/ux/wireframes/<feature>/page.tsx` | [`agents/ux-designer/references/html-prototype-integration.md`](agents/ux-designer/references/html-prototype-integration.md) |
+| **I) Google Stitch** | AI-generated UIs driven by `docs/ux/DESIGN.md` | Stitch project URL | [`agents/ux-designer/references/stitch-integration.md`](agents/ux-designer/references/stitch-integration.md) |
+| **J) Miro** | Flows, journey maps, affinity diagrams (not pixel mocks) | Miro board URL | (pair with another mode for pixel work) |
+| **K) None / defer** | Skip the visual layer for now; text-only specs | n/a | n/a |
 
-The UX Designer **always asks the human** before doing any design work. The choice is recorded once in `.bmad/ux-design-master.md` — all subsequent invocations (revisions, new feature pages) reuse the same tool and master file without re-prompting.
+The selection prompt highlights connected MCPs with `✓` and unconnected options as `manual / external`. Default if no answer is given: the first of `E → F → C → D → A` that has a connected MCP. If none, default to ASCII.
+
+> **Master file principle:** ONE master file per project — never fork per feature. Every new feature/epic adds a new page to the same master. For tools where "master" is naturally a folder (HTML/React, Mermaid, ASCII), treat the folder as the master.
 
 ### Master File Principle
 
@@ -2425,7 +2435,12 @@ The command ships to all 11 tools via the installer walker with zero per-tool co
 
 ### Browser-viewable HTML visualization (`docs/ux/DESIGN.html`)
 
-Alongside the markdown source, the command maintains a **self-contained HTML visualization** at `docs/ux/DESIGN.html` that renders the design system in a browser. It's regenerated automatically on every `create` / `extend` / `sync` / `render` invocation. The HTML page uses a **dual-column layout** — fixed left sidebar + scrollable main — and contains:
+Alongside the markdown source, the UX Designer maintains a **self-contained HTML visualization** at `docs/ux/DESIGN.html` that renders the design system in a browser. The file **always stays in lockstep with `DESIGN.md`** — enforced at two layers:
+
+1. **Claude Code / Kiro PostToolUse hook (automatic).** [`hooks/global/scripts/render-design-md.sh`](hooks/global/scripts/render-design-md.sh) is registered as a `Write|Edit|MultiEdit` PostToolUse hook in `hooks/global/settings.json`. Whenever any tool call writes to `docs/ux/DESIGN.md` — whether it's a UX Designer turn, a Frontend Engineer making a quick token tweak, or a manual human edit — the hook fires, detects the path, and auto-invokes the renderer. Zero agent coordination required. The hook no-ops silently on any other path and on hosts without python3.
+2. **Agent-level completion rule (every tool).** The UX Designer SKILL.md opens with a non-negotiable `🔒 Non-negotiable: DESIGN.html stays in lockstep with DESIGN.md` section that applies to every invocation — `/ux-designer:design-system`, `/ux-designer:create-wireframe`, `/ux-designer:accessibility-audit`, and any plain address-by-role prompt. Before the agent prints its ✅ summary, it verifies that `DESIGN.html` mtime ≥ `DESIGN.md` mtime; if not, it regenerates. This covers Cursor / Windsurf / Trae / Gemini CLI / Aider / etc. where session-hook automation isn't available.
+
+The command also regenerates the HTML explicitly on every `create` / `extend` / `sync` / `render` invocation. The HTML page uses a **dual-column layout** — fixed left sidebar + scrollable main — and contains:
 
 - **Brand sidebar** — sticky left nav with the project's name, version, and a brand-gradient mark. Navigation is grouped into **Foundations** (Colors, Typography, Spacing, Radius, Shadows, Motion), **Components** (one jumpable link per component), **Patterns** (auto-extracted from `## Patterns` subheadings in the markdown body), and **Principles** (Design principles, Accessibility). A scroll-spy highlights the active section as you scroll.
 - **Dark-mode toggle** — explicit button in the page header; persists choice to `localStorage` and respects system preference on first visit.
