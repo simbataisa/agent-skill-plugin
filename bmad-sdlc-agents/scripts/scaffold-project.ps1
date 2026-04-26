@@ -131,6 +131,7 @@ if ($Force -and (Test-Path -LiteralPath '.bmad')) {
 Write-Section 'Creating directories...'
 $dirs = @(
     '.bmad\handoffs',
+    '.bmad\brainstorms',
     '.bmad\signals',
     'docs\architecture\adr',
     'docs\analysis',
@@ -143,6 +144,7 @@ foreach ($d in $dirs) { Ensure-Directory $d }
 
 Write-Host '  ✓ .bmad\'
 Write-Host '  ✓ .bmad\handoffs\'
+Write-Host '  ✓ .bmad\brainstorms\ (consolidated brainstorm briefs from each agent)'
 Write-Host '  ✓ .bmad\signals\ (autonomous orchestration sentinels)'
 Write-Host '  ✓ docs\architecture\adr'
 Write-Host '  ✓ docs\analysis\'

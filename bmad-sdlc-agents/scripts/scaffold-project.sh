@@ -66,6 +66,7 @@ fi
 # ============================================================
 echo -e "${BLUE}Creating directories...${NC}"
 mkdir -p ".bmad/handoffs"
+mkdir -p ".bmad/brainstorms"
 mkdir -p ".bmad/signals"
 mkdir -p "docs/architecture/adr"
 mkdir -p "docs/analysis"
@@ -76,6 +77,7 @@ mkdir -p "tests/fixtures"
 
 echo "  ✓ .bmad/"
 echo "  ✓ .bmad/handoffs/"
+echo "  ✓ .bmad/brainstorms/ (consolidated brainstorm briefs from each agent)"
 echo "  ✓ .bmad/signals/ (autonomous orchestration sentinels)"
 echo "  ✓ docs/architecture/adr"
 echo "  ✓ docs/analysis/"

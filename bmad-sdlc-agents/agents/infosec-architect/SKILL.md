@@ -94,6 +94,28 @@ Work exclusively inside `../bmad-infosec-work/`. Read and write all project file
 
 Skip all git steps. Work in the current directory as normal.
 
+## Worktree Close-out & Merge
+
+> **Run when your work is finished and ready to ship — before printing the ✅ review summary in your Completion Protocol.**
+
+When `.git` exists in the project root, every BMAD agent works inside an isolated worktree (`../bmad-<role>-work`). After completing your work there, follow the canonical close-out protocol:
+
+[`shared/references/worktree-close-out.md`](../../shared/references/worktree-close-out.md)
+
+The protocol covers four stages:
+
+1. **Stage 1 — Request human review.** Print a structured review request with branch name, diffstat, top files changed, commit count, and test status. Wait for `approve` (proceed), `refine: <notes>` (revise), or `defer` (leave the worktree open).
+2. **Stage 2 — Merge to main.** On approval, fetch latest main, detect concurrent-merge state, fast-forward when clean, rebase when main has moved.
+3. **Stage 3 — Conflict Resolution Protocol** (only if rebase produces conflicts). Categorise each conflict by file scope:
+   - **My-domain** → resolve solo, run my tests, commit.
+   - **Their-domain or cross-domain** → request peer review via a `.bmad/signals/conflict-<my-role>-needs-<their-role>-review` sentinel and a structured prompt. On Claude Code / Kiro with autonomous mode, spawn the peer agent directly via the Agent tool. Do **not** complete the merge until the peer agent (or the human) confirms the resolution.
+   - **Sequenced** (DB migrations, IaC) → escalate to Tech Lead, never resolve solo.
+4. **Stage 4 — Clean up.** `git worktree remove ../bmad-<role>-work`, delete the role branch, print the cleanup summary.
+
+**Concurrent-merge rule (multi-agent):** if you arrive at the merge gate after a peer agent has already merged their parallel branch, **you are responsible for the rebase + conflict resolution** — the first merger never has conflicts; the second/third/etc. always do the integration work. If you're not confident in a resolution that touches another role's scope, ask that role to review *before* completing the merge.
+
+**Skip if no git.** Projects without `.git` skip every stage of this protocol — there's no merge to do.
+
 ---
 
 ## Autonomous Task Detection
@@ -319,8 +341,9 @@ mkdir -p .bmad/signals && touch .bmad/signals/infosec-done
    Feature     → DevSecOps Engineer should review threat model addendum for new pipeline gate requirements
 
 Waiting for your review.
-  refine: [your feedback]   → I will revise and re-present
-  next                      → hand off to Enterprise Architect / Solution Architect
+  approve   (or `next`)        → run Worktree Close-out (merge to main, clean up worktree), then hand off to the next agent
+  refine: [your feedback]      → I will revise and re-present
+  defer                        → leave the worktree open and stop (no merge yet)
 ```
 
 ### Step 5 — Wait (or auto-advance in autonomous mode)
@@ -333,6 +356,15 @@ Waiting for your review.
 Apply feedback, re-run affected threat model sections, re-save artifacts, re-print review summary. Repeat until 'next'.
 
 ### Step 7 — On 'next' (or autonomous trigger)
+**Before any handoff to the next agent, run the Worktree Close-out & Merge protocol** if `.git` exists in the project root:
+
+1. Refresh main and detect concurrent-merge state (Stage 2 of [`shared/references/worktree-close-out.md`](../../shared/references/worktree-close-out.md)).
+2. If main has moved (a peer agent already merged): rebase your branch onto the latest main. Conflicts → run **Stage 3 — Conflict Resolution Protocol**: categorise each conflict by file scope; resolve my-domain conflicts solo; for their-domain or shared-file conflicts, write `.bmad/signals/conflict-<my-role>-needs-<peer-role>-review` and request peer review. Do **not** complete the merge until the peer or human signs off.
+3. Merge to main (`git merge --ff-only` after rebase). Run the affected test suites once more on main.
+4. Clean up: `git worktree remove ../bmad-<role>-work` and `git branch -d <my-branch>`. Print the cleanup summary.
+
+If `.git` does not exist, skip the close-out. **Then continue with the original Step 7 actions:**
+
 Security architecture accepted. Write or update `.bmad/signals/infosec-done`.
 
 > In autonomous mode: the orchestrator uses `infosec-done` to signal EA and SA that security requirements are available.

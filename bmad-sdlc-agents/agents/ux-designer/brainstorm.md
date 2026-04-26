@@ -28,7 +28,15 @@ Read any existing context silently:
 
 For every question, lead with 2–3 concrete options and flag a recommended default (e.g. `Option A — … (recommended, because …) / Option B — … / Option C — …`). Only ask an open-ended question when the space is genuinely unbounded or when you truly lack the context to suggest options — in that case, name the missing context.
 
-Ask these questions in one grouped message.
+**Ask one question at a time.** Walk the question bank below as a *prioritised pool*, not a checklist:
+
+1. Skip any question already answered by the project context files (`.bmad/PROJECT-CONTEXT.md`, `docs/prd.md`, prior artefacts) — don't waste a turn.
+2. Pick the highest-impact remaining question (the one whose answer most-unlocks the next-step deliverable). Ask it on its own, with 2–3 concrete options + a recommended default when the answer space is bounded.
+3. **Wait** for the user's answer. Do not stack a second question.
+4. After each answer, capture it in your private brief (see Phase 2.5) and re-rank the remaining bank — many answers will eliminate or reshape later questions.
+5. Stop asking after **3–7 turns** or whenever the next-step deliverable can be written with what you have. You do **not** need to drain the bank.
+
+Full protocol: [`../../shared/references/conversational-brainstorm.md`](../../shared/references/conversational-brainstorm.md).
 
 **Users & Context**
 - Who is the primary user for this feature? What's their technical proficiency?
@@ -69,6 +77,30 @@ Ask these questions in one grouped message.
 - Do any visual patterns in scope fail to map to the chosen catalog? If yes, list them as catalog extension proposals (name, props, a11y contract, motivating screen).
 - Theme params — which design tokens pass through A2UI `theme` vs. bake into the renderer? (default: primary/secondary colour, radius, base font pass through; spacing + type scale bake in.)
 - Reference: [`../../shared/a2ui-reference.md`](../../shared/a2ui-reference.md).
+
+## Phase 2.5 — Consolidate
+
+After the conversational Q&A reaches a natural stopping point (you have enough to write the brief, the user signals they're done, or you've asked 5–7 turns and the rest are nice-to-haves), **read the answers back as a single structured brief** before any analysis or drafting. This is the human's last chance to catch misinterpretations.
+
+Format:
+
+```
+> 📋 Brainstorm brief — <feature / topic>
+>
+> Captured answers:
+>   - [Topic 1]: [user's answer, paraphrased tightly]
+>   - [Topic 2]: [user's answer]
+>   - …
+>
+> Skipped (already on disk): [list with source paths]
+> Inferred defaults: [places where the user said "you decide" — name the default + reason]
+> Open / unaddressed: [bank items you didn't ask but the user might want to weigh in on]
+> Tensions / contradictions: [any answers conflicting with each other or with project files]
+
+Reply 'ok' to lock in this brief and proceed, or 'edit: <correction>' to adjust before I start drafting.
+```
+
+Save the brief verbatim to `.bmad/brainstorms/<role>-<topic-slug>.md` so it's auditable. The next phase (and any follow-up commands) consumes the **brief**, not the raw conversation.
 
 ## Phase 3 — Think Out Loud
 

@@ -52,6 +52,24 @@ Agents operate in a collaborative/iterative mode:
 | Mobile Engineer | Implementation | iOS, Android, React Native, Flutter, offline-first |
 | Tester & QE | Implementation | Test strategy, test cases, E2E automation, quality gates, pre-release sign-off |
 
+## Worktree Workflow & Multi-Agent Merge
+
+Every BMAD agent that writes code or artefacts works inside an **isolated git worktree** (`../bmad-<role>-work`) on a dedicated branch (`<role>/<sprint-or-feature>`). This keeps the main working tree clean, lets parallel agents run without stepping on each other, and gives the human a clear branch boundary for review.
+
+**End-of-job protocol (every agent):**
+
+1. **Request human review.** Print a structured summary with branch name, diffstat, top files changed, commit count, and test status. The human replies `approve` (proceed), `refine: <notes>` (revise), or `defer` (leave the worktree open).
+2. **Merge to main on approval.** Refresh main, detect whether a peer agent already merged. If main hasn't moved → fast-forward merge. If main has moved → rebase the role branch onto the latest main.
+3. **Resolve conflicts cooperatively (multi-agent rule).** When the rebase produces conflicts:
+   - Conflicts in **my-domain** files → resolve solo, run my tests, commit.
+   - Conflicts in **another role's owned scope** OR **shared / cross-domain files** (lockfiles, OpenAPI specs, build configs, integration tests) → write `.bmad/signals/conflict-<my-role>-needs-<peer-role>-review`, request peer review (via the Agent tool on Claude Code / Kiro autonomous mode, or via human prompt elsewhere). **Do not complete the merge until the peer or human signs off.**
+   - Conflicts in **sequenced files** (DB migrations, IaC) → escalate to Tech Lead. Never resolve solo.
+4. **Clean up.** `git worktree remove ../bmad-<role>-work` and `git branch -d <role>/<sprint-or-feature>`. Print the cleanup summary.
+
+The full protocol with bash recipes lives in [`shared/references/worktree-close-out.md`](references/worktree-close-out.md). Every agent's SKILL.md links to it from its `## Worktree Close-out & Merge` section.
+
+**Concurrent-merge invariant:** when BE ∥ FE ∥ ME run in parallel during Wave E2 (or any other parallel-agent wave), the **first** agent to merge always succeeds cleanly. The **second and third** to arrive at the merge gate are responsible for the rebase + conflict resolution — that is the cost of running concurrently. If the second/third agent isn't confident in a resolution that touches another role's scope, they ask that role's agent (or Tech Lead) to review *before* completing the merge. No agent ever silently overwrites another agent's work.
+
 ## Standard Artifact Directory Structure
 
 ```
