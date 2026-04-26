@@ -4,7 +4,7 @@
 
 Install the global layer once across all tools, then scaffold `.bmad/` context files into each project. Agents dynamically load project-specific knowledge from `.bmad/` combined with shared resources, creating a cohesive, context-aware squad.
 
-Every agent is held to the same four **Karpathy-derived engineering principles** — *Think before coding · Simplicity first · Surgical changes · Goal-driven execution* — installed as tool-tailored rulebooks under [`shared/karpathy-principles/`](shared/karpathy-principles/README.md) and referenced inline at the top of every `SKILL.md` and `brainstorm.md`.
+Every agent is held to the same four **Karpathy-derived engineering principles** — _Think before coding · Simplicity first · Surgical changes · Goal-driven execution_ — installed as tool-tailored rulebooks under [`shared/karpathy-principles/`](shared/karpathy-principles/README.md) and referenced inline at the top of every `SKILL.md` and `brainstorm.md`.
 
 The squad also ships **A2UI v0.10 authoring support** for agent-driven UIs (chat canvases, in-product assistants, agentic workflow views). Product Owner, Enterprise Architect, Solution Architect, UX Designer, and InfoSec Architect each pick up A2UI-aware sections in their SKILL and brainstorm files, backed by a shared protocol reference ([`shared/a2ui-reference.md`](shared/a2ui-reference.md)), an ADR skeleton ([`shared/templates/adr-a2ui-adoption.md`](shared/templates/adr-a2ui-adoption.md)), and a per-surface spec template ([`shared/templates/a2ui-surface-spec.md`](shared/templates/a2ui-surface-spec.md)). A2UI is advisory/authoring — no agent emits live envelopes; production adoption requires an EA ADR.
 
@@ -12,25 +12,31 @@ The squad also ships **A2UI v0.10 authoring support** for agent-driven UIs (chat
 
 **Cross-platform installer.** The install script exists in two equivalent forms: `scripts/install-global.sh` (bash — macOS / Linux / WSL / Git Bash) and `scripts/install-global.ps1` (PowerShell 5.1+ or 7+ — Windows 11 native, no python3 dependency). Same for the project scaffolder: `scripts/scaffold-project.sh` and `scripts/scaffold-project.ps1`. Both cover every supported tool (Claude Code, Cowork, Codex CLI, Kiro, Cursor, Windsurf, Trae IDE, GitHub Copilot, Gemini CLI, OpenCode, Aider).
 
+**Wireframe / UI tool selection.** UX Designer offers eleven wireframing modes — ASCII / Mermaid / Excalidraw / tldraw / Pencil / Figma / Penpot / HTML-React / Google Stitch / Miro / None — and asks the human which to use on first invocation. The prompt auto-detects connected MCP servers and marks each option as ✓ connected or "manual / external" so the human sees the effort trade-off at a glance. The choice is recorded once in `.bmad/ux-design-master.md` and reused thereafter. Per-tool integration guides ship under [`agents/ux-designer/references/`](agents/ux-designer/references/).
+
+**Worktree close-out & multi-agent merge.** Every agent that writes code or artefacts works in an isolated git worktree (`../bmad-<role>-work`) on a dedicated branch. When done, the agent runs the canonical close-out protocol — request human review → merge to main → resolve concurrent conflicts cooperatively → clean up. When BE ∥ FE ∥ ME (or any parallel wave) run concurrently, the **first agent to merge succeeds cleanly; the second and third are responsible for the rebase + conflict resolution**, with cross-domain conflicts routed to the owning peer agent for review via `.bmad/signals/conflict-<my-role>-needs-<peer-role>-review` sentinels. Full protocol: [`shared/references/worktree-close-out.md`](shared/references/worktree-close-out.md).
+
+**Conversational brainstorming.** Every agent's `brainstorm.md` sub-command runs as a conversation, not a questionnaire — **one question per turn, wait for the answer, then ask the next**. The agent walks a prioritised question bank, skips anything already on disk, stops after 3–7 turns when the next-step deliverable can be written, and consolidates the answers as a structured brief saved to `.bmad/brainstorms/<role>-<topic>.md`. Full protocol: [`shared/references/conversational-brainstorm.md`](shared/references/conversational-brainstorm.md).
+
 ---
 
 ## Agent Team
 
-| Agent                     | Skill File                              | BMAD Phase     | Role                                                                     |
-| ------------------------- | --------------------------------------- | -------------- | ------------------------------------------------------------------------ |
-| **BMAD Orchestrator**     | `agents/bmad/SKILL.md`                  | All Phases     | Routes work to the right sub-agent; entry point for squad prompts        |
-| **Product Owner**         | `agents/product-owner/SKILL.md`         | Analysis       | Voice of the Business — BRD, high-level PRD, MVP scope (runs first)      |
-| **Business Analyst**      | `agents/business-analyst/SKILL.md`      | Analysis       | Requirements analyst — deep-dives BRD/PRD, produces requirements analysis |
-| **Enterprise Architect**  | `agents/enterprise-architect/SKILL.md`  | Solutioning    | High-level enterprise arch BEFORE SA — cloud infra, compliance, CI/CD    |
-| **UX/UI Designer**        | `agents/ux-designer/SKILL.md`           | Solutioning    | Personas, journeys, wireframes, **`docs/ux/DESIGN.md` (Google Stitch format)**, a11y (parallel with EA) |
-| **Solution Architect**    | `agents/solution-architect/SKILL.md`    | Solutioning    | Detailed solution design using EA + UX outputs — APIs, data models, ADRs |
-| **InfoSec Architect**     | `agents/infosec-architect/SKILL.md`     | Solutioning    | Threat modelling, controls, privacy-by-design, supply-chain, IR readiness |
-| **DevSecOps Engineer**    | `agents/devsecops-engineer/SKILL.md`    | All Phases     | Pipelines, IaC, SLOs, FinOps, reliability & recovery                     |
-| **Tech Lead**             | `agents/tech-lead/SKILL.md`             | All Phases     | Orchestration, sprint planning, code review, risk, release readiness     |
-| **Tester & QE**           | `agents/tester-qe/SKILL.md`             | All Phases     | Test strategy, quality gates, security testing, UI automation            |
-| **Backend Engineer**      | `agents/backend-engineer/SKILL.md`      | Implementation | APIs, data layers, event-driven services, authN/Z, idempotency           |
-| **Frontend Engineer**     | `agents/frontend-engineer/SKILL.md`     | Implementation | React/TypeScript, perf budgets, feature flags, i18n                      |
-| **Mobile Engineer**       | `agents/mobile-engineer/SKILL.md`       | Implementation | iOS/Android, offline, app-size, crash reporting                          |
+| Agent                    | Skill File                             | BMAD Phase     | Role                                                                                                    |
+| ------------------------ | -------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------- |
+| **BMAD Orchestrator**    | `agents/bmad/SKILL.md`                 | All Phases     | Routes work to the right sub-agent; entry point for squad prompts                                       |
+| **Product Owner**        | `agents/product-owner/SKILL.md`        | Analysis       | Voice of the Business — BRD, high-level PRD, MVP scope (runs first)                                     |
+| **Business Analyst**     | `agents/business-analyst/SKILL.md`     | Analysis       | Requirements analyst — deep-dives BRD/PRD, produces requirements analysis                               |
+| **Enterprise Architect** | `agents/enterprise-architect/SKILL.md` | Solutioning    | High-level enterprise arch BEFORE SA — cloud infra, compliance, CI/CD                                   |
+| **UX/UI Designer**       | `agents/ux-designer/SKILL.md`          | Solutioning    | Personas, journeys, wireframes, **`docs/ux/DESIGN.md` (Google Stitch format)**, a11y (parallel with EA) |
+| **Solution Architect**   | `agents/solution-architect/SKILL.md`   | Solutioning    | Detailed solution design using EA + UX outputs — APIs, data models, ADRs                                |
+| **InfoSec Architect**    | `agents/infosec-architect/SKILL.md`    | Solutioning    | Threat modelling, controls, privacy-by-design, supply-chain, IR readiness                               |
+| **DevSecOps Engineer**   | `agents/devsecops-engineer/SKILL.md`   | All Phases     | Pipelines, IaC, SLOs, FinOps, reliability & recovery                                                    |
+| **Tech Lead**            | `agents/tech-lead/SKILL.md`            | All Phases     | Orchestration, sprint planning, code review, risk, release readiness                                    |
+| **Tester & QE**          | `agents/tester-qe/SKILL.md`            | All Phases     | Test strategy, quality gates, security testing, UI automation                                           |
+| **Backend Engineer**     | `agents/backend-engineer/SKILL.md`     | Implementation | APIs, data layers, event-driven services, authN/Z, idempotency                                          |
+| **Frontend Engineer**    | `agents/frontend-engineer/SKILL.md`    | Implementation | React/TypeScript, perf budgets, feature flags, i18n                                                     |
+| **Mobile Engineer**      | `agents/mobile-engineer/SKILL.md`      | Implementation | iOS/Android, offline, app-size, crash reporting                                                         |
 
 ---
 
@@ -91,11 +97,11 @@ This creates project-aware agents that respect global conventions while adapting
 
 Each agent skill uses a three-level loading strategy to keep context windows lean:
 
-| Level | What | When loaded |
-|---|---|---|
-| **1 — Metadata** | YAML frontmatter (`name`, `description`, `allowed-tools`) | Always — used by the tool for skill discovery |
-| **2 — Skill body** | `SKILL.md` (≤500 lines) | On invocation — quick mode detection, responsibilities, completion protocol |
-| **3 — Reference files** | `references/*.md` and `templates/*.md` | On demand — agent reads the relevant file only when working on that task area |
+| Level                   | What                                                      | When loaded                                                                   |
+| ----------------------- | --------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| **1 — Metadata**        | YAML frontmatter (`name`, `description`, `allowed-tools`) | Always — used by the tool for skill discovery                                 |
+| **2 — Skill body**      | `SKILL.md` (≤500 lines)                                   | On invocation — quick mode detection, responsibilities, completion protocol   |
+| **3 — Reference files** | `references/*.md` and `templates/*.md`                    | On demand — agent reads the relevant file only when working on that task area |
 
 This means a Tech Lead doing code review loads `templates/code-review-checklist.md` without also loading the risk assessment or debt registry templates. Agents are instructed to `Read` the appropriate reference file before starting each deliverable.
 
@@ -132,19 +138,19 @@ Each agent announces what it detected and what it will do — or reports `Blocke
 
 Every agent's Completion Protocol includes a `🚀` line in the review summary pointing to the next agent in the chain:
 
-| Agent                 | 🚀 Suggests                                                                                          |
-| --------------------- | ---------------------------------------------------------------------------------------------------- |
-| Product Owner         | `/business-analyst` — deep requirements analysis of your BRD + PRD                                  |
-| Business Analyst      | `/enterprise-architect` ∥ `/ux-designer` in parallel — both read your requirements analysis         |
-| Enterprise Architect  | `/solution-architect` (after UX is also done)                                                        |
-| UX Designer           | `/solution-architect` (after EA is also done)                                                        |
-| Solution Architect    | `/tech-lead` — sprint plan from your solution architecture                                           |
-| Tech Lead (Plan Mode) | Execute Prompt B (squad) or individual engineer commands                                             |
-| Backend Engineer      | `/frontend-engineer` then `/tester-qe`                                                               |
-| Frontend Engineer     | `/mobile-engineer` (if in scope) or `/tester-qe`                                                     |
-| Mobile Engineer       | `/tester-qe` — full sprint testing                                                                   |
-| Tester-QE (all pass)  | `/tech-lead` — release sign-off or next sprint kickoff                                               |
-| Tester-QE (failures)  | Return to the failing engineer for fixes                                                              |
+| Agent                 | 🚀 Suggests                                                                                 |
+| --------------------- | ------------------------------------------------------------------------------------------- |
+| Product Owner         | `/business-analyst` — deep requirements analysis of your BRD + PRD                          |
+| Business Analyst      | `/enterprise-architect` ∥ `/ux-designer` in parallel — both read your requirements analysis |
+| Enterprise Architect  | `/solution-architect` (after UX is also done)                                               |
+| UX Designer           | `/solution-architect` (after EA is also done)                                               |
+| Solution Architect    | `/tech-lead` — sprint plan from your solution architecture                                  |
+| Tech Lead (Plan Mode) | Execute Prompt B (squad) or individual engineer commands                                    |
+| Backend Engineer      | `/frontend-engineer` then `/tester-qe`                                                      |
+| Frontend Engineer     | `/mobile-engineer` (if in scope) or `/tester-qe`                                            |
+| Mobile Engineer       | `/tester-qe` — full sprint testing                                                          |
+| Tester-QE (all pass)  | `/tech-lead` — release sign-off or next sprint kickoff                                      |
+| Tester-QE (failures)  | Return to the failing engineer for fixes                                                    |
 
 You never need to remember the agent sequence — each agent hands you off to the next one.
 
@@ -159,46 +165,46 @@ EA and SA both do architecture, but at different layers and scopes. The rule of 
 
 **Decision matrix (pick the right agent by topic):**
 
-| Topic | EA | SA | InfoSec | DevSecOps |
-|---|:-:|:-:|:-:|:-:|
-| Cloud provider / region strategy | ✅ | | | |
-| Multi-environment topology (dev / staging / prod / DR parity) | ✅ | | | |
-| Compute platform (K8s distro vs. serverless vs. hybrid) | ✅ | | | |
-| Disaster recovery strategy / RTO / RPO | ✅ | | | |
-| Compliance posture (SOC2 / GDPR / HIPAA / PCI) | ✅ | | ✅ coord | |
-| Enterprise observability stack choice | ✅ | | | |
-| CI/CD pipeline template (org-wide) | ✅ | | | ✅ impl |
-| FinOps tagging + budget envelope | ✅ | | | |
-| Shared platform services (identity, API gateway, mesh, bus) | ✅ | | | |
-| Cross-system integration contract ("Order → SAP") | ✅ | | | |
-| Technology radar governance (Adopt / Trial / Assess / Hold) | ✅ | | | |
-| A2UI adoption, version pin, catalog governance | ✅ | | | |
-| Service decomposition within a solution | | ✅ | | |
-| API contracts (OpenAPI / AsyncAPI) for a solution | | ✅ | | |
-| Data model / schema / indexes for a service | | ✅ | | |
-| Database choice (per service, from EA-approved catalog) | | ✅ | | |
-| Application framework (NestJS / FastAPI / Spring Boot) | | ✅ | | |
-| Solution-level integration patterns (saga / CQRS / outbox) | | ✅ | | |
-| Per-service auth flow (OAuth/OIDC) within EA's identity platform | | ✅ | ✅ coord | |
-| Solution-level ADRs | | ✅ | | |
-| C4 Component / Code-level diagrams | | ✅ | | |
-| A2UI per-surface spec (surfaceId, tree, action contracts) | | ✅ | | |
-| Threat models, controls catalogue, encryption choices | | | ✅ | |
-| Secret-rotation cadence, threat-modeling methodology | | | ✅ | |
-| Terraform / Helm / GitHub Actions YAML | | | | ✅ |
-| Provisioning runbooks, log-shipper wiring | | | | ✅ |
+| Topic                                                            | EA  | SA  | InfoSec  | DevSecOps |
+| ---------------------------------------------------------------- | :-: | :-: | :------: | :-------: |
+| Cloud provider / region strategy                                 | ✅  |     |          |           |
+| Multi-environment topology (dev / staging / prod / DR parity)    | ✅  |     |          |           |
+| Compute platform (K8s distro vs. serverless vs. hybrid)          | ✅  |     |          |           |
+| Disaster recovery strategy / RTO / RPO                           | ✅  |     |          |           |
+| Compliance posture (SOC2 / GDPR / HIPAA / PCI)                   | ✅  |     | ✅ coord |           |
+| Enterprise observability stack choice                            | ✅  |     |          |           |
+| CI/CD pipeline template (org-wide)                               | ✅  |     |          |  ✅ impl  |
+| FinOps tagging + budget envelope                                 | ✅  |     |          |           |
+| Shared platform services (identity, API gateway, mesh, bus)      | ✅  |     |          |           |
+| Cross-system integration contract ("Order → SAP")                | ✅  |     |          |           |
+| Technology radar governance (Adopt / Trial / Assess / Hold)      | ✅  |     |          |           |
+| A2UI adoption, version pin, catalog governance                   | ✅  |     |          |           |
+| Service decomposition within a solution                          |     | ✅  |          |           |
+| API contracts (OpenAPI / AsyncAPI) for a solution                |     | ✅  |          |           |
+| Data model / schema / indexes for a service                      |     | ✅  |          |           |
+| Database choice (per service, from EA-approved catalog)          |     | ✅  |          |           |
+| Application framework (NestJS / FastAPI / Spring Boot)           |     | ✅  |          |           |
+| Solution-level integration patterns (saga / CQRS / outbox)       |     | ✅  |          |           |
+| Per-service auth flow (OAuth/OIDC) within EA's identity platform |     | ✅  | ✅ coord |           |
+| Solution-level ADRs                                              |     | ✅  |          |           |
+| C4 Component / Code-level diagrams                               |     | ✅  |          |           |
+| A2UI per-surface spec (surfaceId, tree, action contracts)        |     | ✅  |          |           |
+| Threat models, controls catalogue, encryption choices            |     |     |    ✅    |           |
+| Secret-rotation cadence, threat-modeling methodology             |     |     |    ✅    |           |
+| Terraform / Helm / GitHub Actions YAML                           |     |     |          |    ✅     |
+| Provisioning runbooks, log-shipper wiring                        |     |     |          |    ✅     |
 
 **Quick triage — start here when unsure:**
 
-| If the decision... | Invoke |
-|---|---|
-| Applies to the whole estate or multiple solutions | **Enterprise Architect** |
-| Sets a standard others must follow (pipeline, stack, platform, compliance) | **Enterprise Architect** |
-| Lives inside one solution and its services | **Solution Architect** |
-| Is an API, data model, or service-boundary choice | **Solution Architect** |
-| Introduces a new technology to the organisation | **EA first** (radar update) → then SA adopts it |
-| Is about *how to defend* a system (threats, controls, crypto) | **InfoSec Architect** |
-| Is about *how to operate* a system (IaC, pipelines, runbooks) | **DevSecOps Engineer** |
+| If the decision...                                                         | Invoke                                          |
+| -------------------------------------------------------------------------- | ----------------------------------------------- |
+| Applies to the whole estate or multiple solutions                          | **Enterprise Architect**                        |
+| Sets a standard others must follow (pipeline, stack, platform, compliance) | **Enterprise Architect**                        |
+| Lives inside one solution and its services                                 | **Solution Architect**                          |
+| Is an API, data model, or service-boundary choice                          | **Solution Architect**                          |
+| Introduces a new technology to the organisation                            | **EA first** (radar update) → then SA adopts it |
+| Is about _how to defend_ a system (threats, controls, crypto)              | **InfoSec Architect**                           |
+| Is about _how to operate_ a system (IaC, pipelines, runbooks)              | **DevSecOps Engineer**                          |
 
 **Invocation order for a new project:**
 `PO → BA → EA ∥ UX (parallel) → SA → Tech Lead → engineers → Tester-QE`
@@ -226,15 +232,15 @@ Agents are organized into **waves** — all agents in the same wave run simultan
 
 **New Project — Plan Phase:**
 
-| Wave | Agents                                              | Depends On                                                    |
-| ---- | --------------------------------------------------- | ------------------------------------------------------------- |
-| W1   | Product Owner                                       | —                                                             |
-| W2   | Business Analyst                                    | PO → `docs/brd.md` + `docs/prd.md`                           |
-| W3   | Enterprise Architect ∥ UX Designer                  | BA → `docs/analysis/requirements-analysis.md`             |
-| W4   | Solution Architect                                  | EA → `enterprise-architecture.md` AND UX → `docs/ux/`        |
-| W5   | Tech Lead                                           | SA → `solution-architecture.md`                               |
-| W6   | Backend Eng ∥ Frontend Eng ∥ Mobile Eng (spec only) | TL → `sprint-plan.md`                                         |
-| W7   | Tester & QE (strategy only)                         | All three specs from W6                                       |
+| Wave | Agents                                              | Depends On                                            |
+| ---- | --------------------------------------------------- | ----------------------------------------------------- |
+| W1   | Product Owner                                       | —                                                     |
+| W2   | Business Analyst                                    | PO → `docs/brd.md` + `docs/prd.md`                    |
+| W3   | Enterprise Architect ∥ UX Designer                  | BA → `docs/analysis/requirements-analysis.md`         |
+| W4   | Solution Architect                                  | EA → `enterprise-architecture.md` AND UX → `docs/ux/` |
+| W5   | Tech Lead                                           | SA → `solution-architecture.md`                       |
+| W6   | Backend Eng ∥ Frontend Eng ∥ Mobile Eng (spec only) | TL → `sprint-plan.md`                                 |
+| W7   | Tester & QE (strategy only)                         | All three specs from W6                               |
 
 **Sprint Execution:**
 
@@ -246,14 +252,14 @@ Agents are organized into **waves** — all agents in the same wave run simultan
 
 **Feature — Plan Phase:**
 
-| Wave | Agents                              | Depends On                                              |
-| ---- | ----------------------------------- | ------------------------------------------------------- |
-| W1   | Product Owner                       | —                                                       |
-| W2   | Business Analyst (impact analysis)  | PO → `docs/features/[feature-name]-brief.md`            |
-| W3   | Enterprise Architect ∥ UX Designer  | BA → `docs/analysis/[feature-name]-impact.md`           |
-| W4   | Solution Architect                  | EA + UX (both must complete)                            |
-| W5   | Tech Lead                           | SA → updated `solution-architecture.md`                 |
-| W6   | Tester & QE                         | TL → `[feature]-plan.md`                                |
+| Wave | Agents                             | Depends On                                    |
+| ---- | ---------------------------------- | --------------------------------------------- |
+| W1   | Product Owner                      | —                                             |
+| W2   | Business Analyst (impact analysis) | PO → `docs/features/[feature-name]-brief.md`  |
+| W3   | Enterprise Architect ∥ UX Designer | BA → `docs/analysis/[feature-name]-impact.md` |
+| W4   | Solution Architect                 | EA + UX (both must complete)                  |
+| W5   | Tech Lead                          | SA → updated `solution-architecture.md`       |
+| W6   | Tester & QE                        | TL → `[feature]-plan.md`                      |
 
 **How to spawn parallel waves:** In Claude Code, use the `Agent` tool to launch multiple sub-agents in a single message. In Cursor/Windsurf/Trae, open parallel composer/Builder windows. The key rule: **never start the next wave until ALL agents in the current wave have printed their ✅ summary.** Each agent knows its topology — if it finishes before a parallel peer, it reports completion and notes which peer to wait for.
 
@@ -262,6 +268,7 @@ Agents are organized into **waves** — all agents in the same wave run simultan
 In **Claude Code**, the Tech Lead acts as a fully autonomous orchestrator — spawning engineers, monitoring their progress, and triggering TQE with zero human intervention. This is powered by Claude Code's native **`Agent` tool** (sub-agent spawning) combined with a lightweight **sentinel file protocol** on the shared file system.
 
 > **⚠️ TL must be the main thread.** Claude Code's `Agent` tool can only be called from the **main session thread** — subagents cannot spawn other subagents. To make TL the root orchestrator, start your session with:
+>
 > ```bash
 > claude --agent tech-lead
 > ```
@@ -270,14 +277,14 @@ In **Claude Code**, the Tech Lead acts as a fully autonomous orchestrator — sp
 
 **How it works:**
 
-| Step | What TL Does                                   | Mechanism                        |
-| ---- | ---------------------------------------------- | -------------------------------- |
-| 1    | Produces `sprint-N-kickoff.md`                 | Normal artifact                  |
-| 2    | Clears stale signals, creates `.bmad/signals/` | `bash` tool                      |
-| 3    | Spawns BE ∥ FE ∥ ME simultaneously             | `Agent` tool (3 parallel calls)  |
-| 4    | Waits for all three to finish                  | Polls `.bmad/signals/E2-*-done`  |
-| 5    | Writes `E3-tqe-invoke` sentinel                | `bash` tool                      |
-| 6    | Spawns TQE                                     | `Agent` tool                     |
+| Step | What TL Does                                   | Mechanism                       |
+| ---- | ---------------------------------------------- | ------------------------------- |
+| 1    | Produces `sprint-N-kickoff.md`                 | Normal artifact                 |
+| 2    | Clears stale signals, creates `.bmad/signals/` | `bash` tool                     |
+| 3    | Spawns BE ∥ FE ∥ ME simultaneously             | `Agent` tool (3 parallel calls) |
+| 4    | Waits for all three to finish                  | Polls `.bmad/signals/E2-*-done` |
+| 5    | Writes `E3-tqe-invoke` sentinel                | `bash` tool                     |
+| 6    | Spawns TQE                                     | `Agent` tool                    |
 
 **Sentinel files** (written to `.bmad/signals/`):
 
@@ -315,12 +322,12 @@ In Claude Code, Tech Lead can fully orchestrate the sprint execution pipeline wi
 
 Launch with: `claude --agent tech-lead`
 
-| Step | What Happens |
-|------|-------------|
-| A — Spawn engineers | TL uses Agent tool to launch BE ∥ FE ∥ ME in parallel, all reading `sprint-N-kickoff.md` |
-| B — Monitor ready signals | TL polls `.bmad/signals/` for `E2-[role]-ready` files written by engineers |
-| C — Worktree code review | For each ready signal: `git worktree add` → run TL Code Review Checklist → `git worktree remove` → write done or rework signal |
-| D — Converge | When all three `E2-[role]-done` signals exist → TL invokes TQE via Agent tool |
+| Step                      | What Happens                                                                                                                   |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| A — Spawn engineers       | TL uses Agent tool to launch BE ∥ FE ∥ ME in parallel, all reading `sprint-N-kickoff.md`                                       |
+| B — Monitor ready signals | TL polls `.bmad/signals/` for `E2-[role]-ready` files written by engineers                                                     |
+| C — Worktree code review  | For each ready signal: `git worktree add` → run TL Code Review Checklist → `git worktree remove` → write done or rework signal |
+| D — Converge              | When all three `E2-[role]-done` signals exist → TL invokes TQE via Agent tool                                                  |
 
 #### Path B — Agent Teams Mode (Experimental)
 
@@ -334,35 +341,35 @@ All inter-agent coordination uses files in `.bmad/signals/`. No direct agent-to-
 
 **Planning phase sentinels (written by each agent, triggers the next):**
 
-| File | Written By | Meaning |
-|------|-----------|---------|
-| `.bmad/signals/po-done` | Product Owner | BRD + PRD complete; BA can proceed |
-| `.bmad/signals/ba-done` | Business Analyst | Requirements analysis complete; EA + UX can proceed in parallel |
-| `.bmad/signals/ea-done` | Enterprise Architect | Enterprise architecture complete (converges with `ux-done` before SA starts) |
-| `.bmad/signals/ux-done` | UX Designer | UX specs complete (converges with `ea-done` before SA starts) |
-| `.bmad/signals/sa-done` | Solution Architect | Detailed solution architecture complete; TL can proceed |
-| `.bmad/signals/tl-plan-done` | Tech Lead | Sprint kickoff complete; engineers can proceed |
+| File                         | Written By           | Meaning                                                                      |
+| ---------------------------- | -------------------- | ---------------------------------------------------------------------------- |
+| `.bmad/signals/po-done`      | Product Owner        | BRD + PRD complete; BA can proceed                                           |
+| `.bmad/signals/ba-done`      | Business Analyst     | Requirements analysis complete; EA + UX can proceed in parallel              |
+| `.bmad/signals/ea-done`      | Enterprise Architect | Enterprise architecture complete (converges with `ux-done` before SA starts) |
+| `.bmad/signals/ux-done`      | UX Designer          | UX specs complete (converges with `ea-done` before SA starts)                |
+| `.bmad/signals/sa-done`      | Solution Architect   | Detailed solution architecture complete; TL can proceed                      |
+| `.bmad/signals/tl-plan-done` | Tech Lead            | Sprint kickoff complete; engineers can proceed                               |
 
 **Execution phase sentinels (two-phase TL verification protocol):**
 
-| File | Written By | Meaning |
-|------|-----------|---------|
-| `.bmad/signals/E2-be-ready` | Backend Engineer | Implementation complete, awaiting TL code review. Content = branch name |
-| `.bmad/signals/E2-fe-ready` | Frontend Engineer | Implementation complete, awaiting TL code review. Content = branch name |
-| `.bmad/signals/E2-me-ready` | Mobile Engineer | Implementation complete, awaiting TL code review. Content = branch name |
-| `.bmad/signals/E2-be-done` | **Tech Lead only** | TL has reviewed BE branch via worktree and approved |
-| `.bmad/signals/E2-fe-done` | **Tech Lead only** | TL has reviewed FE branch via worktree and approved |
-| `.bmad/signals/E2-me-done` | **Tech Lead only** | TL has reviewed ME branch via worktree and approved |
-| `.bmad/signals/E2-be-rework` | **Tech Lead only** | BE review failed; content = path to review notes in `docs/reviews/` |
-| `.bmad/signals/E2-fe-rework` | **Tech Lead only** | FE review failed; content = path to review notes in `docs/reviews/` |
-| `.bmad/signals/E2-me-rework` | **Tech Lead only** | ME review failed; content = path to review notes in `docs/reviews/` |
+| File                         | Written By         | Meaning                                                                 |
+| ---------------------------- | ------------------ | ----------------------------------------------------------------------- |
+| `.bmad/signals/E2-be-ready`  | Backend Engineer   | Implementation complete, awaiting TL code review. Content = branch name |
+| `.bmad/signals/E2-fe-ready`  | Frontend Engineer  | Implementation complete, awaiting TL code review. Content = branch name |
+| `.bmad/signals/E2-me-ready`  | Mobile Engineer    | Implementation complete, awaiting TL code review. Content = branch name |
+| `.bmad/signals/E2-be-done`   | **Tech Lead only** | TL has reviewed BE branch via worktree and approved                     |
+| `.bmad/signals/E2-fe-done`   | **Tech Lead only** | TL has reviewed FE branch via worktree and approved                     |
+| `.bmad/signals/E2-me-done`   | **Tech Lead only** | TL has reviewed ME branch via worktree and approved                     |
+| `.bmad/signals/E2-be-rework` | **Tech Lead only** | BE review failed; content = path to review notes in `docs/reviews/`     |
+| `.bmad/signals/E2-fe-rework` | **Tech Lead only** | FE review failed; content = path to review notes in `docs/reviews/`     |
+| `.bmad/signals/E2-me-rework` | **Tech Lead only** | ME review failed; content = path to review notes in `docs/reviews/`     |
 
 > **Engineers never write `E2-*-done`.** The done signal is the Tech Lead's approval stamp — it is only created after a real code review via git worktree. Claiming completion without verification is dishonesty, not efficiency.
 
 **Autonomous mode sentinel:**
 
-| File | Written By | Meaning |
-|------|-----------|---------|
+| File                            | Written By                             | Meaning                                                                            |
+| ------------------------------- | -------------------------------------- | ---------------------------------------------------------------------------------- |
 | `.bmad/signals/autonomous-mode` | `scripts/yolo.sh` / `scripts/yolo.ps1` | All planning agents skip the human-review wait step and auto-invoke the next agent |
 
 Enable with: `bash scripts/yolo.sh on` (Linux/macOS) or `.\scripts\yolo.ps1 on` (Windows)
@@ -373,22 +380,22 @@ Agent behaviour is not identical across AI coding tools — and the gap has narr
 
 Legend: ✅ first-class · 🟡 works but with caveats · ❌ not currently supported.
 
-| Capability | Claude Code | Cowork | Cursor | Windsurf | Trae IDE | GitHub Copilot | Codex CLI | Gemini CLI | Kiro | OpenCode | Aider |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| **Init file / rules entry** | `CLAUDE.md` | `~/.skills/` + `.bmad/` | `.cursor/rules/*.mdc` | `.windsurf/rules/*.md` (+ `.windsurfrules`) | `.trae/rules/*.md` (+ `user_rules.md`) | `.github/copilot-instructions.md` | `AGENTS.md` | `GEMINI.md` | `AGENTS.md` + `.kiro/steering/` | `AGENTS.md` | `.aider.conventions.md` |
-| **Agent/skill container** | `~/.claude/skills/` (folder-per-skill) | `~/.skills/skills/` | Rules only | Rules only | `~/.trae/rules/` (+ `~/.trae/skills/` refs) | Rules only | `~/.codex/skills/` | `~/.gemini/skills/` (skills) + `~/.gemini/agents/` (native subagents) | `~/.kiro/skills/` | `~/.opencode/instructions.md` | conventions file |
-| **Typical model(s)** | Claude Opus / Sonnet / Haiku | Claude Opus / Sonnet | User-selected (Claude, GPT, Gemini, …) | User-selected | User-selected (Claude, GPT, Gemini, DeepSeek, …) | GPT-family + Claude option | GPT-5 / o-series | Gemini 2.5 Pro / Flash | Claude via Bedrock | User-selected | User-selected (architect + editor split) |
-| **Subagent spawning** | ✅ Agent tool | ✅ Agent tool | 🟡 Background agents / Tasks | 🟡 Cascade sub-flows | ❌ (single-session; routing-advisor model) | 🟡 Coding Agent (PR-scale) | 🟡 via Responses API | ✅ Native subagents (markdown-defined) with isolated context | ✅ Agent tool | 🟡 runner-level | ❌ (single-session) |
-| **Parallel E2 engineers** (BE ∥ FE ∥ ME) | ✅ True parallel | ✅ True parallel | 🟡 Multiple background agents | 🟡 Parallel Cascade sessions | 🟡 Multiple Trae windows | 🟡 Multiple Coding Agent PRs | 🟡 limited parallelism | 🟡 Sequential subagent calls (isolated context, not parallel) | ✅ True parallel | 🟡 manual | ❌ Sequential |
-| **Session hooks** (Pre/Post/Stop) | ✅ Full | ✅ Full | ❌ | ❌ | ❌ | ❌ | 🟡 (some CLI hooks) | 🟡 (extension hooks) | ✅ Full | 🟡 limited | ❌ |
-| **Slash / invocation syntax** | `/agent-name` | `/skill-name` | `@agent` rules + Composer | `@agent` mentions in Cascade | `@agent` rules + Builder | `@workspace` / Agent Mode | `/agent-name` | `@<subagent-name>` + `/agents` manager | `@agent-name` | `@agent-name` | `/ask`, `/architect`, `/run` |
-| **Yolo / autonomous harness** | ✅ Full | ✅ Scheduled tasks + auto-run | 🟡 Background agents | 🟡 Cascade autopilot | 🟡 Builder autopilot | 🟡 Coding Agent (GitHub-hosted) | 🟡 --dangerously-auto | 🟡 --yolo flag | ✅ Full | 🟡 | 🟡 --auto-commit |
-| **Sentinel-file protocol** | ✅ Reliable | ✅ Reliable | 🟡 Works; requires explicit rule | 🟡 Works; requires explicit rule | 🟡 Works; requires explicit rule | 🟡 Inconsistent outside Agent Mode | 🟡 Usually reliable post GPT-5 | 🟡 Improved on 2.5-Pro | ✅ Reliable | 🟡 | 🟡 |
-| **Protocol-step compliance** | ✅ High | ✅ High | 🟡 Good inside Composer | 🟡 Good inside Cascade | 🟡 Good inside Builder | 🟡 Good in Agent Mode | 🟡 Medium–High (GPT-5) | 🟡 High inside subagent context; medium in main session | ✅ High | 🟡 Medium | 🟡 Medium |
-| **MCP client support** | ✅ | ✅ | ✅ | ✅ | ✅ (`~/.trae/mcp.json`) | ✅ (Agent Mode) | ✅ | ✅ | ✅ | ✅ | 🟡 via plugins |
-| **Git worktree TL review** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Karpathy-principles auto-install path** | `~/.claude/KARPATHY-PRINCIPLES.md` | `~/.skills/KARPATHY-PRINCIPLES.md` | `~/.cursor/rules/001-karpathy-principles.mdc` | `~/.windsurf/rules/001-karpathy-principles.md` | `~/.trae/rules/001-karpathy-principles.md` | `~/.github/copilot-instructions.md` (appended) | `~/.codex/KARPATHY-PRINCIPLES.md` | `~/.gemini/KARPATHY-PRINCIPLES.md` | `~/.kiro/steering/karpathy-principles.md` | `~/.opencode/instructions.md` (appended) | `~/.aider.conventions.md` (appended) |
-| **Agent-driven UI authoring (A2UI)** — reference deployed for PO/EA/SA/UX/InfoSec | `~/.claude/A2UI-REFERENCE.md` | `~/.skills/A2UI-REFERENCE.md` | `~/.cursor/rules/002-a2ui-reference.md` | `~/.windsurf/rules/002-a2ui-reference.md` | `~/.trae/rules/002-a2ui-reference.md` | — (reference in-repo under `shared/a2ui-reference.md`) | `~/.codex/A2UI-REFERENCE.md` | `~/.gemini/A2UI-REFERENCE.md` | `~/.kiro/steering/a2ui-reference.md` | `~/.opencode/A2UI-REFERENCE.md` | `~/.aider/A2UI-REFERENCE.md` |
+| Capability                                                                        | Claude Code                            | Cowork                             | Cursor                                        | Windsurf                                       | Trae IDE                                         | GitHub Copilot                                         | Codex CLI                         | Gemini CLI                                                            | Kiro                                      | OpenCode                                 | Aider                                    |
+| --------------------------------------------------------------------------------- | -------------------------------------- | ---------------------------------- | --------------------------------------------- | ---------------------------------------------- | ------------------------------------------------ | ------------------------------------------------------ | --------------------------------- | --------------------------------------------------------------------- | ----------------------------------------- | ---------------------------------------- | ---------------------------------------- |
+| **Init file / rules entry**                                                       | `CLAUDE.md`                            | `~/.skills/` + `.bmad/`            | `.cursor/rules/*.mdc`                         | `.windsurf/rules/*.md` (+ `.windsurfrules`)    | `.trae/rules/*.md` (+ `user_rules.md`)           | `.github/copilot-instructions.md`                      | `AGENTS.md`                       | `GEMINI.md`                                                           | `AGENTS.md` + `.kiro/steering/`           | `AGENTS.md`                              | `.aider.conventions.md`                  |
+| **Agent/skill container**                                                         | `~/.claude/skills/` (folder-per-skill) | `~/.skills/skills/`                | Rules only                                    | Rules only                                     | `~/.trae/rules/` (+ `~/.trae/skills/` refs)      | Rules only                                             | `~/.codex/skills/`                | `~/.gemini/skills/` (skills) + `~/.gemini/agents/` (native subagents) | `~/.kiro/skills/`                         | `~/.opencode/instructions.md`            | conventions file                         |
+| **Typical model(s)**                                                              | Claude Opus / Sonnet / Haiku           | Claude Opus / Sonnet               | User-selected (Claude, GPT, Gemini, …)        | User-selected                                  | User-selected (Claude, GPT, Gemini, DeepSeek, …) | GPT-family + Claude option                             | GPT-5 / o-series                  | Gemini 2.5 Pro / Flash                                                | Claude via Bedrock                        | User-selected                            | User-selected (architect + editor split) |
+| **Subagent spawning**                                                             | ✅ Agent tool                          | ✅ Agent tool                      | 🟡 Background agents / Tasks                  | 🟡 Cascade sub-flows                           | ❌ (single-session; routing-advisor model)       | 🟡 Coding Agent (PR-scale)                             | 🟡 via Responses API              | ✅ Native subagents (markdown-defined) with isolated context          | ✅ Agent tool                             | 🟡 runner-level                          | ❌ (single-session)                      |
+| **Parallel E2 engineers** (BE ∥ FE ∥ ME)                                          | ✅ True parallel                       | ✅ True parallel                   | 🟡 Multiple background agents                 | 🟡 Parallel Cascade sessions                   | 🟡 Multiple Trae windows                         | 🟡 Multiple Coding Agent PRs                           | 🟡 limited parallelism            | 🟡 Sequential subagent calls (isolated context, not parallel)         | ✅ True parallel                          | 🟡 manual                                | ❌ Sequential                            |
+| **Session hooks** (Pre/Post/Stop)                                                 | ✅ Full                                | ✅ Full                            | ❌                                            | ❌                                             | ❌                                               | ❌                                                     | 🟡 (some CLI hooks)               | 🟡 (extension hooks)                                                  | ✅ Full                                   | 🟡 limited                               | ❌                                       |
+| **Slash / invocation syntax**                                                     | `/agent-name`                          | `/skill-name`                      | `@agent` rules + Composer                     | `@agent` mentions in Cascade                   | `@agent` rules + Builder                         | `@workspace` / Agent Mode                              | `/agent-name`                     | `@<subagent-name>` + `/agents` manager                                | `@agent-name`                             | `@agent-name`                            | `/ask`, `/architect`, `/run`             |
+| **Yolo / autonomous harness**                                                     | ✅ Full                                | ✅ Scheduled tasks + auto-run      | 🟡 Background agents                          | 🟡 Cascade autopilot                           | 🟡 Builder autopilot                             | 🟡 Coding Agent (GitHub-hosted)                        | 🟡 --dangerously-auto             | 🟡 --yolo flag                                                        | ✅ Full                                   | 🟡                                       | 🟡 --auto-commit                         |
+| **Sentinel-file protocol**                                                        | ✅ Reliable                            | ✅ Reliable                        | 🟡 Works; requires explicit rule              | 🟡 Works; requires explicit rule               | 🟡 Works; requires explicit rule                 | 🟡 Inconsistent outside Agent Mode                     | 🟡 Usually reliable post GPT-5    | 🟡 Improved on 2.5-Pro                                                | ✅ Reliable                               | 🟡                                       | 🟡                                       |
+| **Protocol-step compliance**                                                      | ✅ High                                | ✅ High                            | 🟡 Good inside Composer                       | 🟡 Good inside Cascade                         | 🟡 Good inside Builder                           | 🟡 Good in Agent Mode                                  | 🟡 Medium–High (GPT-5)            | 🟡 High inside subagent context; medium in main session               | ✅ High                                   | 🟡 Medium                                | 🟡 Medium                                |
+| **MCP client support**                                                            | ✅                                     | ✅                                 | ✅                                            | ✅                                             | ✅ (`~/.trae/mcp.json`)                          | ✅ (Agent Mode)                                        | ✅                                | ✅                                                                    | ✅                                        | ✅                                       | 🟡 via plugins                           |
+| **Git worktree TL review**                                                        | ✅                                     | ✅                                 | ✅                                            | ✅                                             | ✅                                               | ✅                                                     | ✅                                | ✅                                                                    | ✅                                        | ✅                                       | ✅                                       |
+| **Karpathy-principles auto-install path**                                         | `~/.claude/KARPATHY-PRINCIPLES.md`     | `~/.skills/KARPATHY-PRINCIPLES.md` | `~/.cursor/rules/001-karpathy-principles.mdc` | `~/.windsurf/rules/001-karpathy-principles.md` | `~/.trae/rules/001-karpathy-principles.md`       | `~/.github/copilot-instructions.md` (appended)         | `~/.codex/KARPATHY-PRINCIPLES.md` | `~/.gemini/KARPATHY-PRINCIPLES.md`                                    | `~/.kiro/steering/karpathy-principles.md` | `~/.opencode/instructions.md` (appended) | `~/.aider.conventions.md` (appended)     |
+| **Agent-driven UI authoring (A2UI)** — reference deployed for PO/EA/SA/UX/InfoSec | `~/.claude/A2UI-REFERENCE.md`          | `~/.skills/A2UI-REFERENCE.md`      | `~/.cursor/rules/002-a2ui-reference.md`       | `~/.windsurf/rules/002-a2ui-reference.md`      | `~/.trae/rules/002-a2ui-reference.md`            | — (reference in-repo under `shared/a2ui-reference.md`) | `~/.codex/A2UI-REFERENCE.md`      | `~/.gemini/A2UI-REFERENCE.md`                                         | `~/.kiro/steering/a2ui-reference.md`      | `~/.opencode/A2UI-REFERENCE.md`          | `~/.aider/A2UI-REFERENCE.md`             |
 
 **Practical impact by tool:**
 
@@ -405,6 +412,240 @@ Legend: ✅ first-class · 🟡 works but with caveats · ❌ not currently supp
 - **Aider** — Architect+editor split is a natural fit for Karpathy-style "think before coding": use a strong model in `/architect` to produce the plan, a cheap model to apply edits. No subagents — drive the squad manually turn-by-turn.
 
 > **Recommendation:** if you want the fully autonomous BMAD pipeline (sentinels, parallel engineers, hooks, Yolo), pick **Claude Code**, **Kiro**, or **Cowork**. For IDE-integrated workflows with agentic modes, pick **Cursor**, **Windsurf**, **Trae IDE**, or **GitHub Copilot**. For CLI-first teams, **Codex CLI** or **Gemini CLI** are solid — just budget for the occasional sentinel-verification step. **Aider** is excellent for disciplined single-threaded work where you want tight human control.
+
+---
+
+## Workflow Diagrams
+
+Visual reference for all five work types. Each diagram shows the agent chain, key artifact outputs, and decision points.
+
+### 🏗 New Project
+
+Full 10-agent flow from business requirements through multi-sprint execution.
+
+```mermaid
+flowchart TD
+    START([🏗 New Project Kickoff]) --> PO
+
+    subgraph PLAN["📋 Plan Phase — 7 Waves"]
+        subgraph W1["W1"]
+            PO["Product Owner<br>📄 brd.md + prd.md"]
+        end
+        subgraph W2["W2"]
+            BA["Business Analyst<br>📄 requirements-analysis.md + stories/"]
+        end
+        subgraph W3["W3 ∥ parallel"]
+            EA["Enterprise Architect<br>📄 enterprise-architecture.md"]
+            UX["UX Designer<br>📄 docs/ux/ + ux-design-master.md"]
+        end
+        subgraph W4["W4"]
+            SA["Solution Architect<br>📄 solution-architecture.md"]
+        end
+        subgraph W5["W5"]
+            TL_PLAN["Tech Lead<br>📄 sprint-plan.md"]
+        end
+        subgraph W6["W6 ∥ parallel"]
+            BE_SPEC["BE spec"]
+            FE_SPEC["FE spec"]
+            ME_SPEC["ME spec"]
+        end
+        subgraph W7["W7"]
+            TQE_STRAT["Tester & QE<br>📄 test-strategy.md"]
+        end
+
+        PO --> BA
+        BA --> EA & UX
+        EA & UX --> SA --> TL_PLAN
+        TL_PLAN --> BE_SPEC & FE_SPEC & ME_SPEC
+        BE_SPEC & FE_SPEC & ME_SPEC --> TQE_STRAT
+    end
+
+    TQE_STRAT --> KICKOFF
+
+    subgraph EXEC["🔨 Execute Phase — 3 Waves per Sprint"]
+        subgraph E1["E1"]
+            KICKOFF["Tech Lead<br>📄 sprint-N-kickoff.md"]
+        end
+        subgraph E2["E2 ∥ parallel"]
+            BE["Backend Engineer"]
+            FE["Frontend Engineer"]
+            ME["Mobile Engineer"]
+        end
+        subgraph E3["E3"]
+            TQE["Tester & QE<br>📄 sprint-N-results.md"]
+        end
+        PASS{All stories\npass?}
+
+        KICKOFF --> BE & FE & ME
+        BE & FE & ME --> TQE --> PASS
+        PASS -->|"🔁 Failures"| BE
+        PASS -->|"✅ Next Sprint"| KICKOFF
+    end
+
+    PASS -->|"🚀 Release"| DONE([Release / Deploy])
+```
+
+---
+
+### ✨ Feature Request / Enhancement
+
+PO defines feature scope, BA performs impact analysis, then SA and UX run in parallel (using existing EA enterprise architecture). No full EA wave needed since enterprise architecture is already established.
+
+```mermaid
+flowchart TD
+    START([✨ Feature Request]) --> PO
+
+    subgraph PLAN["📋 Plan Phase — 5 Waves"]
+        subgraph W1["W1"]
+            PO["Product Owner<br/>📄 features/feature-brief.md"]
+        end
+        subgraph W2["W2"]
+            BA["Business Analyst<br/>📄 analysis/feature-impact.md + stories/"]
+        end
+        subgraph W3["W3 ∥ parallel"]
+            SA["Solution Architect<br/>📄 ADRs updated + solution-architecture.md"]
+            UX["UX Designer<br/>📄 ux/feature-name/ + ux-design-master.md"]
+        end
+        subgraph W4["W4"]
+            TL_PLAN["Tech Lead<br/>📄 feature-name-plan.md"]
+        end
+        subgraph W5["W5"]
+            TQE_STRAT["Tester & QE<br/>📄 test-strategy.md"]
+        end
+
+        PO --> BA
+        BA --> SA & UX
+        SA & UX --> TL_PLAN --> TQE_STRAT
+    end
+
+    TQE_STRAT --> KICKOFF
+
+    subgraph EXEC["🔨 Execute Phase — 3 Waves"]
+        subgraph E1["E1"]
+            KICKOFF["Tech Lead<br>Kickoff + ADRs locked"]
+        end
+        subgraph E2["E2 ∥ parallel"]
+            BE["Backend Engineer"]
+            FE["Frontend Engineer"]
+            ME["Mobile Engineer"]
+        end
+        subgraph E3["E3"]
+            TQE["Tester & QE<br>Verify + Regression"]
+        end
+        PASS{Pass?}
+
+        KICKOFF --> BE & FE & ME
+        BE & FE & ME --> TQE --> PASS
+        PASS -->|"🔁 Fix"| BE
+    end
+
+    PASS -->|"✅ Done"| DONE([Feature Shipped])
+```
+
+---
+
+### 🐛 Bug Fix
+
+Diagnosis before fix. Two diagnosis agents confirm root cause before any code changes.
+
+```mermaid
+flowchart TD
+    START([🐛 Bug Report]) --> TQE1
+
+    subgraph DIAGNOSE["📋 Diagnose (Prompt A — 2 agents)"]
+        TQE1["Tester & QE<br/>Reproduce + Root-Cause Hypotheses<br/>📄 docs/testing/bugs/bug-id.md"]
+        TL1["Tech Lead<br/>Confirm Root Cause + Minimal Safe Fix<br/>📄 docs/testing/bugs/bug-id-fix-plan.md"]
+
+        TQE1 --> TL1
+    end
+
+    TL1 --> ENG_Q
+
+    subgraph FIX["🔨 Fix & Verify (Prompt B — 2 agents)"]
+        ENG_Q{Engineer<br>Role?}
+        BE["Backend Engineer<br/>/ FIX: bug-id"]
+        FE["Frontend Engineer<br/>/ FIX: bug-id"]
+        ME["Mobile Engineer<br/>/ FIX: bug-id"]
+        TQE2["Tester & QE<br/>Verify Fix + Regression<br/>📄 bug-id-verified.md"]
+        PASS{Bug<br>Resolved?}
+
+        ENG_Q -->|Backend| BE
+        ENG_Q -->|Frontend| FE
+        ENG_Q -->|Mobile| ME
+        BE & FE & ME --> TQE2 --> PASS
+        PASS -->|"🔁 Still failing"| TL1
+    end
+
+    PASS -->|"✅ Resolved"| DONE([Bug Closed])
+```
+
+---
+
+### 🚨 Hotfix (Production Emergency)
+
+Assess, fix, smoke test in a single session. No planning docs, no refactoring.
+
+```mermaid
+flowchart TD
+    START([🚨 Production Incident]) --> TL
+
+    subgraph HOTFIX["Single Prompt — 3 agents in strict sequence"]
+        TL["Tech Lead<br/>Assess Root Cause<br/>Minimal Safe Fix + Rollback Plan<br>📄 docs/testing/hotfixes/date-issue.md"]
+        ENG_Q{Smallest<br/>Safe Fix}
+        BE["Backend Engineer<br/>/ HOTFIX: date-issue<br/>No refactoring outside fix scope"]
+        FE["Frontend Engineer<br/>/ HOTFIX: date-issue<br/>No refactoring outside fix scope"]
+        ME["Mobile Engineer<br/>/ HOTFIX: date-issue<br/>No refactoring outside fix scope"]
+        TQE["Tester & QE<br/>Smoke Test Only — Critical Path<br/>📄 date-issue-verified.md"]
+        PASS{Critical Path\nUnbroken?}
+
+        TL --> ENG_Q
+        ENG_Q -->|Backend| BE
+        ENG_Q -->|Frontend| FE
+        ENG_Q -->|Mobile| ME
+        BE & FE & ME --> TQE --> PASS
+        PASS -->|"🔁 Rollback"| TL
+    end
+
+    PASS -->|"✅ Stable"| DONE([Hotfix Deployed])
+```
+
+---
+
+### 📋 Backlog Item / Tech Debt / Chore
+
+Lightweight two-agent refinement then direct execution. No architecture review needed.
+
+```mermaid
+flowchart TD
+    START([📋 Backlog Item\nTech Debt / Chore]) --> PO
+
+    subgraph REFINE["📋 Refine (Prompt A — 3 agents)"]
+        PO["Product Owner\nClarify Scope + Acceptance Criteria<br>📄 docs/stories/story-id.md"]
+        BA["Business Analyst\nRequirements + Impact Analysis<br>📄 docs/analysis/story-id-analysis.md"]
+        TL["Tech Lead\nTechnical Breakdown + Effort<br>📄 docs/architecture/story-id-notes.md"]
+
+        PO --> BA --> TL
+    end
+
+    TL --> ENG_Q
+
+    subgraph EXEC["🔨 Execute (Prompt B — 2 agents)"]
+        ENG_Q{Engineer<br>Role?}
+        BE["Backend Engineer"]
+        FE["Frontend Engineer"]
+        ME["Mobile Engineer"]
+        TQE["Tester & QE<br>Verify Acceptance Criteria<br>📄 docs/testing/story-id-results.md"]
+        PASS{Criteria<br>Met?}
+
+        ENG_Q -->|Backend| BE
+        ENG_Q -->|Frontend| FE
+        ENG_Q -->|Mobile| ME
+        BE & FE & ME --> TQE --> PASS
+        PASS -->|"🔁 Rework"| ENG_Q
+    end
+
+    PASS -->|"✅ Done"| DONE([Story Closed])
+```
 
 ---
 
@@ -472,18 +713,18 @@ At the start of every conversation, read these files to understand this project:
 
 ## Available BMAD Agents (slash commands)
 
-| Command                 | Role                                                    |
-| ----------------------- | ------------------------------------------------------- |
-| `/product-owner`        | BRD, high-level PRD, MVP scope (first agent)            |
-| `/business-analyst`     | Requirements analysis from BRD/PRD (second agent)       |
-| `/enterprise-architect` | Enterprise arch — cloud infra, compliance, CI/CD        |
-| `/ux-designer`          | Wireframes, design system, accessibility (parallel EA)  |
-| `/solution-architect`   | Detailed solution design — APIs, data models, ADRs      |
-| `/tech-lead`            | Orchestration, sprint planning, code review, risk       |
-| `/tester-qe`            | Test strategy, quality gates, UI automation             |
-| `/backend-engineer`     | APIs, services, data layers                             |
-| `/frontend-engineer`    | React/TypeScript, components, a11y                      |
-| `/mobile-engineer`      | iOS/Android, native architecture                        |
+| Command                 | Role                                                   |
+| ----------------------- | ------------------------------------------------------ |
+| `/product-owner`        | BRD, high-level PRD, MVP scope (first agent)           |
+| `/business-analyst`     | Requirements analysis from BRD/PRD (second agent)      |
+| `/enterprise-architect` | Enterprise arch — cloud infra, compliance, CI/CD       |
+| `/ux-designer`          | Wireframes, design system, accessibility (parallel EA) |
+| `/solution-architect`   | Detailed solution design — APIs, data models, ADRs     |
+| `/tech-lead`            | Orchestration, sprint planning, code review, risk      |
+| `/tester-qe`            | Test strategy, quality gates, UI automation            |
+| `/backend-engineer`     | APIs, services, data layers                            |
+| `/frontend-engineer`    | React/TypeScript, components, a11y                     |
+| `/mobile-engineer`      | iOS/Android, native architecture                       |
 ```
 
 ### Cursor — `.cursor/rules/001-project-context.mdc`
@@ -590,18 +831,18 @@ At the start of every conversation, read these files:
 
 ## Available BMAD Agents (skills)
 
-| Skill ($ invoke)        | Role                                                            |
-| ----------------------- | --------------------------------------------------------------- |
-| `$product-owner`        | BRD, PRD, MVP scope (first agent)                              |
-| `$business-analyst`     | Requirements analysis from BRD/PRD (second agent)              |
-| `$enterprise-architect` | Enterprise arch — cloud infra, compliance, CI/CD (W3 ∥)        |
-| `$ux-designer`          | Wireframes, design system, accessibility (W3 ∥ EA)             |
-| `$solution-architect`   | Detailed solution design — APIs, data models, ADRs             |
-| `$tech-lead`            | Orchestration, code review, risk               |
-| `$tester-qe`            | Test strategy, quality gates                   |
-| `$backend-engineer`     | APIs, services, data layers                    |
-| `$frontend-engineer`    | React/TypeScript, components, a11y             |
-| `$mobile-engineer`      | iOS/Android, native architecture               |
+| Skill ($ invoke)        | Role                                                    |
+| ----------------------- | ------------------------------------------------------- |
+| `$product-owner`        | BRD, PRD, MVP scope (first agent)                       |
+| `$business-analyst`     | Requirements analysis from BRD/PRD (second agent)       |
+| `$enterprise-architect` | Enterprise arch — cloud infra, compliance, CI/CD (W3 ∥) |
+| `$ux-designer`          | Wireframes, design system, accessibility (W3 ∥ EA)      |
+| `$solution-architect`   | Detailed solution design — APIs, data models, ADRs      |
+| `$tech-lead`            | Orchestration, code review, risk                        |
+| `$tester-qe`            | Test strategy, quality gates                            |
+| `$backend-engineer`     | APIs, services, data layers                             |
+| `$frontend-engineer`    | React/TypeScript, components, a11y                      |
+| `$mobile-engineer`      | iOS/Android, native architecture                        |
 
 Apply all conventions from `team-conventions.md` when writing or reviewing code.
 ```
@@ -661,6 +902,7 @@ bash scripts/install-global.sh
 ```
 
 > **Skills vs. Subagents (Claude Code).** Claude Code treats these as two distinct primitives and BMAD deploys both:
+>
 > - **`~/.claude/skills/<role>/SKILL.md`** — the full, authoritative role body. Loaded inline in the main session via progressive disclosure when a slash command runs or the model decides the skill is relevant.
 > - **`~/.claude/agents/<role>.md`** — a thin YAML-frontmatter pointer (`name`, `description`, `tools`, `model`) that registers the role as a callable subagent. This is what the `Task`/`Agent` tool looks up when Tech Lead spawns Backend Engineer, etc. The subagent runs in an **isolated context window** and, on completion, returns a summary to the main agent. Without these files you will see `Error: Agent type 'backend-engineer' not found`.
 >
@@ -847,8 +1089,8 @@ bash /path/to/bmad-sdlc-agents/scripts/scaffold-project.sh "My Project"
 
 **Invoking agents:**
 
-- Address agents by role in your prompt: *"Acting as the Backend Engineer, implement BE-001…"*
-- Or reference a command file directly: *"Run the `backend-engineer:implement-story` rule on story BE-001."*
+- Address agents by role in your prompt: _"Acting as the Backend Engineer, implement BE-001…"_
+- Or reference a command file directly: _"Run the `backend-engineer:implement-story` rule on story BE-001."_
 - The 13 role rule files stay resident across every Trae session, so the agent always knows which role it's playing.
 
 **MCP servers:** edit `~/.trae/mcp.json` (or use Settings → MCP & Agents) to connect MCP servers such as Playwright, GitHub, Linear, etc. Trae supports both stdio and SSE transports.
@@ -1003,15 +1245,15 @@ conventions-file: .aider.conventions.md
 
 After running `scaffold-project.sh`, the `.bmad/` directory contains:
 
-| File                  | When to Fill In               | Purpose                                                           |
-| --------------------- | ----------------------------- | ----------------------------------------------------------------- |
-| `PROJECT-CONTEXT.md`  | Before first sprint           | Project vision, goals, stakeholders, constraints, timeline        |
-| `tech-stack.md`       | Before architecture decisions | Languages, frameworks, databases, cloud platform, CI/CD           |
-| `team-conventions.md` | Before first code review      | Code style, naming conventions, architecture patterns, PR process |
-| `domain-glossary.md`  | During analysis phase         | Business domain terminology, entities, relationships              |
-| `handoff-log.md`      | Ongoing                       | Record of work handed off between agents or to humans             |
+| File                  | When to Fill In               | Purpose                                                                          |
+| --------------------- | ----------------------------- | -------------------------------------------------------------------------------- |
+| `PROJECT-CONTEXT.md`  | Before first sprint           | Project vision, goals, stakeholders, constraints, timeline                       |
+| `tech-stack.md`       | Before architecture decisions | Languages, frameworks, databases, cloud platform, CI/CD                          |
+| `team-conventions.md` | Before first code review      | Code style, naming conventions, architecture patterns, PR process                |
+| `domain-glossary.md`  | During analysis phase         | Business domain terminology, entities, relationships                             |
+| `handoff-log.md`      | Ongoing                       | Record of work handed off between agents or to humans                            |
 | `ux-design-master.md` | After first UX Designer run   | Design tool choice (ASCII / Pencil / Figma), master file path/ID, and page index |
-| `signals/`            | Automatically by agents       | Sentinel files for inter-agent coordination and autonomous mode    |
+| `signals/`            | Automatically by agents       | Sentinel files for inter-agent coordination and autonomous mode                  |
 
 **Tip:** Fill `PROJECT-CONTEXT.md` and `tech-stack.md` first. Other files populate based on these.
 
@@ -2323,19 +2565,19 @@ BMAD supports **eleven** wireframing modes, selected once per project by the UX 
 
 ### Wireframe Modes
 
-| Mode | When to choose | Master file | Integration ref |
-|------|----------------|-------------|-----------------|
-| **A) ASCII / Text** | No tool available, speed over fidelity, docs-heavy projects | `docs/ux/wireframes/*.md` | (built-in) |
-| **B) Mermaid** | User flows, state diagrams, IA — *not* pixel mocks | `docs/ux/flows/*.mmd` | [`agents/ux-designer/references/mermaid-integration.md`](agents/ux-designer/references/mermaid-integration.md) |
-| **C) Excalidraw** | Hand-drawn / whiteboard feel; early exploration | `docs/ux/wireframes/master.excalidraw` | [`agents/ux-designer/references/excalidraw-integration.md`](agents/ux-designer/references/excalidraw-integration.md) |
-| **D) tldraw** | Infinite-canvas with strong AI-agent integration | `docs/ux/wireframes/master.tldr` | [`agents/ux-designer/references/tldraw-integration.md`](agents/ux-designer/references/tldraw-integration.md) |
-| **E) Pencil** | Open-source desktop wireframing (Pencil MCP) | `docs/ux/wireframes/master.pencil` | [`agents/ux-designer/references/pencil-mcp-integration.md`](agents/ux-designer/references/pencil-mcp-integration.md) |
-| **F) Figma** | Industry-standard collaborative design (Figma MCP) | Figma file URL | [`agents/ux-designer/references/figma-mcp-integration.md`](agents/ux-designer/references/figma-mcp-integration.md) |
-| **G) Penpot** | Open-source Figma alternative; GDPR / on-prem | Penpot project URL | (manual export) |
+| Mode                          | When to choose                                                    | Master file                             | Integration ref                                                                                                              |
+| ----------------------------- | ----------------------------------------------------------------- | --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| **A) ASCII / Text**           | No tool available, speed over fidelity, docs-heavy projects       | `docs/ux/wireframes/*.md`               | (built-in)                                                                                                                   |
+| **B) Mermaid**                | User flows, state diagrams, IA — _not_ pixel mocks                | `docs/ux/flows/*.mmd`                   | [`agents/ux-designer/references/mermaid-integration.md`](agents/ux-designer/references/mermaid-integration.md)               |
+| **C) Excalidraw**             | Hand-drawn / whiteboard feel; early exploration                   | `docs/ux/wireframes/master.excalidraw`  | [`agents/ux-designer/references/excalidraw-integration.md`](agents/ux-designer/references/excalidraw-integration.md)         |
+| **D) tldraw**                 | Infinite-canvas with strong AI-agent integration                  | `docs/ux/wireframes/master.tldr`        | [`agents/ux-designer/references/tldraw-integration.md`](agents/ux-designer/references/tldraw-integration.md)                 |
+| **E) Pencil**                 | Open-source desktop wireframing (Pencil MCP)                      | `docs/ux/wireframes/master.pencil`      | [`agents/ux-designer/references/pencil-mcp-integration.md`](agents/ux-designer/references/pencil-mcp-integration.md)         |
+| **F) Figma**                  | Industry-standard collaborative design (Figma MCP)                | Figma file URL                          | [`agents/ux-designer/references/figma-mcp-integration.md`](agents/ux-designer/references/figma-mcp-integration.md)           |
+| **G) Penpot**                 | Open-source Figma alternative; GDPR / on-prem                     | Penpot project URL                      | (manual export)                                                                                                              |
 | **H) HTML / React prototype** | Highest fidelity; design-to-code handoff via shadcn/ui + Tailwind | `docs/ux/wireframes/<feature>/page.tsx` | [`agents/ux-designer/references/html-prototype-integration.md`](agents/ux-designer/references/html-prototype-integration.md) |
-| **I) Google Stitch** | AI-generated UIs driven by `docs/ux/DESIGN.md` | Stitch project URL | [`agents/ux-designer/references/stitch-integration.md`](agents/ux-designer/references/stitch-integration.md) |
-| **J) Miro** | Flows, journey maps, affinity diagrams (not pixel mocks) | Miro board URL | (pair with another mode for pixel work) |
-| **K) None / defer** | Skip the visual layer for now; text-only specs | n/a | n/a |
+| **I) Google Stitch**          | AI-generated UIs driven by `docs/ux/DESIGN.md`                    | Stitch project URL                      | [`agents/ux-designer/references/stitch-integration.md`](agents/ux-designer/references/stitch-integration.md)                 |
+| **J) Miro**                   | Flows, journey maps, affinity diagrams (not pixel mocks)          | Miro board URL                          | (pair with another mode for pixel work)                                                                                      |
+| **K) None / defer**           | Skip the visual layer for now; text-only specs                    | n/a                                     | n/a                                                                                                                          |
 
 The selection prompt highlights connected MCPs with `✓` and unconnected options as `manual / external`. Default if no answer is given: the first of `E → F → C → D → A` that has a connected MCP. If none, default to ASCII.
 
@@ -2346,6 +2588,7 @@ The selection prompt highlights connected MCPs with `✓` and unconnected option
 One master file per project — not one file per feature. Every feature or epic adds a **new page or frame** to the same file. This means the entire team can open one file to see all UX work, past and present.
 
 `.bmad/ux-design-master.md` records:
+
 - Design tool choice
 - Path or file ID of the master file
 - Page/frame naming convention and page index
@@ -2354,8 +2597,8 @@ One master file per project — not one file per feature. Every feature or epic 
 
 Every non-UX agent (PO, BA, EA, SA, TL, BE, FE, ME, TQE) has **read-only** access to the design tool via MCP:
 
-| Agent | Can read | Cannot modify |
-|---|---|---|
+| Agent               | Can read                                                                                                                                              | Cannot modify                                                                                             |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | All 9 non-UX agents | `mcp__pencil__open_document`, `mcp__pencil__get_screenshot`, `mcp__pencil__batch_get`, `mcp__figma__get_figma_data`, + 9 other read-only Pencil tools | `mcp__pencil__batch_design`, `mcp__pencil__set_variables`, `mcp__pencil__replace_all_matching_properties` |
 
 Agents load `.bmad/ux-design-master.md` in **Project Context Loading step 6** and use it to navigate directly to the relevant page/frame for their work area — e.g. the Frontend Engineer opens the master Pencil file and reads only the page for the current sprint feature.
@@ -2365,6 +2608,7 @@ Agents load `.bmad/ux-design-master.md` in **Project Context Loading step 6** an
 ### MCP Configuration
 
 Pencil and Figma MCP config files are included in `mcp-configs/global/`:
+
 - `mcp-configs/global/pencil.json` — Pencil desktop MCP
 - `mcp-configs/global/figma.json` — Figma MCP
 
@@ -2394,12 +2638,12 @@ Stitch's `DESIGN.md` is an open-source (Apache 2.0) spec that combines:
 
 ### Cross-agent contract
 
-| Agent                    | Responsibility                                                                                                            |
-|--------------------------|---------------------------------------------------------------------------------------------------------------------------|
-| **UX Designer**          | Creates, reads, and extends `docs/ux/DESIGN.md`. Owns token/component/pattern decisions. Runs the linter before handoff. |
+| Agent                          | Responsibility                                                                                                                                                                                                                                                             |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **UX Designer**                | Creates, reads, and extends `docs/ux/DESIGN.md`. Owns token/component/pattern decisions. Runs the linter before handoff.                                                                                                                                                   |
 | **Frontend / Mobile Engineer** | Reads the file in full before writing a screen. **Refuses** to implement specs that reference tokens/components not declared in the YAML — sends the story back to UX Designer to update DESIGN.md first. Resolves tokens via `{path.to.token}` refs, never inline values. |
-| **Tech Lead**            | Verifies `docs/ux/DESIGN.md` version is current before opening the sprint kickoff; blocks stories whose UI spec cites undeclared tokens. |
-| **Tester & QE**          | Cross-checks implemented UI against the tokens in DESIGN.md during the quality gate.                                      |
+| **Tech Lead**                  | Verifies `docs/ux/DESIGN.md` version is current before opening the sprint kickoff; blocks stories whose UI spec cites undeclared tokens.                                                                                                                                   |
+| **Tester & QE**                | Cross-checks implemented UI against the tokens in DESIGN.md during the quality gate.                                                                                                                                                                                       |
 
 If a UI spec and `docs/ux/DESIGN.md` disagree, **the DESIGN.md wins.** Engineering sends the story back to UX.
 
@@ -2407,31 +2651,31 @@ If a UI spec and `docs/ux/DESIGN.md` disagree, **the DESIGN.md wins.** Engineeri
 
 A dedicated cross-tool command manages the file in every supported AI tool. It supports six modes via `$ARGUMENTS` (auto-detected if empty):
 
-| Argument                | Action                                                                                                                                    |
-|-------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|
-| `create`                | Bootstrap a new `docs/ux/DESIGN.md` from the Stitch-compliant template **and** regenerate `docs/ux/DESIGN.html`.                           |
-| `audit`                 | Read the existing file, check Stitch spec compliance, list issues. Refreshes `docs/ux/DESIGN.html` so the audit reflects live tokens.     |
-| `extend <thing>`        | Add a new token / component / pattern, bump version, add Changelog row **and** regenerate `docs/ux/DESIGN.html`.                           |
-| `validate`              | Run `npx @google/design.md lint docs/ux/DESIGN.md` and report.                                                                            |
-| `sync`                  | Reconcile the file against the latest wireframes, UI spec, and PRD. Regenerates HTML after changes.                                      |
-| `render` (alias `html`) | Regenerate `docs/ux/DESIGN.html` from the existing `docs/ux/DESIGN.md` — no markdown edits.                                               |
-| *(empty)*               | Auto-detect: `create` if missing, `audit` if it exists.                                                                                   |
+| Argument                | Action                                                                                                                                |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `create`                | Bootstrap a new `docs/ux/DESIGN.md` from the Stitch-compliant template **and** regenerate `docs/ux/DESIGN.html`.                      |
+| `audit`                 | Read the existing file, check Stitch spec compliance, list issues. Refreshes `docs/ux/DESIGN.html` so the audit reflects live tokens. |
+| `extend <thing>`        | Add a new token / component / pattern, bump version, add Changelog row **and** regenerate `docs/ux/DESIGN.html`.                      |
+| `validate`              | Run `npx @google/design.md lint docs/ux/DESIGN.md` and report.                                                                        |
+| `sync`                  | Reconcile the file against the latest wireframes, UI spec, and PRD. Regenerates HTML after changes.                                   |
+| `render` (alias `html`) | Regenerate `docs/ux/DESIGN.html` from the existing `docs/ux/DESIGN.md` — no markdown edits.                                           |
+| _(empty)_               | Auto-detect: `create` if missing, `audit` if it exists.                                                                               |
 
 The command ships to all 11 tools via the installer walker with zero per-tool configuration:
 
-| Tool             | Invocation                                    | Destination                                                              |
-|------------------|-----------------------------------------------|--------------------------------------------------------------------------|
-| Claude Code      | `/ux-designer:design-system`                  | `~/.claude/commands/ux-designer/design-system.md` (native YAML frontmatter) |
-| Cowork           | `/ux-designer:design-system`                  | `~/.skills/commands/ux-designer/design-system.md`                         |
-| Codex CLI        | `$ux-designer-design-system` (skill)          | `~/.codex/skills/ux-designer-design-system/SKILL.md` (flat)              |
-| Kiro             | `/ux-designer-design-system` (skill)          | `~/.kiro/skills/ux-designer-design-system/SKILL.md` (flat)               |
-| Cursor           | `/ux-designer:design-system`                  | `~/.cursor/commands/ux-designer/design-system.md` (adapted header)       |
-| Windsurf         | prompt-triggered rule                         | `~/.windsurf/rules/bmad-commands/ux-designer/design-system.md`           |
-| Trae IDE         | prompt-triggered rule                         | `~/.trae/rules/bmad-commands/ux-designer/design-system.md`               |
-| GitHub Copilot   | `/ux-designer:design-system`                  | `~/.github/bmad-commands/ux-designer/design-system.md`                   |
-| Gemini CLI       | `/bmad-ux-designer:design-system`             | `~/.gemini/extensions/bmad-ux-designer/skills/design-system/SKILL.md`    |
-| OpenCode         | `/ux-designer:design-system`                  | `~/.opencode/commands/ux-designer/design-system.md`                      |
-| Aider            | "Workflow: ux-designer:design-system" section | appended to `~/.aider.conventions.md`                                    |
+| Tool           | Invocation                                    | Destination                                                                 |
+| -------------- | --------------------------------------------- | --------------------------------------------------------------------------- |
+| Claude Code    | `/ux-designer:design-system`                  | `~/.claude/commands/ux-designer/design-system.md` (native YAML frontmatter) |
+| Cowork         | `/ux-designer:design-system`                  | `~/.skills/commands/ux-designer/design-system.md`                           |
+| Codex CLI      | `$ux-designer-design-system` (skill)          | `~/.codex/skills/ux-designer-design-system/SKILL.md` (flat)                 |
+| Kiro           | `/ux-designer-design-system` (skill)          | `~/.kiro/skills/ux-designer-design-system/SKILL.md` (flat)                  |
+| Cursor         | `/ux-designer:design-system`                  | `~/.cursor/commands/ux-designer/design-system.md` (adapted header)          |
+| Windsurf       | prompt-triggered rule                         | `~/.windsurf/rules/bmad-commands/ux-designer/design-system.md`              |
+| Trae IDE       | prompt-triggered rule                         | `~/.trae/rules/bmad-commands/ux-designer/design-system.md`                  |
+| GitHub Copilot | `/ux-designer:design-system`                  | `~/.github/bmad-commands/ux-designer/design-system.md`                      |
+| Gemini CLI     | `/bmad-ux-designer:design-system`             | `~/.gemini/extensions/bmad-ux-designer/skills/design-system/SKILL.md`       |
+| OpenCode       | `/ux-designer:design-system`                  | `~/.opencode/commands/ux-designer/design-system.md`                         |
+| Aider          | "Workflow: ux-designer:design-system" section | appended to `~/.aider.conventions.md`                                       |
 
 ### Browser-viewable HTML visualization (`docs/ux/DESIGN.html`)
 
@@ -2452,7 +2696,7 @@ The command also regenerates the HTML explicitly on every `create` / `extend` / 
 - **Radius scale** — live corner previews for each `rounded:` token.
 - **Shadows ramp** — four elevation levels (0–3) rendered as sample cards.
 - **Motion tokens** — if the YAML has a `motion:` block, each easing/duration is shown as a card; otherwise a placeholder prompt to add the block.
-- **Component gallery** — every `components:` entry renders with its declared tokens *applied* (buttons render as buttons, inputs as inputs, cards as cards); variants appear inline as pills; a full props table shows raw reference (`{colors.primary-500}`) + resolved value (`#E31B8E`) side-by-side. Each component gets its own `<section id="{component-name}">` so the sidebar links jump directly to it.
+- **Component gallery** — every `components:` entry renders with its declared tokens _applied_ (buttons render as buttons, inputs as inputs, cards as cards); variants appear inline as pills; a full props table shows raw reference (`{colors.primary-500}`) + resolved value (`#E31B8E`) side-by-side. Each component gets its own `<section id="{component-name}">` so the sidebar links jump directly to it.
 - **Patterns** — each `### <name>` under a `## Patterns` markdown section is rendered as a standalone card with its own anchor id.
 - **Accessibility contrast report** — auto-computed WCAG 2.2 ratios for every `backgroundColor`/`textColor` pair, with AAA / AA / AA-Large / Fail badges.
 - **Design principles** — rendered prose from the §Do's and Don'ts section (Do / Don't bullets + Changelog table).
@@ -2490,6 +2734,86 @@ The same `docs/ux/DESIGN.md` can be imported into [Google Stitch](https://stitch
 ### Single file, not per-feature copies
 
 One `docs/ux/DESIGN.md` per project — never fork it per feature. Every feature reads and appends to the same file. This is how the system stays coherent as the product grows.
+
+---
+
+## Worktree Close-out & Multi-Agent Merge
+
+Every BMAD agent that writes code or artefacts works inside an **isolated git worktree** at `../bmad-<role>-work/` on a dedicated branch (`<role>/<sprint-or-feature>`). When the work is done, the agent runs the canonical close-out protocol — **request human review → merge to main → resolve concurrent conflicts cooperatively → clean up the worktree** — before handing off to the next agent.
+
+The full protocol with bash recipes lives at [`shared/references/worktree-close-out.md`](shared/references/worktree-close-out.md). Every agent's SKILL.md links to it from a `## Worktree Close-out & Merge` section, and Step 7 of every Completion Protocol invokes it before the next-agent handoff.
+
+### The four stages
+
+| Stage                                                                     | What happens                                                                                                                                                                                           |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **1. Request human review**                                               | Print a structured summary — branch, diffstat, top files changed, commits, test status. Human replies `approve` (proceed), `refine: <notes>` (revise), or `defer` (leave the worktree open).           |
+| **2. Merge to main**                                                      | On approve: refresh main, detect concurrent-merge state. If main is unchanged → fast-forward merge. If main has moved (a peer agent already merged) → rebase the role branch onto the latest main.     |
+| **3. Conflict Resolution Protocol** _(only if rebase produces conflicts)_ | Categorise every conflicting file: **my-domain** (resolve solo), **their-domain or shared / cross-domain** (request peer-agent review), or **sequenced** (DB migrations, IaC — escalate to Tech Lead). |
+| **4. Clean up**                                                           | `git worktree remove ../bmad-<role>-work`, `git branch -d <my-branch>`, print the cleanup summary.                                                                                                     |
+
+### The multi-agent invariant
+
+When BE ∥ FE ∥ ME (or any other parallel-agent wave) run concurrently, they each work in their own worktree. **The first agent to merge always succeeds cleanly. The second and third are responsible for the rebase + conflict resolution** — that is the cost of running concurrently.
+
+If the second/third agent isn't confident in a resolution that touches another role's scope, they:
+
+1. Write a sentinel `.bmad/signals/conflict-<my-role>-needs-<peer-role>-review` listing the conflicting files and the proposed resolution.
+2. Request peer review — via the Agent tool on Claude Code / Kiro autonomous mode (spawn the peer for an inline read-only review), or via a human prompt elsewhere ("run /backend-engineer to review my proposed conflict resolution").
+3. **Wait** for peer or human sign-off. Do not complete the merge until they confirm.
+
+No agent ever silently overwrites another agent's work. The role file-scope quick-reference table in `worktree-close-out.md` (mapping every BMAD role to its owned write paths) is the source of truth for "is this conflict in my domain or theirs?".
+
+### Cross-domain hotspots and how to handle them
+
+| File pattern                                           | Resolver                                                                                       |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| `package-lock.json`, `pnpm-lock.yaml`, `Cargo.lock`, … | Don't hand-merge — delete the conflicted lockfile, regenerate via the package manager, commit. |
+| `package.json`, `pyproject.toml`, `Cargo.toml`         | Combine all dependency entries; take the higher version on conflicts; reinstall + test.        |
+| `docs/api-specs/openapi.yaml`                          | Hand to Solution Architect — SA owns the API contract.                                         |
+| `docs/ux/DESIGN.md`                                    | Hand to UX Designer — single-author by design.                                                 |
+| Database migrations with conflicting numbers           | Sequenced — escalate to Tech Lead; never auto-resolve.                                         |
+| Integration tests touching both halves                 | Run the full integration suite after merging; if red, re-open as a `refine:` request.          |
+
+---
+
+## Conversational Brainstorm Protocol
+
+Every agent's `brainstorm.md` sub-command — `/business-analyst:brainstorm`, `/ux-designer:brainstorm`, `/solution-architect:brainstorm`, etc. — runs as a **conversation, not a questionnaire**. The single rule: **ask one question per turn, wait for the human's answer, then ask the next.** No wall-of-questions, no stacked clarifications, no surveys.
+
+The full protocol lives at [`shared/references/conversational-brainstorm.md`](shared/references/conversational-brainstorm.md). All 13 brainstorm sub-commands reference it and follow the same 7-step flow.
+
+### Why one at a time
+
+- A 12-question questionnaire gets 12 shallow answers. A 12-turn conversation gets 12 useful ones.
+- Each answer **reshapes the rest of the question pool** — a good first answer often makes three later questions redundant. Never display them in the first place.
+- The human can stop the brainstorm cleanly at any turn. Mid-questionnaire is awkward; mid-conversation is fine.
+
+### The 7-step flow
+
+1. **Build the question bank silently** — the categorical lists in each brainstorm.md are a _prioritised pool_, not a checklist. Skip questions already answered by `.bmad/PROJECT-CONTEXT.md`, `docs/prd.md`, or prior artefacts.
+2. **Ask the single most-impactful question** — the one whose answer most-unlocks the next-step deliverable. Lead with 2–3 concrete options + a recommended default for bounded questions; open-ended only when truly unbounded.
+3. **Wait** for the answer. Do not pre-stack the next question.
+4. **Capture and re-prioritise** after each answer — many answers eliminate or reshape later questions.
+5. **Stop early** when the next-step deliverable can be written with what you have, or when the user signals they're done. **3–7 turns** is the target, not draining the bank.
+6. **Consolidate** — Phase 2.5 of every brainstorm.md. Read the answers back as a structured brief showing captured answers, skipped-already-on-disk items, inferred defaults, open / unaddressed items, and tensions / contradictions. Save the brief to `.bmad/brainstorms/<role>-<topic>.md` so it's auditable. The brief drives the rest of the protocol — not the raw turn-by-turn transcript.
+7. **Confirm and act** — the existing Phase 4 (Confirm Understanding) restates the brief as a one-paragraph plan-of-record; on `ok` the agent invokes the suggested next BMAD command.
+
+### Tool integration
+
+- **Claude Code / Cowork** — use the AskUserQuestion tool for every multi-choice question (Options A/B/C). It renders a tappable picker, eliminates parsing ambiguity, and shows the recommended default visually.
+- **Codex CLI / Cursor / Windsurf / Trae / Gemini CLI / Aider** — plain-text Option A/B/C format; the agent waits for the human's reply in chat.
+- **Kiro** — uses Kiro's built-in multi-choice picker when available.
+
+The scaffolders (`scripts/scaffold-project.sh` and `scripts/scaffold-project.ps1`) create `.bmad/brainstorms/` alongside `.bmad/handoffs/` and `.bmad/signals/` so the directory exists from project init and brief-saving never fails on a fresh project.
+
+### Anti-patterns the protocol rules out
+
+- ❌ The wall-of-questions opener ("Before we start, I have a few questions: 1. … 2. … 3. … 4. …")
+- ❌ Stacked clarifications ("Question N + a follow-up to Question N − 1 in the same message — pick one")
+- ❌ Asking what's already on disk (always read context files first; ~30% of bank questions disappear)
+- ❌ Confirming the obvious ("So you want a login screen?" after the user said "build a login screen")
+- ❌ Performative consolidation — the consolidation step must surface tensions / inferred defaults / open items, not just paraphrase back
 
 ---
 
@@ -2584,240 +2908,6 @@ bash /path/to/bmad-sdlc-agents/scripts/update.sh
 
 # All projects instantly have access to updated agents
 # Project context files are preserved
-```
-
----
-
-## Workflow Diagrams
-
-Visual reference for all five work types. Each diagram shows the agent chain, key artifact outputs, and decision points.
-
-### 🏗 New Project
-
-Full 10-agent flow from business requirements through multi-sprint execution.
-
-```mermaid
-flowchart TD
-    START([🏗 New Project Kickoff]) --> PO
-
-    subgraph PLAN["📋 Plan Phase — 7 Waves"]
-        subgraph W1["W1"]
-            PO["Product Owner<br>📄 brd.md + prd.md"]
-        end
-        subgraph W2["W2"]
-            BA["Business Analyst<br>📄 requirements-analysis.md + stories/"]
-        end
-        subgraph W3["W3 ∥ parallel"]
-            EA["Enterprise Architect<br>📄 enterprise-architecture.md"]
-            UX["UX Designer<br>📄 docs/ux/ + ux-design-master.md"]
-        end
-        subgraph W4["W4"]
-            SA["Solution Architect<br>📄 solution-architecture.md"]
-        end
-        subgraph W5["W5"]
-            TL_PLAN["Tech Lead<br>📄 sprint-plan.md"]
-        end
-        subgraph W6["W6 ∥ parallel"]
-            BE_SPEC["BE spec"]
-            FE_SPEC["FE spec"]
-            ME_SPEC["ME spec"]
-        end
-        subgraph W7["W7"]
-            TQE_STRAT["Tester & QE<br>📄 test-strategy.md"]
-        end
-
-        PO --> BA
-        BA --> EA & UX
-        EA & UX --> SA --> TL_PLAN
-        TL_PLAN --> BE_SPEC & FE_SPEC & ME_SPEC
-        BE_SPEC & FE_SPEC & ME_SPEC --> TQE_STRAT
-    end
-
-    TQE_STRAT --> KICKOFF
-
-    subgraph EXEC["🔨 Execute Phase — 3 Waves per Sprint"]
-        subgraph E1["E1"]
-            KICKOFF["Tech Lead<br>📄 sprint-N-kickoff.md"]
-        end
-        subgraph E2["E2 ∥ parallel"]
-            BE["Backend Engineer"]
-            FE["Frontend Engineer"]
-            ME["Mobile Engineer"]
-        end
-        subgraph E3["E3"]
-            TQE["Tester & QE<br>📄 sprint-N-results.md"]
-        end
-        PASS{All stories\npass?}
-
-        KICKOFF --> BE & FE & ME
-        BE & FE & ME --> TQE --> PASS
-        PASS -->|"🔁 Failures"| BE
-        PASS -->|"✅ Next Sprint"| KICKOFF
-    end
-
-    PASS -->|"🚀 Release"| DONE([Release / Deploy])
-```
-
----
-
-### ✨ Feature Request / Enhancement
-
-PO defines feature scope, BA performs impact analysis, then SA and UX run in parallel (using existing EA enterprise architecture). No full EA wave needed since enterprise architecture is already established.
-
-```mermaid
-flowchart TD
-    START([✨ Feature Request]) --> PO
-
-    subgraph PLAN["📋 Plan Phase — 5 Waves"]
-        subgraph W1["W1"]
-            PO["Product Owner<br/>📄 features/feature-brief.md"]
-        end
-        subgraph W2["W2"]
-            BA["Business Analyst<br/>📄 analysis/feature-impact.md + stories/"]
-        end
-        subgraph W3["W3 ∥ parallel"]
-            SA["Solution Architect<br/>📄 ADRs updated + solution-architecture.md"]
-            UX["UX Designer<br/>📄 ux/feature-name/ + ux-design-master.md"]
-        end
-        subgraph W4["W4"]
-            TL_PLAN["Tech Lead<br/>📄 feature-name-plan.md"]
-        end
-        subgraph W5["W5"]
-            TQE_STRAT["Tester & QE<br/>📄 test-strategy.md"]
-        end
-
-        PO --> BA
-        BA --> SA & UX
-        SA & UX --> TL_PLAN --> TQE_STRAT
-    end
-
-    TQE_STRAT --> KICKOFF
-
-    subgraph EXEC["🔨 Execute Phase — 3 Waves"]
-        subgraph E1["E1"]
-            KICKOFF["Tech Lead<br>Kickoff + ADRs locked"]
-        end
-        subgraph E2["E2 ∥ parallel"]
-            BE["Backend Engineer"]
-            FE["Frontend Engineer"]
-            ME["Mobile Engineer"]
-        end
-        subgraph E3["E3"]
-            TQE["Tester & QE<br>Verify + Regression"]
-        end
-        PASS{Pass?}
-
-        KICKOFF --> BE & FE & ME
-        BE & FE & ME --> TQE --> PASS
-        PASS -->|"🔁 Fix"| BE
-    end
-
-    PASS -->|"✅ Done"| DONE([Feature Shipped])
-```
-
----
-
-### 🐛 Bug Fix
-
-Diagnosis before fix. Two diagnosis agents confirm root cause before any code changes.
-
-```mermaid
-flowchart TD
-    START([🐛 Bug Report]) --> TQE1
-
-    subgraph DIAGNOSE["📋 Diagnose (Prompt A — 2 agents)"]
-        TQE1["Tester & QE<br/>Reproduce + Root-Cause Hypotheses<br/>📄 docs/testing/bugs/bug-id.md"]
-        TL1["Tech Lead<br/>Confirm Root Cause + Minimal Safe Fix<br/>📄 docs/testing/bugs/bug-id-fix-plan.md"]
-
-        TQE1 --> TL1
-    end
-
-    TL1 --> ENG_Q
-
-    subgraph FIX["🔨 Fix & Verify (Prompt B — 2 agents)"]
-        ENG_Q{Engineer<br>Role?}
-        BE["Backend Engineer<br/>/ FIX: bug-id"]
-        FE["Frontend Engineer<br/>/ FIX: bug-id"]
-        ME["Mobile Engineer<br/>/ FIX: bug-id"]
-        TQE2["Tester & QE<br/>Verify Fix + Regression<br/>📄 bug-id-verified.md"]
-        PASS{Bug<br>Resolved?}
-
-        ENG_Q -->|Backend| BE
-        ENG_Q -->|Frontend| FE
-        ENG_Q -->|Mobile| ME
-        BE & FE & ME --> TQE2 --> PASS
-        PASS -->|"🔁 Still failing"| TL1
-    end
-
-    PASS -->|"✅ Resolved"| DONE([Bug Closed])
-```
-
----
-
-### 🚨 Hotfix (Production Emergency)
-
-Assess, fix, smoke test in a single session. No planning docs, no refactoring.
-
-```mermaid
-flowchart TD
-    START([🚨 Production Incident]) --> TL
-
-    subgraph HOTFIX["Single Prompt — 3 agents in strict sequence"]
-        TL["Tech Lead<br/>Assess Root Cause<br/>Minimal Safe Fix + Rollback Plan<br>📄 docs/testing/hotfixes/date-issue.md"]
-        ENG_Q{Smallest<br/>Safe Fix}
-        BE["Backend Engineer<br/>/ HOTFIX: date-issue<br/>No refactoring outside fix scope"]
-        FE["Frontend Engineer<br/>/ HOTFIX: date-issue<br/>No refactoring outside fix scope"]
-        ME["Mobile Engineer<br/>/ HOTFIX: date-issue<br/>No refactoring outside fix scope"]
-        TQE["Tester & QE<br/>Smoke Test Only — Critical Path<br/>📄 date-issue-verified.md"]
-        PASS{Critical Path\nUnbroken?}
-
-        TL --> ENG_Q
-        ENG_Q -->|Backend| BE
-        ENG_Q -->|Frontend| FE
-        ENG_Q -->|Mobile| ME
-        BE & FE & ME --> TQE --> PASS
-        PASS -->|"🔁 Rollback"| TL
-    end
-
-    PASS -->|"✅ Stable"| DONE([Hotfix Deployed])
-```
-
----
-
-### 📋 Backlog Item / Tech Debt / Chore
-
-Lightweight two-agent refinement then direct execution. No architecture review needed.
-
-```mermaid
-flowchart TD
-    START([📋 Backlog Item\nTech Debt / Chore]) --> PO
-
-    subgraph REFINE["📋 Refine (Prompt A — 3 agents)"]
-        PO["Product Owner\nClarify Scope + Acceptance Criteria<br>📄 docs/stories/story-id.md"]
-        BA["Business Analyst\nRequirements + Impact Analysis<br>📄 docs/analysis/story-id-analysis.md"]
-        TL["Tech Lead\nTechnical Breakdown + Effort<br>📄 docs/architecture/story-id-notes.md"]
-
-        PO --> BA --> TL
-    end
-
-    TL --> ENG_Q
-
-    subgraph EXEC["🔨 Execute (Prompt B — 2 agents)"]
-        ENG_Q{Engineer<br>Role?}
-        BE["Backend Engineer"]
-        FE["Frontend Engineer"]
-        ME["Mobile Engineer"]
-        TQE["Tester & QE<br>Verify Acceptance Criteria<br>📄 docs/testing/story-id-results.md"]
-        PASS{Criteria<br>Met?}
-
-        ENG_Q -->|Backend| BE
-        ENG_Q -->|Frontend| FE
-        ENG_Q -->|Mobile| ME
-        BE & FE & ME --> TQE --> PASS
-        PASS -->|"🔁 Rework"| ENG_Q
-    end
-
-    PASS -->|"✅ Done"| DONE([Story Closed])
 ```
 
 ---
