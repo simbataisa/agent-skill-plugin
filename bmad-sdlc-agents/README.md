@@ -4,14 +4,12 @@
 
 [![License: PolyForm Noncommercial 1.0.0](https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-blue.svg)](./LICENSE)
 [![Commercial license available](https://img.shields.io/badge/commercial%20license-available-success.svg)](./COMMERCIAL-LICENSE.md)
-[![Latest release](https://img.shields.io/github/v/release/your-org/bmad-sdlc-agents?label=release&color=informational)](https://github.com/your-org/bmad-sdlc-agents/releases)
-[![GitHub stars](https://img.shields.io/github/stars/your-org/bmad-sdlc-agents?style=social)](https://github.com/your-org/bmad-sdlc-agents/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/your-org/bmad-sdlc-agents?style=social)](https://github.com/your-org/bmad-sdlc-agents/network/members)
-[![Open issues](https://img.shields.io/github/issues/your-org/bmad-sdlc-agents.svg)](https://github.com/your-org/bmad-sdlc-agents/issues)
-[![Open pull requests](https://img.shields.io/github/issues-pr/your-org/bmad-sdlc-agents.svg)](https://github.com/your-org/bmad-sdlc-agents/pulls)
-[![Last commit](https://img.shields.io/github/last-commit/your-org/bmad-sdlc-agents.svg)](https://github.com/your-org/bmad-sdlc-agents/commits)
-
-> Replace `your-org/bmad-sdlc-agents` with your real GitHub path before publishing.
+[![Latest release](https://img.shields.io/github/v/release/simbataisa/gent-skill-plugin?label=release&color=informational)](https://github.com/simbataisa/gent-skill-plugin/releases)
+[![GitHub stars](https://img.shields.io/github/stars/simbataisa/gent-skill-plugin?style=social)](https://github.com/simbataisa/gent-skill-plugin/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/simbataisa/gent-skill-plugin?style=social)](https://github.com/simbataisa/gent-skill-plugin/network/members)
+[![Open issues](https://img.shields.io/github/issues/simbataisa/gent-skill-plugin.svg)](https://github.com/simbataisa/gent-skill-plugin/issues)
+[![Open pull requests](https://img.shields.io/github/issues-pr/simbataisa/gent-skill-plugin.svg)](https://github.com/simbataisa/gent-skill-plugin/pulls)
+[![Last commit](https://img.shields.io/github/last-commit/simbataisa/gent-skill-plugin.svg)](https://github.com/simbataisa/agent-skill-plugin/commits)
 
 ---
 
@@ -33,14 +31,14 @@ Install the global layer once across all your AI coding tools, then scaffold `.b
 
 ## At a glance
 
-| | |
-|---|---|
-| **Specialized AI agents** | 13 |
-| **Tools supported** | 11 |
-| **Workflow types** | 5 (new project · feature · bug · hotfix · backlog) |
-| **Plan + Execute waves** | 7 plan + 3 execute |
-| **Engineering principles** | 4 — Think before coding · Simplicity first · Surgical changes · Goal-driven execution |
-| **License** | [PolyForm Noncommercial 1.0.0](./LICENSE) (free for non-commercial) · [Commercial license](./COMMERCIAL-LICENSE.md) for organizations |
+|                            |                                                                                                                                       |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| **Specialized AI agents**  | 13                                                                                                                                    |
+| **Tools supported**        | 11                                                                                                                                    |
+| **Workflow types**         | 5 (new project · feature · bug · hotfix · backlog)                                                                                    |
+| **Plan + Execute waves**   | 7 plan + 3 execute                                                                                                                    |
+| **Engineering principles** | 4 — Think before coding · Simplicity first · Surgical changes · Goal-driven execution                                                 |
+| **License**                | [PolyForm Noncommercial 1.0.0](./LICENSE) (free for non-commercial) · [Commercial license](./COMMERCIAL-LICENSE.md) for organizations |
 
 ---
 
@@ -63,12 +61,12 @@ Full setup walkthroughs per tool live in [`docs/tooling.md`](docs/tooling.md). T
 
 ## The squad
 
-| Phase | Agents |
-|---|---|
-| **Analysis** | Product Owner · Business Analyst |
-| **Solutioning** | Enterprise Architect · UX/UI Designer · Solution Architect · InfoSec Architect |
-| **Implementation** | Backend Engineer · Frontend Engineer · Mobile Engineer |
-| **All phases** | DevSecOps Engineer · Tech Lead · Tester & QE · BMAD Orchestrator |
+| Phase              | Agents                                                                         |
+| ------------------ | ------------------------------------------------------------------------------ |
+| **Analysis**       | Product Owner · Business Analyst                                               |
+| **Solutioning**    | Enterprise Architect · UX/UI Designer · Solution Architect · InfoSec Architect |
+| **Implementation** | Backend Engineer · Frontend Engineer · Mobile Engineer                         |
+| **All phases**     | DevSecOps Engineer · Tech Lead · Tester & QE · BMAD Orchestrator               |
 
 Full roster, role descriptions, and skill-file paths in [`docs/agents.md`](docs/agents.md).
 
