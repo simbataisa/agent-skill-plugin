@@ -355,35 +355,63 @@ function genData() {
     return data;
 }
 
-const DATA = genData();
+// ============================================================
+// Schema v2 ingestion
+// ------------------------------------------------------------
+// Records emitted by /bmad:eval may include schemaVersion=2 plus nested
+// _extras, _confidence, and _collectedAt fields. The dashboard reads metric
+// keys directly off each row, so we strip the nested bags here and pass null
+// metrics through (downstream helpers filter non-finite values).
+// ============================================================
+function normalizeRecord(r) {
+    if (!r || typeof r !== "object") return r;
+    if (r.schemaVersion && r.schemaVersion > 2) {
+        console.warn("Eval record schemaVersion > 2; some fields may be ignored", r);
+    }
+    // Pass-through; explicitly DO NOT mutate _extras / _confidence so callers
+    // can still inspect them via the raw record if they want to.
+    return r;
+}
+
+const DATA = genData().map(normalizeRecord);
 
 // ============================================================
 // Composite score calculation
+// ------------------------------------------------------------
+// Per-metric averages SKIP rows whose value is null/undefined/NaN — that's
+// what `confidence: missing` translates to. A row contributes 0 to a metric
+// only when its actual measured value is 0, never when it's missing.
 // ============================================================
+function _avgFinite(arr) {
+    const xs = arr.filter(x => Number.isFinite(x));
+    return xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null;
+}
+function _scaleHigher(val, max)      { return Number.isFinite(val) ? (val / max) * 100 : null; }
+function _scaleLowerBetter(val, max) { return Number.isFinite(val) ? (1 - val / max) * 100 : null; }
+
 function compositeScore(rows) {
     if (!rows.length) return 0;
-    const avg = (arr) => arr.reduce((a, b) => a + b, 0) / arr.length;
-    // Normalize each metric to 0-100 scale
-    // Speed: lower is better → invert
     const maxTime = 25, maxDraft = 12, maxIter = 7;
-    const speedScore = avg(rows.map(r => (
-        (1 - r.timeToArtifact / maxTime) * 33.3 +
-        (1 - r.timeToDraft / maxDraft) * 33.3 +
-        (1 - r.iterTurnaround / maxIter) * 33.4
-    )));
-    // Quality: higher is better
-    const qualityScore = avg(rows.map(r => (
-        r.firstPassRate * 33.3 +
-        r.nfrCoverage * 33.3 +
-        (1 - r.archDebt / 6) * 33.4
-    )));
-    // Coverage: higher is better
-    const maxAlts = 8, maxRisks = 10, maxScen = 9;
-    const coverageScore = avg(rows.map(r => (
-        (r.alternatives / maxAlts) * 33.3 +
-        (r.risks / maxRisks) * 33.3 +
-        (r.scenarios / maxScen) * 33.4
-    )));
+    const maxDebt = 6, maxAlts = 8, maxRisks = 10, maxScen = 9;
+
+    // Speed (lower is better) — three sub-metrics, equal weight.
+    const tA = _avgFinite(rows.map(r => _scaleLowerBetter(r.timeToArtifact, maxTime)));
+    const tD = _avgFinite(rows.map(r => _scaleLowerBetter(r.timeToDraft,    maxDraft)));
+    const tI = _avgFinite(rows.map(r => _scaleLowerBetter(r.iterTurnaround, maxIter)));
+    const speedScore = _avgFinite([tA, tD, tI]) ?? 0;
+
+    // Quality (higher is better, except archDebt which inverts).
+    const fp = _avgFinite(rows.map(r => Number.isFinite(r.firstPassRate) ? r.firstPassRate * 100 : null));
+    const nf = _avgFinite(rows.map(r => Number.isFinite(r.nfrCoverage)   ? r.nfrCoverage   * 100 : null));
+    const ad = _avgFinite(rows.map(r => _scaleLowerBetter(r.archDebt, maxDebt)));
+    const qualityScore = _avgFinite([fp, nf, ad]) ?? 0;
+
+    // Coverage (higher is better).
+    const al = _avgFinite(rows.map(r => _scaleHigher(r.alternatives, maxAlts)));
+    const rk = _avgFinite(rows.map(r => _scaleHigher(r.risks,        maxRisks)));
+    const sc = _avgFinite(rows.map(r => _scaleHigher(r.scenarios,    maxScen)));
+    const coverageScore = _avgFinite([al, rk, sc]) ?? 0;
+
     return +(0.35 * speedScore + 0.35 * qualityScore + 0.30 * coverageScore).toFixed(1);
 }
 
@@ -426,8 +454,20 @@ function populatePractitioners() {
 // ============================================================
 // Statistics helpers
 // ============================================================
-function mean(arr) { return arr.reduce((a, b) => a + b, 0) / arr.length; }
-function variance(arr) { const m = mean(arr); return arr.reduce((s, x) => s + (x - m) ** 2, 0) / (arr.length - 1); }
+// `mean` / `variance` filter to finite numbers only, so schema-v2 records with
+// null metrics (confidence: missing) don't drag aggregates to NaN. Callers that
+// previously relied on `arr.length > 0` should now also tolerate `mean` returning
+// 0 when all values were non-finite — same behaviour as before for those slots.
+function mean(arr) {
+    const xs = arr.filter(x => Number.isFinite(x));
+    return xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0;
+}
+function variance(arr) {
+    const xs = arr.filter(x => Number.isFinite(x));
+    if (xs.length < 2) return 0;
+    const m = xs.reduce((a, b) => a + b, 0) / xs.length;
+    return xs.reduce((s, x) => s + (x - m) ** 2, 0) / (xs.length - 1);
+}
 function tTest(a, b) {
     const ma = mean(a), mb = mean(b);
     const va = variance(a), vb = variance(b);

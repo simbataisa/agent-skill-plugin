@@ -125,7 +125,7 @@ For issues, enhancements, or new agents, open an issue. To contribute an agent o
 
 ## Star history
 
-[![Star History Chart](https://api.star-history.com/svg?repos=simbataisa/bmad-sdlc-agents&type=Date)](https://www.star-history.com/#simbataisa/bmad-sdlc-agents&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=simbataisa/agent-skill-plugin&type=Date)](https://www.star-history.com/#simbataisa/agent-skill-plugin&Date)
 
 ---
 

@@ -1,22 +1,44 @@
 ---
-description: "[BMAD] Collect productivity metrics from .bmad/ artifacts and output a JSON evaluation snapshot compatible with the BMAD Eval Dashboard."
-argument-hint: "[week-number] (optional — defaults to current week)"
+description: "[BMAD] Collect productivity metrics from .bmad/ artifacts and emit a JSON evaluation snapshot (schema v2) compatible with the BMAD Eval Dashboard."
+argument-hint: "[week-number] (optional — defaults to current project week)"
 ---
 
-Collect BMAD productivity metrics for the current project and output a JSON evaluation
-record compatible with the **BMAD Agent Productivity Evaluation Dashboard**.
+Collect BMAD productivity metrics for the current project and emit a JSON evaluation
+record (schema v2) consumable by the **BMAD Agent Productivity Evaluation Dashboard**.
 
 ## Context
 
 This command auto-measures what it can from `.bmad/` artifacts, git history, and project
 files — then asks the practitioner to fill in gaps that require human judgment.
-The output is a single JSON record that can be appended to the dashboard's `DATA` array.
+The output is a single **flat** JSON record matching the dashboard's `DATA[]` row shape,
+plus an `_extras` bag of nested observability data.
 
 Metrics cover five dimensions: **Speed**, **Quality**, **Coverage**, **Parallel Efficiency**, and **Compliance**.
+
+**Every numeric metric carries a `confidence` tag** (`manual` | `derived` | `fuzzy` | `missing`).
+The dashboard dims metrics tagged `fuzzy`/`missing` so practitioners can see where to apply
+human judgment.
 
 ---
 
 ## Steps
+
+### 0. Source the shared metrics library
+
+All measurements go through `shared/scripts/bmad-metrics-lib.sh` so this command and
+`/bmad:status` agree on definitions. Locate it (project copy first, then global install):
+
+```bash
+LIB=""
+for c in shared/scripts/bmad-metrics-lib.sh \
+         ~/.bmad/scripts/bmad-metrics-lib.sh \
+         ~/bmad-sdlc-agents/shared/scripts/bmad-metrics-lib.sh; do
+  [ -f "$c" ] && LIB="$c" && break
+done
+[ -z "$LIB" ] && { echo "❌ bmad-metrics-lib.sh not found — run scripts/install-global.sh"; exit 1; }
+# shellcheck disable=SC1090
+source "$LIB"
+```
 
 ### 1. Read project context
 
@@ -25,185 +47,155 @@ cat .bmad/PROJECT-CONTEXT.md 2>/dev/null
 ```
 
 Extract: project name, current phase, practitioner info (if present).
-
-If `.bmad/PROJECT-CONTEXT.md` doesn't exist, tell the user to run `/bmad-status` first.
+If `.bmad/PROJECT-CONTEXT.md` doesn't exist, tell the user to run `/bmad:status` first.
 
 ### 2. Determine the evaluation week
 
-- If `$ARGUMENTS` contains a number, use that as the week number.
-- Otherwise, calculate the week number from git history:
-  ```bash
-  first_commit=$(git log --diff-filter=A --format="%ct" -- .bmad/ 2>/dev/null | tail -1)
-  now=$(date +%s)
-  [ -n "$first_commit" ] && echo $(( (now - first_commit) / 604800 + 1 )) || echo "unknown"
-  ```
-  If this fails, ask the user for the week number.
+- If `$ARGUMENTS` contains a positive integer, use that as the week number.
+- Otherwise call `bmad_project_week` — it returns weeks since the first commit on `.bmad/`,
+  anchored to ISO-week boundaries so two same-day runs always agree.
+- If both fail, ask the user.
+
+```bash
+week="${ARGUMENTS:-$(bmad_project_week)}"
+[[ "$week" =~ ^[0-9]+$ ]] || week="unknown"
+echo "Week: $week"
+```
 
 ---
 
 ### 3. Auto-collect Speed metrics
 
-**Time-to-First-Draft** — Measure from task assignment to first artifact commit:
 ```bash
-for f in \
-  docs/project-brief.md \
-  docs/prd.md \
-  docs/architecture/solution-architecture.md \
-  docs/architecture/enterprise-architecture.md \
-  docs/ux/DESIGN.md \
-  docs/testing/test-strategy.md \
-  docs/architecture/sprint-plan.md; do
-  if [ -f "$f" ]; then
-    created=$(git log --diff-filter=A --format="%ai" -- "$f" 2>/dev/null | tail -1)
-    echo "$f | created: $created"
-  fi
+shopt -s globstar nullglob 2>/dev/null
+
+# Time-to-First-Draft per artifact: ISO timestamp of first commit creating the file.
+declare -A artifact_drafts
+for f in docs/project-brief.md \
+         docs/prd.md \
+         docs/architecture/solution-architecture.md \
+         docs/architecture/enterprise-architecture.md \
+         docs/ux/DESIGN.md \
+         docs/architecture/sprint-plan.md \
+         docs/testing/test-strategy.md \
+         docs/analysis/*.md; do
+  [ -f "$f" ] || continue
+  artifact_drafts["$f"]=$(bmad_first_commit_iso "$f")
+  echo "$f | first commit: ${artifact_drafts[$f]}"
 done
 
-# Also check feature/backlog analysis artifacts
-for f in docs/analysis/*.md; do
-  [ -f "$f" ] && created=$(git log --diff-filter=A --format="%ai" -- "$f" 2>/dev/null | tail -1) && echo "$f | created: $created"
+# Iteration turnaround = mean Δ in hours between consecutive commits on the artifact.
+# This is the value the dashboard's iterTurnaround field expects.
+declare -A artifact_iter
+for f in "${!artifact_drafts[@]}"; do
+  artifact_iter["$f"]=$(bmad_mean_intercommit_hours "$f")
+  echo "$f | mean inter-commit hours: ${artifact_iter[$f]}"
+done
+
+# Time-to-Draft (HOURS), derived from handoff timestamp → first commit.
+# Falls back to manual entry. Echo a candidate per artifact.
+for f in "${!artifact_drafts[@]}"; do
+  case "$f" in
+    docs/project-brief.md)                   to_agent="ba" ;;
+    docs/prd.md)                             to_agent="po" ;;
+    docs/architecture/solution-architecture.md) to_agent="sa" ;;
+    docs/architecture/enterprise-architecture.md) to_agent="ea" ;;
+    docs/ux/DESIGN.md)                       to_agent="ux" ;;
+    docs/architecture/sprint-plan.md)        to_agent="tl" ;;
+    docs/testing/test-strategy.md)           to_agent="qe" ;;
+    *)                                       to_agent="" ;;
+  esac
+  start=""; [ -n "$to_agent" ] && start=$(bmad_handoff_first_to_agent "$to_agent")
+  hours=$(bmad_hours_between_iso "$start" "${artifact_drafts[$f]}")
+  echo "$f | task-start (handoff to $to_agent): $start | timeToDraft hours: $hours"
 done
 ```
 
-**Iteration Turnaround** — Count revision commits per artifact:
-```bash
-for f in \
-  docs/project-brief.md \
-  docs/prd.md \
-  docs/architecture/solution-architecture.md \
-  docs/analysis/*.md; do
-  if [ -f "$f" ]; then
-    revisions=$(git log --oneline -- "$f" 2>/dev/null | wc -l)
-    first=$(git log --format="%ai" -- "$f" 2>/dev/null | tail -1)
-    last=$(git log --format="%ai" -- "$f" 2>/dev/null | head -1)
-    echo "$f | revisions: $revisions | first: $first | last: $last"
-  fi
-done
-```
+**Sprint velocity** — structured count of stories per sprint:
 
-**Sprint Velocity** — Stories completed per sprint:
 ```bash
-for results in docs/testing/sprint-*-results.md; do
-  [ -f "$results" ] || continue
-  sprint_n=$(echo "$results" | grep -oP 'sprint-\K[0-9]+')
-  # Count passed stories (lines containing ✅ or "pass")
-  passed=$(grep -ci "✅\|pass\|accepted\|verified" "$results" 2>/dev/null)
-  # Count failed stories
-  failed=$(grep -ci "❌\|fail\|rejected\|unmet" "$results" 2>/dev/null)
-  echo "Sprint $sprint_n: ~$passed passed, ~$failed failed"
-done
+# Pick the latest sprint with both a kickoff and a results file
+latest_sprint=$(ls docs/architecture/sprint-*-kickoff.md 2>/dev/null \
+  | sed -E 's/.*sprint-([0-9]+)-kickoff\.md/\1/' | sort -n | tail -1)
+if [ -n "$latest_sprint" ]; then
+  planned=$(bmad_sprint_planned "$latest_sprint")
+  completed=$(bmad_sprint_completed "$latest_sprint")
+  echo "Sprint $latest_sprint: planned=$planned completed=$completed"
+fi
 ```
 
 ---
 
 ### 4. Auto-collect Quality metrics
 
-**NFR Coverage Score** — Parse the solution architecture for NFR sections:
 ```bash
-if [ -f docs/architecture/solution-architecture.md ]; then
-  for nfr in "security" "performance" "scalability" "availability" "reliability" \
-             "accessibility" "compliance" "observability" "maintainability" "privacy"; do
-    grep -qi "$nfr" docs/architecture/solution-architecture.md && echo "  ✅ $nfr" || echo "  ❌ $nfr"
-  done
+# NFR coverage as a 0..1 ratio (the dashboard's nfrCoverage field).
+nfr_ratio=$(bmad_nfr_ratio docs/architecture/solution-architecture.md)
+nfr_list=$(bmad_nfr_found_list docs/architecture/solution-architecture.md | paste -sd, -)
+echo "NFR coverage: $nfr_ratio ($nfr_list)"
+
+# Architecture debt: ADRs explicitly marked Deferred / Deprecated / Superseded.
+arch_debt=$(bmad_adr_debt_count)
+echo "Arch debt (deferred/deprecated ADRs): $arch_debt"
+
+# DEVIATION / FIX / HOTFIX markers — both stock (current) and flow (added this week).
+dev_open=$(bmad_count_markers '// DEVIATION:|# DEVIATION:')
+fix_open=$(bmad_count_markers '// FIX:|# FIX:')
+hot_open=$(bmad_count_markers '// HOTFIX:|# HOTFIX:')
+
+dev_added=$(bmad_count_markers_added_since '// DEVIATION:|# DEVIATION:' '7 days ago')
+fix_added=$(bmad_count_markers_added_since '// FIX:|# FIX:' '7 days ago')
+hot_added=$(bmad_count_markers_added_since '// HOTFIX:|# HOTFIX:' '7 days ago')
+
+echo "Markers (open / added-7d): DEVIATION=$dev_open/$dev_added FIX=$fix_open/$fix_added HOTFIX=$hot_open/$hot_added"
+
+# Security rules coverage: presence of structured sections.
+sec_present=0; sec_total=3
+grep -qiE "^#{2,4}.*\b(threat|attack|trust boundary)\b" docs/architecture/solution-architecture.md 2>/dev/null && sec_present=$((sec_present+1))
+grep -qiE "^#{2,4}.*\b(secrets|vault|kms|key management)\b" docs/architecture/enterprise-architecture.md 2>/dev/null && sec_present=$((sec_present+1))
+grep -qiE "^#{2,4}.*\b(wcag|accessibility|aria|a11y)\b" docs/ux/DESIGN.md 2>/dev/null && sec_present=$((sec_present+1))
+sec_ratio=$(python3 -c "print(round($sec_present/$sec_total,3))")
+echo "Security rules coverage: $sec_ratio ($sec_present/$sec_total sections)"
+
+# First-pass review rate — derive from PRs if `gh` is available; else mark missing.
+first_pass_rate="null"; first_pass_conf="missing"
+if command -v gh >/dev/null 2>&1; then
+  data=$(gh pr list --state merged --limit 50 \
+    --json reviewDecision,reviews --jq \
+    '[.[] | select(.reviewDecision != null)] | {total: length, clean: ([.[] | select((.reviews // []) | all(.state != "CHANGES_REQUESTED"))] | length)}' 2>/dev/null)
+  if [ -n "$data" ]; then
+    first_pass_rate=$(python3 -c "
+import json,sys
+d=json.loads(sys.argv[1])
+print('null' if not d['total'] else round(d['clean']/d['total'],3))" "$data")
+    first_pass_conf="derived"
+  fi
 fi
-```
-
-**Architecture Debt** — Count ADR "deferred" or "debt" items:
-```bash
-debt_count=0
-if [ -d docs/architecture/adr ]; then
-  debt_count=$(grep -rli "debt\|deferred\|workaround\|technical-debt\|tech.debt" \
-    docs/architecture/adr/ 2>/dev/null | wc -l)
-fi
-echo "Arch debt items: $debt_count"
-```
-
-**Agent Rules Compliance — DEVIATION count:**
-```bash
-# Count DEVIATION markers across all source code (signals intentional rule deviations)
-dev_count=$(grep -r "// DEVIATION:\|# DEVIATION:" . \
-  --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" \
-  --include="*.py" --include="*.go" --include="*.java" --include="*.kt" \
-  --include="*.swift" --include="*.rb" --include="*.cs" \
-  2>/dev/null | wc -l)
-echo "DEVIATION markers: $dev_count"
-
-# Count FIX markers (applied bug fixes)
-fix_count=$(grep -r "// FIX:\|# FIX:" . \
-  --include="*.ts" --include="*.tsx" --include="*.js" --include="*.py" \
-  2>/dev/null | wc -l)
-echo "FIX markers: $fix_count"
-
-# Count HOTFIX markers (applied hotfixes)
-hotfix_count=$(grep -r "// HOTFIX:\|# HOTFIX:" . \
-  --include="*.ts" --include="*.tsx" --include="*.js" --include="*.py" \
-  2>/dev/null | wc -l)
-echo "HOTFIX markers: $hotfix_count"
-```
-
-**Security Rules Coverage** — Check if key security artifacts are present:
-```bash
-# Threat model in solution architecture?
-grep -qi "threat\|attack\|trust boundary" docs/architecture/solution-architecture.md 2>/dev/null && \
-  echo "✅ Threat model present" || echo "❌ No threat model"
-
-# Secrets management defined?
-grep -qi "vault\|secrets manager\|kms\|key management" \
-  docs/architecture/enterprise-architecture.md 2>/dev/null && \
-  echo "✅ Secrets management defined" || echo "❌ No secrets strategy"
-
-# WCAG / accessibility defined?
-grep -qi "wcag\|accessibility\|aria\|a11y" docs/ux/DESIGN.md 2>/dev/null && \
-  echo "✅ Accessibility standards defined" || echo "❌ No accessibility spec"
+echo "First-pass review rate: $first_pass_rate ($first_pass_conf)"
 ```
 
 ---
 
 ### 5. Auto-collect Coverage metrics
 
-**Alternatives Evaluated** — Count options in ADRs:
 ```bash
-if [ -d docs/architecture/adr ]; then
-  total_options=0
-  adr_count=$(ls docs/architecture/adr/*.md 2>/dev/null | wc -l)
-  for adr in docs/architecture/adr/*.md; do
-    options=$(grep -ci "option\|alternative\|approach\|considered" "$adr" 2>/dev/null)
-    total_options=$((total_options + options))
-    echo "  $(basename $adr): ~$options options/alternatives mentioned"
-  done
-  echo "ADRs: $adr_count | Total alternative mentions: $total_options"
-fi
-```
+# Alternatives — sum of `### Option …` headings across ADRs.
+alternatives=$(bmad_total_adr_options)
+adr_count=$(bmad_adr_count)
+echo "Alternatives (across $adr_count ADRs): $alternatives"
 
-**Risks Identified** — Count risks across all artifacts including new analysis docs:
-```bash
-risk_count=0
-for f in \
-  docs/project-brief.md \
-  docs/prd.md \
-  docs/architecture/solution-architecture.md \
-  docs/analysis/*.md; do
-  if [ -f "$f" ]; then
-    risks=$(grep -ci "risk\|concern\|caveat\|limitation\|constraint\|vulnerability" "$f" 2>/dev/null)
-    risk_count=$((risk_count + risks))
-    echo "  $f: $risks risk mentions"
-  fi
-done
-echo "Total risk mentions: $risk_count"
-```
+# Risks — entries inside `## Risks` sections / risk tables across artifacts.
+risks=$(bmad_total_risks)
+echo "Risks: $risks"
 
-**Stakeholder Scenarios** — Count scenarios/use-cases:
-```bash
-scenario_count=0
-for f in docs/prd.md docs/ux/DESIGN.md docs/analysis/*.md; do
-  if [ -f "$f" ]; then
-    sc=$(grep -ci "scenario\|use.case\|user.story\|workflow\|journey\|persona" "$f" 2>/dev/null)
-    scenario_count=$((scenario_count + sc))
-  fi
-done
-story_count=$(ls docs/stories/*.md 2>/dev/null | wc -l)
-feature_story_count=$(ls docs/stories/**/*.md 2>/dev/null | wc -l)
-echo "Scenario mentions: $scenario_count | Story files: $((story_count + feature_story_count))"
+# Scenarios — Gherkin Scenario: lines + Use Case / User Journey headings.
+scenarios=$(bmad_total_scenarios)
+echo "Scenarios: $scenarios"
+
+# Story counts.
+story_total=$(bmad_count_stories_total)
+story_done=$(bmad_count_stories_by_status docs/stories 'Done|Accepted|Verified')
+echo "Stories: $story_done done / $story_total total"
 ```
 
 ---
@@ -211,178 +203,201 @@ echo "Scenario mentions: $scenario_count | Story files: $((story_count + feature
 ### 6. Auto-collect Parallel Execution metrics
 
 ```bash
-# Count waves that required parallel execution and completed successfully
-echo "=== Parallel Wave Health ==="
-
-# W4 (EA + UX) — new project plan
+# W4 (EA ∥ UX)
 ea_done=0; ux_done=0
 [ -f docs/architecture/enterprise-architecture.md ] && ea_done=1
 [ -f docs/ux/DESIGN.md ] && ux_done=1
-echo "W4 (EA ∥ UX): EA=$ea_done UX=$ux_done | Complete=$([ $ea_done -eq 1 ] && [ $ux_done -eq 1 ] && echo yes || echo no)"
+w4_complete=$([ $ea_done -eq 1 ] && [ $ux_done -eq 1 ] && echo true || echo false)
 
-# W6 (BE ∥ FE ∥ ME specs) — new project plan
+# W6 (BE ∥ FE ∥ ME specs)
 be_done=0; fe_done=0; me_done=0
-[ -f docs/architecture/backend-implementation-spec.md ] && be_done=1
+[ -f docs/architecture/backend-implementation-spec.md ]  && be_done=1
 [ -f docs/architecture/frontend-implementation-spec.md ] && fe_done=1
-[ -f docs/architecture/mobile-implementation-spec.md ] && me_done=1
-echo "W6 (BE ∥ FE ∥ ME spec): BE=$be_done FE=$fe_done ME=$me_done"
+[ -f docs/architecture/mobile-implementation-spec.md ]   && me_done=1
+w6_complete=$([ $be_done -eq 1 ] && [ $fe_done -eq 1 ] && [ $me_done -eq 1 ] && echo true || echo false)
 
-# Sprint E2 waves — count completed sprints
-sprint_count=$(ls docs/architecture/sprint-*-kickoff.md 2>/dev/null | wc -l)
-result_count=$(ls docs/testing/sprint-*-results.md 2>/dev/null | wc -l)
-echo "Sprints kicked off: $sprint_count | Sprints with results: $result_count"
+sprint_count=$(ls docs/architecture/sprint-*-kickoff.md 2>/dev/null | wc -l | tr -d ' ')
+result_count=$(ls docs/testing/sprint-*-results.md   2>/dev/null | wc -l | tr -d ' ')
+feature_count=$(ls docs/analysis/*-impact.md         2>/dev/null | wc -l | tr -d ' ')
+backlog_count=$(ls docs/analysis/*-analysis.md       2>/dev/null | wc -l | tr -d ' ')
 
-# Feature W3 (SA ∥ UX)
-feature_count=$(ls docs/analysis/*-impact.md 2>/dev/null | wc -l)
-feature_plan_count=$(ls docs/architecture/*-plan.md 2>/dev/null | wc -l)
-echo "Feature analyses (BA): $feature_count | Feature plans (TL): $feature_plan_count"
-
-# Backlog W2 (BA analysis)
-backlog_analysis_count=$(ls docs/analysis/*-analysis.md 2>/dev/null | wc -l)
-backlog_notes_count=$(ls docs/architecture/*-notes.md 2>/dev/null | wc -l)
-echo "Backlog analyses (BA): $backlog_analysis_count | Backlog notes (TL): $backlog_notes_count"
+echo "W4: $w4_complete | W6: $w6_complete"
+echo "Sprints kicked-off: $sprint_count | results: $result_count"
+echo "Feature analyses: $feature_count | Backlog analyses: $backlog_count"
 ```
 
 ---
 
-### 7. Count handoffs as process health indicator
+### 7. Handoff health
 
 ```bash
-handoff_count=$(ls .bmad/handoffs/*.md 2>/dev/null | grep -v _template | wc -l)
-echo "Handoffs completed: $handoff_count"
-
-# Count handoffs per agent type
-for agent in business-analyst product-owner solution-architect enterprise-architect \
-             ux-designer tech-lead backend-engineer frontend-engineer mobile-engineer tester-qe; do
-  count=$(grep -rl "from.*$agent\|to.*$agent" .bmad/handoffs/*.md 2>/dev/null | wc -l)
-  echo "  $agent: $count handoffs"
+total_handoffs=$(bmad_handoff_count)
+echo "Total handoffs: $total_handoffs"
+for agent in ba po sa ea ux tl be fe me qe sec; do
+  echo "  $agent: $(bmad_handoff_count_by_agent "$agent")"
 done
 ```
 
 ---
 
-### 8. Ask the practitioner for metrics that can't be auto-collected
+### 8. Practitioner inputs (only for what couldn't be derived)
 
-Present what was auto-collected, then ask for:
+Present the auto-collected snapshot, then prompt for fields whose `confidence` is
+`fuzzy` or `missing`. **Skip prompts for any field already at `derived` or `manual`.**
 
-- **Practitioner ID and role** (e.g., "TL-01" / "BA-02" / "SA-03")
-- **Time-to-Artifact (hours)** — "How many hours from task start to the artifact being approved?"
-- **Time-to-First-Draft (hours)** — "How many hours from task start to first draft commit?"
-- **First-Pass Review Rate** — "Was the most recent artifact approved on first review? (y/n or ratio like 3/5)"
-- **Phase** — "Is this a `baseline` (no AI) or `assisted` (AI-assisted) measurement?"
-- **Sprint velocity (if in execution)** — "How many stories were planned vs. completed this sprint?"
-- **Rules compliance rating** — "On a scale of 1–5, how well did agents follow their agent rules this session? (5 = no violations)"
+Always required:
 
-If the user declines to provide manual inputs, use the auto-collected approximations with
-a `"confidence": "auto-estimated"` flag.
+- **Practitioner ID and role** (e.g., `TL-01`, `BA-02`, `SA-03`)
+- **Practitioner name** (matches the dashboard's `name`)
+- **Phase** — `baseline` (no AI) or `assisted` (AI-assisted)
+
+Required only if not derivable:
+
+- `timeToArtifact` (hours) — if no handoff timestamp + approval marker exists.
+- `timeToDraft` (hours) — if no handoff-to-agent timestamp exists for this artifact.
+- `firstPassRate` (0..1 or fraction like `3/5`) — if `gh` derivation failed.
+- `rulesRating` (1–5 integer) — always manual; subjective compliance score.
+
+If the practitioner declines a prompt, set the field to `null` and confidence to `missing`.
 
 ---
 
-### 9. Output the evaluation record
+### 9. Emit the evaluation record (schema v2 — FLAT, dashboard-compatible)
 
-Output a fenced JSON block in this exact schema:
+The dashboard reads keys directly off each row (`r.firstPassRate`, `r.timeToArtifact`,
+…). **Top-level metric keys MUST stay flat** — anything nested goes into `_extras`.
 
 ```json
 {
+  "schemaVersion": 2,
   "practitioner": "<ID>",
   "name": "<Name>",
-  "role": "<role>",
+  "role": "<EA|SA|BA|PO|UX|TL|BE|FE|ME|QE|SEC|DSO>",
   "week": <N>,
   "phase": "<baseline|assisted>",
 
-  "_speed": {
-    "timeToArtifact": <hours>,
-    "timeToDraft": <hours>,
-    "iterTurnaround": <hours>,
-    "sprintVelocityPlanned": <N>,
-    "sprintVelocityCompleted": <N>
+  "timeToArtifact":    <hours|null>,
+  "timeToDraft":       <hours|null>,
+  "iterTurnaround":    <hours|null>,
+  "firstPassRate":     <0..1|null>,
+  "nfrCoverage":       <0..1|null>,
+  "archDebt":          <count>,
+  "alternatives":      <count>,
+  "risks":             <count>,
+  "scenarios":         <count>,
+
+  "_confidence": {
+    "timeToArtifact":  "manual|derived|fuzzy|missing",
+    "timeToDraft":     "...",
+    "iterTurnaround":  "...",
+    "firstPassRate":   "...",
+    "nfrCoverage":     "...",
+    "archDebt":        "...",
+    "alternatives":    "...",
+    "risks":           "...",
+    "scenarios":       "..."
   },
 
-  "_quality": {
-    "firstPassRate": <0.0-1.0>,
-    "nfrCoverage": <0.0-1.0>,
-    "archDebt": <count>,
-    "deviationCount": <count>,
-    "fixMarkerCount": <count>,
-    "hotfixMarkerCount": <count>,
-    "securityRulesCoverage": <0.0-1.0>
+  "_extras": {
+    "speed": {
+      "sprintVelocityPlanned":   <N|null>,
+      "sprintVelocityCompleted": <N|null>,
+      "perArtifactDraftIso":     {"<path>": "<iso>"},
+      "perArtifactIterHours":    {"<path>": <hours|null>}
+    },
+    "quality": {
+      "deviationOpen":     <N>,
+      "deviationAdded7d":  <N>,
+      "fixOpen":           <N>,
+      "fixAdded7d":        <N>,
+      "hotfixOpen":        <N>,
+      "hotfixAdded7d":     <N>,
+      "securityRulesCoverage": <0..1>
+    },
+    "coverage": {
+      "adrCount":   <N>,
+      "storyTotal": <N>,
+      "storyDone":  <N>
+    },
+    "parallelEfficiency": {
+      "w4Complete":         <bool>,
+      "w6Complete":         <bool>,
+      "sprintsKickedOff":   <N>,
+      "sprintsWithResults": <N>,
+      "featureAnalyses":    <N>,
+      "backlogAnalyses":    <N>
+    },
+    "compliance": {
+      "rulesRating":        <1-5|null>,
+      "deviationsJustified":<bool|"partial"|"unknown">,
+      "adrLockRespected":   <bool|"unknown">
+    },
+    "autoCollected": {
+      "nfrSections":  ["security","performance",...],
+      "handoffCount": <N>,
+      "handoffByAgent": {"ba": <N>, "po": <N>, ...}
+    }
   },
 
-  "_coverage": {
-    "alternatives": <count>,
-    "risks": <count>,
-    "scenarios": <count>,
-    "storyCount": <count>,
-    "featureAnalysisCount": <count>,
-    "backlogAnalysisCount": <count>
-  },
-
-  "_parallelEfficiency": {
-    "w4Complete": <true|false>,
-    "w6Complete": <true|false>,
-    "sprintsKickedOff": <N>,
-    "sprintsWithResults": <N>,
-    "featuresWithBAAnalysis": <N>,
-    "backlogWithBAAnalysis": <N>
-  },
-
-  "_compliance": {
-    "rulesRating": <1-5>,
-    "deviationsJustified": <true|false|"partial">,
-    "adrLockRespected": <true|false|"unknown">
-  },
-
-  "_autoCollected": {
-    "nfrSections": ["list of NFRs found"],
-    "adrCount": <N>,
-    "handoffCount": <N>,
-    "artifactRevisions": {"file": <N>}
-  },
-
-  "_collectedAt": "<ISO-8601 timestamp>"
+  "_collectedAt": "<ISO-8601 UTC>"
 }
 ```
 
+**Construction tip** — emit the JSON via Python from inside the command so quoting and
+escaping are correct:
+
+```bash
+python3 - <<PY
+import json, datetime, os
+record = {
+  "schemaVersion": 2,
+  "practitioner": "${PRACTITIONER_ID:-unknown}",
+  "name":         "${PRACTITIONER_NAME:-Anonymous}",
+  "role":         "${PRACTITIONER_ROLE:-TL}",
+  "week":         int("${week}") if "${week}".isdigit() else None,
+  "phase":        "${PHASE:-baseline}",
+  # … flat metrics …
+  "_collectedAt": datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+}
+print(json.dumps(record, indent=2))
+PY
+```
+
 ---
 
-### 10. Suggest appending to the dashboard
+### 10. Append to local eval log
 
-Tell the user:
-
-> **To add this to your dashboard:**
-> 1. Open `.bmad/eval/bmad-agent-eval-dashboard.html` (scaffolded with your project) or
->    `~/.bmad/eval/bmad-agent-eval-dashboard.html` (installed globally)
-> 2. Find the `const DATA = genData();` line
-> 3. Replace it with `const DATA = [` ... paste your records ... `];`
-> 4. Or append this record to an existing `DATA` array
->
-> The dashboard tracks 5 dimensions: Speed, Quality, Coverage, Parallel Efficiency, and Compliance.
-> Once you have 4+ weeks of baseline and 4+ weeks of AI-assisted data,
-> the statistical significance tests will become meaningful.
-
----
-
-### 11. Append to local eval log (optional)
-
-If `.bmad/eval/eval-log.jsonl` exists or the user confirms, append the JSON record:
+If `.bmad/eval/eval-log.jsonl` exists or the user agrees, append the record as a single
+JSON line:
 
 ```bash
 mkdir -p .bmad/eval
-echo '<json-record>' >> .bmad/eval/eval-log.jsonl
+printf '%s\n' "$RECORD_JSON" >> .bmad/eval/eval-log.jsonl
 ```
 
-This creates a running log alongside the dashboard in `.bmad/eval/`, which can later be
-bulk-imported into `bmad-agent-eval-dashboard.html`.
+This jsonl can be bulk-imported into `bmad-agent-eval-dashboard.html` later.
+
+---
+
+### 11. Suggest dashboard ingestion
+
+> **To ingest this record into the dashboard:**
+> 1. Open `eval/bmad-agent-eval-dashboard.html` (project) or
+>    `~/.bmad/eval/bmad-agent-eval-dashboard.html` (global).
+> 2. The dashboard auto-detects `schemaVersion: 2` records and merges them into `DATA`.
+>    Records with `null` metrics are excluded from those metrics' charts but still
+>    contribute where they have values.
+> 3. With ≥4 baseline + ≥4 assisted weeks, statistical-significance tests become valid.
 
 ---
 
 ## Output Format
 
-The output should include:
+The chat output should include, in order:
 
-1. **Auto-collected metrics summary** — table showing all 5 dimensions with values and confidence level
-2. **Parallel wave health snapshot** — which parallel waves completed cleanly
-3. **Compliance highlights** — DEVIATION count, security coverage, rules observations
-4. **Practitioner input prompts** — for metrics that need human judgment
-5. **Final JSON record** — copy-paste ready for the dashboard
-6. **Next steps** — how to accumulate records and when statistical tests become valid
+1. **Auto-collected snapshot** — table of all five dimensions with values + confidence.
+2. **Parallel-wave health** — W4 / W6 / sprints / features / backlog status.
+3. **Compliance highlights** — open vs. added-this-week markers; security sections.
+4. **Practitioner prompts** — only for fields still at `fuzzy`/`missing` confidence.
+5. **Final JSON record** — fenced JSON block, schema v2, copy-paste ready.
+6. **Next steps** — append to log, ingest into dashboard, when stats become meaningful.
