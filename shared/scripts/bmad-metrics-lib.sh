@@ -460,3 +460,160 @@ bmad_active_engineer_worktrees() {
     | awk '/^branch / {sub(/^branch /, ""); print}' \
     | grep -E '/(backend|frontend|mobile|be|fe|me)[-/]|sprint-' || true
 }
+
+# ---- Project identity & log append -----------------------------------------
+#
+# Eval records are written to two places:
+#   1. <project>/.bmad/eval/eval-log.jsonl     — authoritative, per-project
+#   2. ~/.bmad/eval/global-log.jsonl           — machine-wide rollup
+#
+# The dashboard imports either or both via its file picker. Dedupe key is
+# (project, practitioner, role, week) — re-runs in the same week overwrite
+# the prior snapshot. Set BMAD_NO_GLOBAL_MIRROR=1 in your env to skip the
+# global mirror (per-project file is always written).
+
+bmad_project_name() {
+  # Extract the project name from .bmad/PROJECT-CONTEXT.md (the first H1 line),
+  # falling back to the basename of the repo's top-level directory.
+  local name=""
+  if [ -f .bmad/PROJECT-CONTEXT.md ]; then
+    name=$(awk '/^#[[:space:]]+/ { sub(/^#[[:space:]]+/, ""); print; exit }' \
+            .bmad/PROJECT-CONTEXT.md)
+  fi
+  if [ -z "$name" ]; then
+    name=$(git rev-parse --show-toplevel 2>/dev/null | xargs basename 2>/dev/null)
+  fi
+  [ -z "$name" ] && name="unknown-project"
+  echo "$name"
+}
+
+bmad_project_slug() {
+  # Filesystem-safe slug derived from the project name.
+  bmad_project_name | tr '[:upper:]' '[:lower:]' \
+                    | sed -E 's/[^a-z0-9]+/-/g; s/^-+|-+$//g'
+}
+
+bmad_dedupe_key() {
+  # Compute the dedupe key for a JSON record passed on stdin or as $1.
+  # Echoes "<project>|<practitioner>|<role>|<week>".
+  python3 -c '
+import json, sys
+src = sys.argv[1] if len(sys.argv) > 1 and sys.argv[1] else sys.stdin.read()
+r = json.loads(src)
+print("|".join([
+    str(r.get("project") or ""),
+    str(r.get("practitioner") or ""),
+    str(r.get("role") or ""),
+    str(r.get("week") if r.get("week") is not None else ""),
+]))
+' "${1:-}"
+}
+
+bmad_append_eval_log() {
+  # Append a single JSON record (passed as $1 OR via stdin) to:
+  #   - <project>/.bmad/eval/eval-log.jsonl  (always)
+  #   - ~/.bmad/eval/global-log.jsonl        (unless BMAD_NO_GLOBAL_MIRROR=1)
+  #
+  # If a record with the same dedupe key already exists in either file, that
+  # line is replaced (in-place rewrite). Validates the input is parseable JSON;
+  # returns non-zero on validation failure without touching the files.
+  local record="${1:-}"
+  if [ -z "$record" ]; then record="$(cat)"; fi
+  if ! printf '%s' "$record" | python3 -c 'import json,sys; json.loads(sys.stdin.read())' >/dev/null 2>&1; then
+    echo "bmad_append_eval_log: record is not valid JSON" >&2
+    return 1
+  fi
+  local key
+  key=$(printf '%s' "$record" | bmad_dedupe_key)
+
+  local proj_log=".bmad/eval/eval-log.jsonl"
+  local global_log="${HOME}/.bmad/eval/global-log.jsonl"
+
+  mkdir -p "$(dirname "$proj_log")"
+  python3 -c '
+import json, os, sys, tempfile
+record_str = sys.argv[1].rstrip("\n")
+key = sys.argv[2]
+target = sys.argv[3]
+def rec_key(line):
+    try:
+        r = json.loads(line)
+    except Exception:
+        return None
+    return "|".join([str(r.get("project") or ""), str(r.get("practitioner") or ""),
+                     str(r.get("role") or ""), str(r.get("week") if r.get("week") is not None else "")])
+existing = []
+if os.path.exists(target):
+    with open(target) as f:
+        existing = [ln.rstrip("\n") for ln in f if ln.strip()]
+kept = [ln for ln in existing if rec_key(ln) != key]
+kept.append(record_str)
+fd, tmp = tempfile.mkstemp(prefix=".eval-log-", dir=os.path.dirname(target) or ".")
+with os.fdopen(fd, "w") as f:
+    f.write("\n".join(kept) + "\n")
+os.replace(tmp, target)
+' "$record" "$key" "$proj_log"
+
+  if [ "${BMAD_NO_GLOBAL_MIRROR:-0}" != "1" ]; then
+    mkdir -p "$(dirname "$global_log")"
+    python3 -c '
+import json, os, sys, tempfile
+record_str = sys.argv[1].rstrip("\n")
+key = sys.argv[2]
+target = sys.argv[3]
+def rec_key(line):
+    try:
+        r = json.loads(line)
+    except Exception:
+        return None
+    return "|".join([str(r.get("project") or ""), str(r.get("practitioner") or ""),
+                     str(r.get("role") or ""), str(r.get("week") if r.get("week") is not None else "")])
+existing = []
+if os.path.exists(target):
+    with open(target) as f:
+        existing = [ln.rstrip("\n") for ln in f if ln.strip()]
+kept = [ln for ln in existing if rec_key(ln) != key]
+kept.append(record_str)
+fd, tmp = tempfile.mkstemp(prefix=".eval-log-", dir=os.path.dirname(target) or ".")
+with os.fdopen(fd, "w") as f:
+    f.write("\n".join(kept) + "\n")
+os.replace(tmp, target)
+' "$record" "$key" "$global_log"
+  fi
+
+  echo "Appended to $proj_log (key=$key)"
+}
+
+bmad_eval_debounce_ok() {
+  # Returns 0 (ok to run) if no eval has been recorded for this project in the
+  # last $1 minutes (default 30). Returns 1 (skip) otherwise. Used by --auto
+  # callers (hooks) to avoid storms of near-identical records.
+  local minutes="${1:-30}"
+  local log=".bmad/eval/eval-log.jsonl"
+  [ -f "$log" ] || return 0
+  python3 -c '
+import datetime, json, sys
+minutes = int(sys.argv[1])
+log = sys.argv[2]
+now = datetime.datetime.utcnow()
+cutoff = now - datetime.timedelta(minutes=minutes)
+last = None
+try:
+    with open(log) as f:
+        for line in f:
+            try:
+                r = json.loads(line)
+            except Exception:
+                continue
+            ts = r.get("_collectedAt")
+            if not ts: continue
+            try:
+                t = datetime.datetime.fromisoformat(ts.replace("Z", "+00:00")).replace(tzinfo=None)
+            except Exception:
+                continue
+            if last is None or t > last: last = t
+except FileNotFoundError:
+    sys.exit(0)
+sys.exit(1 if (last and last > cutoff) else 0)
+' "$minutes" "$log"
+}

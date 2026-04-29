@@ -59,4 +59,10 @@ echo "  To turn off Yolo mode: ./scripts/yolo.sh off"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
+# ── Productivity snapshot (silent) ────────────────────────────────────────────
+# Records a /bmad:eval --auto snapshot tagged worktree-cleanup so the dashboard
+# can track Yolo-driven productivity over time. No-op outside BMAD projects.
+HOOK_DIR="$(dirname "${BASH_SOURCE[0]}")"
+[ -f "$HOOK_DIR/post-cleanup-eval.sh" ] && bash "$HOOK_DIR/post-cleanup-eval.sh" || true
+
 exit 0

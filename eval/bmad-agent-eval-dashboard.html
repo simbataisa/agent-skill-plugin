@@ -39,6 +39,29 @@
         .sample-banner { background: linear-gradient(135deg, #eff6ff, #faf5ff); border: 1px solid #c7d2fe; border-radius: 10px; padding: 12px 20px; margin-bottom: 20px; font-size: 13px; color: #4338ca; display: flex; align-items: center; gap: 8px; }
         .sample-banner strong { font-weight: 600; }
 
+        /* Data toolbar (Import / Reset / status) */
+        .data-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 14px; background: #fff; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+        .dt-left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .dt-right { font-size: 12px; color: var(--text-secondary); }
+        .dt-import { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; background: var(--accent-blue); color: #fff; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: filter .15s; }
+        .dt-import:hover { filter: brightness(0.95); }
+        .dt-icon { font-size: 14px; }
+        .dt-btn-secondary { padding: 6px 12px; background: #fff; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; color: var(--text-primary); cursor: pointer; transition: background .15s; }
+        .dt-btn-secondary:hover { background: #f3f4f6; }
+        .dt-hint { font-size: 12px; color: var(--text-secondary); }
+        .dt-hint code { background: #f3f4f6; padding: 1px 5px; border-radius: 4px; font-size: 11px; }
+        #dataStatus.warn { color: #b45309; }
+        #dataStatus.ok   { color: #047857; }
+
+        /* Drag-drop overlay */
+        .drop-overlay { position: fixed; inset: 0; background: rgba(67, 56, 202, 0.85); display: none; align-items: center; justify-content: center; z-index: 9999; pointer-events: none; }
+        .drop-overlay.active { display: flex; }
+        .drop-card { background: #fff; padding: 32px 48px; border-radius: 14px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+        .drop-icon { font-size: 40px; color: var(--accent-blue); }
+        .drop-title { font-size: 18px; font-weight: 600; margin-top: 8px; }
+        .drop-sub { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
+        .drop-sub code { background: #f3f4f6; padding: 1px 6px; border-radius: 4px; }
+
         /* Framework pills */
         .framework-bar { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
         .pill { padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; border: 2px solid transparent; transition: all .2s; }
@@ -156,12 +179,40 @@
                     <option value="all">All Practitioners</option>
                 </select>
             </div>
+            <div class="filter-group" id="filterProjectGroup" style="display:none">
+                <label>Project:</label>
+                <select id="filterProject">
+                    <option value="all">All Projects</option>
+                </select>
+            </div>
         </div>
     </div>
 
-    <div class="sample-banner">
+    <div class="data-toolbar">
+        <div class="dt-left">
+            <label class="dt-import" for="importFile">
+                <span class="dt-icon">⬆</span> Import JSONL
+            </label>
+            <input id="importFile" type="file" accept=".jsonl,.json,.txt" multiple style="display:none" />
+            <button class="dt-btn-secondary" id="resetDemoBtn" type="button">Reset to demo</button>
+            <span class="dt-hint">or drag &amp; drop <code>eval-log.jsonl</code> files anywhere on this page</span>
+        </div>
+        <div class="dt-right">
+            <span id="dataStatus">Showing demo data (144 simulated records)</span>
+        </div>
+    </div>
+
+    <div id="dropOverlay" class="drop-overlay">
+        <div class="drop-card">
+            <div class="drop-icon">⬇</div>
+            <div class="drop-title">Drop one or more <code>.jsonl</code> files</div>
+            <div class="drop-sub">Per-project log or <code>~/.bmad/eval/global-log.jsonl</code></div>
+        </div>
+    </div>
+
+    <div class="sample-banner" id="sampleBanner">
         <strong>Sample Data</strong> &mdash; This dashboard uses realistic simulated data for 12 practitioners over 12 weeks.
-        Replace the <code>DATA</code> variable in the HTML source with your actual measurements.
+        Click <strong>Import</strong> above to load your real eval logs from <code>.bmad/eval/eval-log.jsonl</code> or <code>~/.bmad/eval/global-log.jsonl</code>.
     </div>
 
     <div class="framework-bar">
@@ -373,7 +424,10 @@ function normalizeRecord(r) {
     return r;
 }
 
-const DATA = genData().map(normalizeRecord);
+// `let` (not `const`) so Import / Reset can swap the dataset without a full reload.
+let DATA = genData().map(normalizeRecord);
+let SOURCE_DESCRIPTION = "demo data (144 simulated records)";
+let SOURCE_FILES = [];   // names of imported files (for the status row)
 
 // ============================================================
 // Composite score calculation
@@ -423,13 +477,16 @@ let sortCol = -1, sortAsc = true;
 
 function getFiltered() {
     let d = DATA;
-    const role = document.getElementById("filterRole").value;
+    const role   = document.getElementById("filterRole").value;
     const period = document.getElementById("filterPeriod").value;
-    const prac = document.getElementById("filterPractitioner").value;
-    if (role !== "all") d = d.filter(r => r.role === role);
+    const prac   = document.getElementById("filterPractitioner").value;
+    const projEl = document.getElementById("filterProject");
+    const proj   = projEl ? projEl.value : "all";
+    if (role !== "all")     d = d.filter(r => r.role === role);
     if (period === "baseline") d = d.filter(r => r.phase === "baseline");
     else if (period === "assisted") d = d.filter(r => r.phase === "assisted");
-    if (prac !== "all") d = d.filter(r => r.practitioner === prac);
+    if (prac !== "all")     d = d.filter(r => r.practitioner === prac);
+    if (proj !== "all")     d = d.filter(r => (r.project || "") === proj);
     return d;
 }
 
@@ -440,15 +497,184 @@ function setDimension(dim) {
     render();
 }
 
-// Populate practitioner dropdown
+// Populate practitioner dropdown from the *current* DATA (not the static seed list).
 function populatePractitioners() {
     const sel = document.getElementById("filterPractitioner");
-    PRACTITIONERS.forEach(p => {
+    const prev = sel.value;
+    sel.innerHTML = '<option value="all">All Practitioners</option>';
+    const seen = new Map();
+    DATA.forEach(r => {
+        if (!r.practitioner || seen.has(r.practitioner)) return;
+        seen.set(r.practitioner, r);
+    });
+    [...seen.values()]
+        .sort((a, b) => (a.role || "").localeCompare(b.role || "") || (a.name || "").localeCompare(b.name || ""))
+        .forEach(r => {
+            const opt = document.createElement("option");
+            opt.value = r.practitioner;
+            opt.textContent = `${r.name || r.practitioner} (${r.role || "?"})`;
+            sel.appendChild(opt);
+        });
+    if (prev && [...sel.options].some(o => o.value === prev)) sel.value = prev;
+}
+
+// Populate project dropdown — only visible once data has multiple projects.
+function populateProjects() {
+    const sel = document.getElementById("filterProject");
+    const group = document.getElementById("filterProjectGroup");
+    if (!sel || !group) return;
+    const projects = [...new Set(DATA.map(r => r.project).filter(Boolean))].sort();
+    const prev = sel.value;
+    sel.innerHTML = '<option value="all">All Projects</option>';
+    projects.forEach(p => {
         const opt = document.createElement("option");
-        opt.value = p.id;
-        opt.textContent = `${p.name} (${p.role})`;
+        opt.value = p; opt.textContent = p;
         sel.appendChild(opt);
     });
+    group.style.display = projects.length >= 2 ? "" : "none";
+    if (prev && [...sel.options].some(o => o.value === prev)) sel.value = prev;
+}
+
+// ============================================================
+// JSONL import + dedupe
+// ------------------------------------------------------------
+// Records are deduped by (project, practitioner, role, week). If multiple
+// records collide, the one with the latest `_collectedAt` wins. The first
+// import REPLACES the demo dataset; subsequent imports MERGE (with dedupe).
+// ============================================================
+function recordKey(r) {
+    return [r.project || "", r.practitioner || "", r.role || "",
+            r.week == null ? "" : String(r.week)].join("|");
+}
+
+function parseJsonl(text) {
+    const records = [];
+    const errors = [];
+    text.split(/\r?\n/).forEach((line, i) => {
+        const trimmed = line.trim();
+        if (!trimmed) return;
+        try {
+            const r = JSON.parse(trimmed);
+            if (typeof r !== "object" || r === null) throw new Error("not an object");
+            records.push(normalizeRecord(r));
+        } catch (e) {
+            errors.push(`line ${i+1}: ${e.message}`);
+        }
+    });
+    return { records, errors };
+}
+
+function mergeRecords(incoming, base) {
+    // Build a key→record map from `base`, then upsert each incoming record,
+    // keeping whichever has the more recent `_collectedAt` on collision.
+    const map = new Map(base.map(r => [recordKey(r), r]));
+    const ts = r => Date.parse(r._collectedAt || "") || 0;
+    incoming.forEach(r => {
+        const k = recordKey(r);
+        const prev = map.get(k);
+        if (!prev || ts(r) >= ts(prev)) map.set(k, r);
+    });
+    return [...map.values()];
+}
+
+let _hasImported = false;
+async function loadFromFiles(fileList) {
+    const files = [...fileList];
+    if (!files.length) return;
+    const allRecords = [];
+    const fileSummary = [];
+    let totalErrors = 0;
+    for (const f of files) {
+        try {
+            const text = await f.text();
+            const { records, errors } = parseJsonl(text);
+            allRecords.push(...records);
+            fileSummary.push(`${f.name} (${records.length})`);
+            totalErrors += errors.length;
+            if (errors.length) console.warn(`Errors in ${f.name}:`, errors);
+        } catch (e) {
+            console.error(`Failed to read ${f.name}:`, e);
+            totalErrors++;
+        }
+    }
+    if (!allRecords.length) {
+        setStatus(`No valid records found in ${files.length} file(s)`, "warn");
+        return;
+    }
+    // First import replaces demo data; later imports merge into the imported set.
+    const base = _hasImported ? DATA : [];
+    DATA = mergeRecords(allRecords, base);
+    _hasImported = true;
+    SOURCE_FILES = [...new Set([...SOURCE_FILES, ...files.map(f => f.name)])];
+    SOURCE_DESCRIPTION = `${DATA.length} records from ${[...new Set(DATA.map(r => r.project || "(unnamed)"))].length} project(s)`;
+    const banner = document.getElementById("sampleBanner");
+    if (banner) banner.style.display = "none";
+    setStatus(
+        `Showing ${SOURCE_DESCRIPTION} — sources: ${SOURCE_FILES.join(", ")}` +
+        (totalErrors ? ` · ${totalErrors} parse error(s) — see console` : ""),
+        totalErrors ? "warn" : "ok"
+    );
+    populatePractitioners();
+    populateProjects();
+    render();
+}
+
+function resetToDemo() {
+    DATA = genData().map(normalizeRecord);
+    SOURCE_DESCRIPTION = "demo data (144 simulated records)";
+    SOURCE_FILES = [];
+    _hasImported = false;
+    setStatus(`Showing ${SOURCE_DESCRIPTION}`, "");
+    const banner = document.getElementById("sampleBanner");
+    if (banner) banner.style.display = "";
+    populatePractitioners();
+    populateProjects();
+    render();
+}
+
+function setStatus(text, klass) {
+    const el = document.getElementById("dataStatus");
+    if (!el) return;
+    el.textContent = text;
+    el.className = klass || "";
+}
+
+// Wire up UI: file input, reset button, full-page drag-drop.
+function wireDataToolbar() {
+    const fileInput = document.getElementById("importFile");
+    if (fileInput) {
+        fileInput.addEventListener("change", e => {
+            loadFromFiles(e.target.files);
+            e.target.value = "";  // allow re-importing the same file later
+        });
+    }
+    const resetBtn = document.getElementById("resetDemoBtn");
+    if (resetBtn) resetBtn.addEventListener("click", resetToDemo);
+
+    const overlay = document.getElementById("dropOverlay");
+    let dragDepth = 0;
+    window.addEventListener("dragenter", e => {
+        if (e.dataTransfer && [...(e.dataTransfer.types || [])].includes("Files")) {
+            dragDepth++;
+            if (overlay) overlay.classList.add("active");
+        }
+    });
+    window.addEventListener("dragleave", () => {
+        dragDepth = Math.max(0, dragDepth - 1);
+        if (dragDepth === 0 && overlay) overlay.classList.remove("active");
+    });
+    window.addEventListener("dragover", e => { e.preventDefault(); });
+    window.addEventListener("drop", e => {
+        e.preventDefault();
+        dragDepth = 0;
+        if (overlay) overlay.classList.remove("active");
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
+            loadFromFiles(e.dataTransfer.files);
+        }
+    });
+
+    const projSel = document.getElementById("filterProject");
+    if (projSel) projSel.addEventListener("change", render);
 }
 
 // ============================================================
@@ -886,6 +1112,8 @@ function sortTable(col) {
 // Init
 // ============================================================
 populatePractitioners();
+populateProjects();
+wireDataToolbar();
 document.getElementById("filterRole").addEventListener("change", render);
 document.getElementById("filterPeriod").addEventListener("change", render);
 document.getElementById("filterPractitioner").addEventListener("change", render);

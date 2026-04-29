@@ -1461,16 +1461,21 @@ fi
 # without depending on the BMAD repo being present on disk.
 SCRIPTS_SRC_DIR="$BASE_DIR/scripts"
 BMAD_SCRIPTS_DIR="$BMAD_HOME/scripts"
-DIAGNOSTIC_SCRIPTS=(check-playwright-env.sh render-design-md.py)
+DIAGNOSTIC_SCRIPTS=(check-playwright-env.sh render-design-md.py bmad-eval-run.sh)
+SHARED_SCRIPTS_SRC_DIR="$BASE_DIR/shared/scripts"
+SHARED_SCRIPTS=(bmad-metrics-lib.sh)
 
 # Only proceed if at least one diagnostic script exists in source
 _has_diag_script="false"
 for s in "${DIAGNOSTIC_SCRIPTS[@]}"; do
     [[ -f "$SCRIPTS_SRC_DIR/$s" ]] && _has_diag_script="true"
 done
+for s in "${SHARED_SCRIPTS[@]}"; do
+    [[ -f "$SHARED_SCRIPTS_SRC_DIR/$s" ]] && _has_diag_script="true"
+done
 
 if [[ "$_has_diag_script" == "true" ]]; then
-    echo -e "${BLUE}Installing BMAD diagnostic scripts...${NC}"
+    echo -e "${BLUE}Installing BMAD diagnostic + metrics scripts...${NC}"
     for s in "${DIAGNOSTIC_SCRIPTS[@]}"; do
         src="$SCRIPTS_SRC_DIR/$s"
         dest="$BMAD_SCRIPTS_DIR/$s"
@@ -1482,9 +1487,23 @@ if [[ "$_has_diag_script" == "true" ]]; then
             echo -e "  ${GREEN}✓${NC} $s → $BMAD_SCRIPTS_DIR/"
         fi
     done
+    # Shared metrics lib — sourced by /bmad:eval, /bmad:status, and the
+    # auto-eval hooks. Lives at ~/.bmad/scripts/bmad-metrics-lib.sh after install.
+    for s in "${SHARED_SCRIPTS[@]}"; do
+        src="$SHARED_SCRIPTS_SRC_DIR/$s"
+        dest="$BMAD_SCRIPTS_DIR/$s"
+        if [[ -f "$src" ]]; then
+            copy_file "$src" "$dest"
+            if [[ "$DRY_RUN" != "true" ]]; then
+                chmod +x "$dest" 2>/dev/null || true
+            fi
+            echo -e "  ${GREEN}✓${NC} $s → $BMAD_SCRIPTS_DIR/  (shared/scripts)"
+        fi
+    done
     echo "  Invoke from any project:"
     echo "    bash   $BMAD_SCRIPTS_DIR/check-playwright-env.sh"
     echo "    python $BMAD_SCRIPTS_DIR/render-design-md.py --input docs/ux/DESIGN.md"
+    echo "    bash   $BMAD_SCRIPTS_DIR/bmad-eval-run.sh --trigger=manual --verbose"
     echo ""
 fi
 

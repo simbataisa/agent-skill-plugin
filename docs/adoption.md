@@ -152,7 +152,7 @@ After each sprint the Tester-QE agent prints a `✅` review summary and waits. O
 The key steps for every sprint boundary are the same regardless of tool:
 
 1. Type `next` to accept the Tester-QE review (closes Sprint N)
-2. Run `/bmad-eval` to log Sprint N productivity metrics
+2. (No action needed — the post-merge / sprint-results hooks record `/bmad:eval --auto` for you. Run `/bmad:eval` manually for an interactive snapshot if you want a richer record.)
 3. Invoke **Tech Lead** — read `sprint-N-results.md`, confirm carry-overs, produce `sprint-N+1-kickoff.md`
 4. Invoke **Backend / Frontend / Mobile** engineers with Sprint N+1 story lists from the kickoff doc
 5. Invoke **Tester-QE** — test Sprint N+1, save `sprint-N+1-results.md`
@@ -186,16 +186,84 @@ BMAD includes a framework for measuring AI-assisted productivity gains, specific
 
 **Composite Score** = `0.35 × Speed + 0.35 × Quality + 0.30 × Coverage` (normalized 0–100)
 
-### The `/bmad-eval` Command
+### The `/bmad:eval` Command
 
-Run `/bmad-eval` inside any BMAD project to auto-collect metrics from `.bmad/` artifacts, git history, and architecture docs. The command:
+Run `/bmad:eval` inside any BMAD project to record a productivity snapshot. The command auto-collects everything it can from `.bmad/` artifacts, git history, and architecture docs, then asks the practitioner only for fields that can't be derived. It runs in two modes:
 
-1. Scans artifact files for NFR sections, ADR options, risk mentions, and scenario counts
-2. Measures revision history and time-to-commit from git
-3. Asks the practitioner for manual inputs (time-to-artifact, first-pass rate)
-4. Outputs a JSON record compatible with the evaluation dashboard
+| Mode | Trigger | Practitioner interview | Output |
+|---|---|---|---|
+| **Interactive** | `/bmad:eval` | One question per turn (7 questions, "skip" to bypass) | Verbose chat report |
+| **Auto** | `/bmad:eval --auto` (or any of the auto-trigger hooks) | Skipped — uses env defaults | Silent unless `--verbose` |
 
-Records accumulate in `.bmad/eval/eval-log.jsonl` for longitudinal tracking.
+**What gets auto-derived** (no manual input needed):
+
+- NFR coverage (ratio of NFR sections present as headings in the solution architecture)
+- Alternatives evaluated (count of `### Option` headings under `## Options Considered` across ADRs)
+- Risks (entries inside `## Risks` sections / risk-register tables)
+- Scenarios (Gherkin `Scenario:` lines + `## Use Case` / `## User Journey` headings)
+- Architecture debt (count of ADRs whose status is Deferred / Deprecated / Superseded)
+- DEVIATION / FIX / HOTFIX markers — both stock (current count) and flow (added in last 7 days)
+- Iteration turnaround (mean Δ in hours between consecutive commits on each artifact)
+- First-pass review rate (derived via `gh pr list` when GitHub CLI is available)
+- Sprint velocity (planned vs completed stories from sprint-N-kickoff/results)
+
+**What's still manual** (asked sequentially in interactive mode, `null` in auto mode):
+
+1. Practitioner ID & name
+2. Phase (`baseline` vs `assisted`)
+3. Time-to-artifact (hours)
+4. Time-to-first-draft (hours)
+5. First-pass review rate — only if `gh` derivation failed
+6. Rules compliance rating (1–5)
+7. Iteration turnaround — only if no inter-commit Δ available
+
+Every numeric metric carries a `confidence` tag (`manual` | `derived` | `fuzzy` | `missing`) so the dashboard can dim values that need human verification.
+
+### Storage layout — per-project log + global mirror
+
+Each `/bmad:eval` run does a **dual-write** via the shared library:
+
+| Path | Content | Lifecycle |
+|---|---|---|
+| `<project>/.bmad/eval/eval-log.jsonl` | Authoritative project log | Per-project; can be checked into git |
+| `~/.bmad/eval/global-log.jsonl` | Machine-wide rollup across all your projects | Auto-mirrored unless `BMAD_NO_GLOBAL_MIRROR=1` |
+
+Records are deduped by `(project, practitioner, role, week)` — re-running in the same week overwrites the prior snapshot, so back-to-back hook invocations don't pile up duplicates. Set `--debounce=N` (default 30 minutes) to suppress runs that come too soon after the last one.
+
+Every record carries `schemaVersion: 2` and a flat metric shape that the dashboard reads directly.
+
+### Auto-triggers — eval on workflow completion
+
+Three events fire `/bmad:eval --auto` automatically when the per-repo hooks are installed:
+
+| Event | Hook | Mechanism |
+|---|---|---|
+| `git pull` / `git merge` / `git rebase` lands locally | `.git/hooks/post-merge` | Fire-and-forget background run |
+| Sprint results file written (`docs/testing/sprint-*-results.md`) | Claude Code PostToolUse hook on `Write` | Synchronous, debounced 15min |
+| Yolo harness session wrap-up (worktree cleanup) | `hooks/yolo-harness/hooks/post-cleanup-eval.sh` | Synchronous, tagged `worktree-cleanup` |
+
+**Install per repo:**
+
+```bash
+cd /path/to/your/project
+bash /path/to/bmad-sdlc-agents/hooks/install-project-hooks.sh
+```
+
+The installer is idempotent and uses a `BMAD-MANAGED` sentinel comment so it never clobbers existing user-written hooks (use `--force` to override).
+
+### Practitioner identity for hook-driven runs
+
+Set these once in `~/.bmadrc` so auto-triggered runs attribute correctly:
+
+```bash
+# ~/.bmadrc
+export BMAD_PRACTITIONER_ID="TL-01"
+export BMAD_PRACTITIONER_NAME="Your Name"
+export BMAD_PRACTITIONER_ROLE="TL"
+export BMAD_PHASE="assisted"   # or "baseline" while running comparisons
+```
+
+Then source it from your shell rc (`echo 'source ~/.bmadrc' >> ~/.bashrc`).
 
 ### Interactive Dashboard
 
@@ -204,16 +272,27 @@ The dashboard ships as `eval/bmad-agent-eval-dashboard.html` in this repo. After
 - **Per-project:** `.bmad/eval/bmad-agent-eval-dashboard.html` — scaffolded automatically by `scaffold-project.sh`
 - **Global reference:** `~/.bmad/eval/bmad-agent-eval-dashboard.html` — copied by `install-global.sh`
 
-It is a self-contained HTML file (Chart.js, no server required) that visualizes:
+Self-contained HTML (Chart.js, no server required). Visualizes:
 
 - KPI cards with baseline → assisted deltas
 - Weekly composite trend (bar chart)
-- Per-dimension breakdowns (speed, quality, coverage)
+- Per-dimension breakdowns (Speed, Quality, Coverage)
 - EA vs SA radar comparison
 - Two-sample t-test statistical significance table
 - Sortable practitioner detail table
 
-**Getting started:** Collect 4 weeks of baseline data (no AI), then 4+ weeks of AI-assisted data. Replace the sample `DATA` array in the dashboard with your real records from `/bmad-eval`.
+**Loading your real data — the Import flow:**
+
+1. Open the dashboard.
+2. Click the **Import JSONL** button in the toolbar (or drag `~/.bmad/eval/global-log.jsonl` directly onto the page).
+3. Pick one or more files — per-project logs or the global rollup, in any combination.
+4. The first import replaces the synthetic demo data; subsequent imports merge with `(project, practitioner, role, week)` dedupe (latest `_collectedAt` wins).
+5. A **Project** filter dropdown auto-appears once ≥2 projects are loaded, so you can drill into one project or compare across them.
+6. Click **Reset to demo** any time to swap back to the simulated dataset.
+
+`null` metrics (confidence: `missing`) are excluded from the affected charts but still contribute to other metrics on the same row — so partial records remain useful.
+
+**Statistical significance:** With ≥4 baseline weeks and ≥4 assisted weeks per practitioner, the t-test table becomes meaningful. Set `BMAD_PHASE=baseline` for the initial 4-week stretch (no AI), then `BMAD_PHASE=assisted` once you start using BMAD.
 
 ---
 

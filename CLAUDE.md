@@ -18,6 +18,12 @@ bash scripts/scaffold-project.sh <project-name>
 
 # Pull latest agent updates (git pull + reinstall)
 bash scripts/update.sh
+
+# Per-repo: install auto-eval hooks (git post-merge + Claude PostToolUse on sprint results)
+bash hooks/install-project-hooks.sh
+
+# Standalone auto-mode eval (what the hooks call internally — also useful for cron / CI)
+bash scripts/bmad-eval-run.sh --trigger=manual --verbose
 ```
 
 ---
@@ -37,25 +43,41 @@ shared/
   BMAD-SHARED-CONTEXT.md        ← Org-wide conventions loaded by all agents
   references/                   ← Shared reference docs (technology radar, etc.)
   templates/                    ← Shared output templates
+  scripts/
+    bmad-metrics-lib.sh         ← Shared lib sourced by /bmad:eval, /bmad:status,
+                                  and the auto-eval hooks (NFR ratio, ADR options,
+                                  story-status, dual-write log append, dedupe)
 
 scripts/
   install-global.sh             ← Main installer — deploys to all detected tools
   scaffold-project.sh           ← Scaffolds .bmad/ into a project repo
   update.sh                     ← git pull + reinstall in one step
+  bmad-eval-run.sh              ← Standalone --auto runner used by hooks; does the
+                                  same dual-write the slash command does, silently
 
 rules/                          ← Tool-specific rule/context files
   cursor/   gemini/   copilot/   windsurf/   aider/   opencode/
 
 hooks/
   global/                       ← Hooks installed globally (PostToolUse, Stop)
+    scripts/
+      post-merge-eval.sh        ← Git post-merge hook → /bmad:eval --auto
   project/                      ← Hooks scaffolded per project
+    scripts/
+      auto-eval-on-sprint-results.sh  ← PostToolUse on sprint-N-results.md write
   yolo-harness/                 ← Yolo parallel execution harness
+    hooks/
+      post-cleanup-eval.sh      ← Records eval after worktree cleanup
+  install-project-hooks.sh      ← Per-repo installer that wires the git hook +
+                                  copies Claude PostToolUse hooks into .claude/
 
 mcp-configs/
   global/                       ← MCP server config stubs (merge into tool settings)
 
 eval/
   bmad-agent-eval-dashboard.html ← Standalone productivity dashboard
+                                   (file-picker + drag-drop import of *.jsonl logs;
+                                    dedupes by project|practitioner|role|week)
 ```
 
 ---
@@ -147,6 +169,45 @@ The installer automatically discovers all `*.md` files in each agent folder (ski
 **Kiro-specific:** `name:` frontmatter must match the folder name and must not contain YAML-special characters. Descriptions with `[brackets]` are automatically double-quoted.
 
 **Gemini-specific:** One extension per agent (`bmad-<agent-name>`). `GEMINI.md` contains pure `@import` directives only — no inline content. Agent persona goes in `skills/<agent-name>/SKILL.md` so it's invocable as `/bmad-tech-lead:tech-lead`.
+
+The installer also copies the **shared metrics library** and the **standalone eval runner** to `~/.bmad/scripts/` so the eval/status commands and hook scripts can find them on every machine:
+
+| Source | Destination |
+|---|---|
+| `shared/scripts/bmad-metrics-lib.sh` | `~/.bmad/scripts/bmad-metrics-lib.sh` |
+| `scripts/bmad-eval-run.sh`           | `~/.bmad/scripts/bmad-eval-run.sh`   |
+| `eval/bmad-agent-eval-dashboard.html`| `~/.bmad/eval/bmad-agent-eval-dashboard.html` |
+
+---
+
+## Productivity Eval Pipeline
+
+`/bmad:eval` and `/bmad:status` share a single source of measurement truth — the shared metrics library. The pipeline has three layers:
+
+| Layer | Path | Role |
+|---|---|---|
+| **Measurement** | `shared/scripts/bmad-metrics-lib.sh` | All NFR / ADR / risk / scenario / story / handoff / marker counters; ISO-week math; mean inter-commit Δ; recency-aware hotfix detection; `bmad_append_eval_log` (dual-write + dedupe) |
+| **Slash command** | `agents/bmad/eval.md` | Interactive runner. Sources the lib; conducts the 7-question interview one-Q-per-turn; emits a schema-v2 record |
+| **Standalone runner** | `scripts/bmad-eval-run.sh` | Auto-mode runner used by hooks. Reads identity from env (`BMAD_PRACTITIONER_*`); skips the interview; honors `--debounce` |
+
+Records are written to two places on every run:
+
+```
+<project>/.bmad/eval/eval-log.jsonl   ← per-project authoritative log
+~/.bmad/eval/global-log.jsonl         ← machine-wide rollup (set BMAD_NO_GLOBAL_MIRROR=1 to skip)
+```
+
+Dedupe key: `(project, practitioner, role, week)` — a re-run in the same week replaces the prior line in-place; it does not append a duplicate.
+
+**Auto-trigger hooks** (installed by `hooks/install-project-hooks.sh`):
+
+| Event | Hook script | Mechanism |
+|---|---|---|
+| `git pull` / `git merge` / `git rebase` lands | `hooks/global/scripts/post-merge-eval.sh` | Wired into `.git/hooks/post-merge`; runs `bmad-eval-run.sh --trigger=post-merge` in the background |
+| `Write` of `docs/testing/sprint-*-results.md` | `hooks/project/scripts/auto-eval-on-sprint-results.sh` | Registered as a Claude Code PostToolUse hook in `hooks/project/settings.json`; tagged `--trigger=sprint-results` |
+| Yolo session wrap-up (worktree cleanup) | `hooks/yolo-harness/hooks/post-cleanup-eval.sh` | Called from `session-wrap-up.sh`; tagged `--trigger=worktree-cleanup` |
+
+The dashboard at `eval/bmad-agent-eval-dashboard.html` has an **Import** button + drag-drop overlay that ingest one or more `*.jsonl` logs in any combination. Records with `null` metrics (confidence: `missing`) are excluded from the affected charts but still contribute to other metrics on the same row.
 
 ---
 

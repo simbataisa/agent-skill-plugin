@@ -1,6 +1,6 @@
 ---
 description: "[BMAD] Collect productivity metrics from .bmad/ artifacts and emit a JSON evaluation snapshot (schema v2) compatible with the BMAD Eval Dashboard."
-argument-hint: "[week-number] (optional — defaults to current project week)"
+argument-hint: "[week-number] [--auto] [--verbose] [--note=\"...\"] [--debounce=N]"
 ---
 
 Collect BMAD productivity metrics for the current project and emit a JSON evaluation
@@ -19,11 +19,22 @@ Metrics cover five dimensions: **Speed**, **Quality**, **Coverage**, **Parallel 
 The dashboard dims metrics tagged `fuzzy`/`missing` so practitioners can see where to apply
 human judgment.
 
+## Modes
+
+| Mode          | Trigger                            | Practitioner interview | Output    |
+|---------------|------------------------------------|------------------------|-----------|
+| Interactive   | `/bmad:eval` (default)             | Yes — one Q per turn   | Verbose   |
+| Auto          | `/bmad:eval --auto`                | Skipped (env defaults) | Silent unless `--verbose` |
+
+`--auto` is the mode invoked by hooks (post-merge, sprint-results-write, worktree
+cleanup). It honors a debounce window (default 30 min) — back-to-back triggers within
+the window become no-ops so a flurry of commits/merges doesn't spam the eval log.
+
 ---
 
 ## Steps
 
-### 0. Source the shared metrics library
+### 0. Source the shared metrics library + parse arguments
 
 All measurements go through `shared/scripts/bmad-metrics-lib.sh` so this command and
 `/bmad:status` agree on definitions. Locate it (project copy first, then global install):
@@ -38,6 +49,49 @@ done
 [ -z "$LIB" ] && { echo "❌ bmad-metrics-lib.sh not found — run scripts/install-global.sh"; exit 1; }
 # shellcheck disable=SC1090
 source "$LIB"
+
+# Parse $ARGUMENTS into flags
+AUTO=0; VERBOSE=0; NOTE=""; DEBOUNCE_MIN=30; week_arg=""
+for a in $ARGUMENTS; do
+  case "$a" in
+    --auto)        AUTO=1 ;;
+    --verbose)     VERBOSE=1 ;;
+    --debounce=*)  DEBOUNCE_MIN="${a#--debounce=}" ;;
+    --note=*)      NOTE="${a#--note=}" ;;
+    [0-9]*)        week_arg="$a" ;;
+    *)             [ $VERBOSE -eq 1 ] && echo "ignoring arg: $a" ;;
+  esac
+done
+
+# In --auto mode, honor the debounce window. Skip silently if a recent record exists.
+if [ "$AUTO" = "1" ]; then
+  if ! bmad_eval_debounce_ok "$DEBOUNCE_MIN"; then
+    [ "$VERBOSE" = "1" ] && echo "⏱  debounced (last eval within ${DEBOUNCE_MIN}m)"
+    exit 0
+  fi
+fi
+```
+
+**Practitioner defaults for `--auto` mode** (read from env, with fallbacks):
+
+```bash
+if [ "$AUTO" = "1" ]; then
+  PRACTITIONER_ID="${BMAD_PRACTITIONER_ID:-${USER:-anon}-auto}"
+  PRACTITIONER_NAME="${BMAD_PRACTITIONER_NAME:-${USER:-Anonymous}}"
+  PRACTITIONER_ROLE="${BMAD_PRACTITIONER_ROLE:-TL}"
+  PHASE="${BMAD_PHASE:-assisted}"
+fi
+```
+
+Users wire these into `~/.bmadrc` (sourced by their shell) so hook-driven runs always
+attribute to the right person:
+
+```bash
+# ~/.bmadrc
+export BMAD_PRACTITIONER_ID="TL-01"
+export BMAD_PRACTITIONER_NAME="Dennis Dao"
+export BMAD_PRACTITIONER_ROLE="TL"
+export BMAD_PHASE="assisted"
 ```
 
 ### 1. Read project context
@@ -51,15 +105,23 @@ If `.bmad/PROJECT-CONTEXT.md` doesn't exist, tell the user to run `/bmad:status`
 
 ### 2. Determine the evaluation week
 
-- If `$ARGUMENTS` contains a positive integer, use that as the week number.
+- If a positive integer was passed in `$ARGUMENTS`, use that.
 - Otherwise call `bmad_project_week` — it returns weeks since the first commit on `.bmad/`,
   anchored to ISO-week boundaries so two same-day runs always agree.
-- If both fail, ask the user.
+- If both fail and we're in interactive mode, ask the user. In `--auto` mode, fall back
+  to `null` (the dashboard treats null weeks as undated points and excludes them from
+  trend lines).
 
 ```bash
-week="${ARGUMENTS:-$(bmad_project_week)}"
-[[ "$week" =~ ^[0-9]+$ ]] || week="unknown"
-echo "Week: $week"
+week="${week_arg:-$(bmad_project_week)}"
+[[ "$week" =~ ^[0-9]+$ ]] || week=""
+echo "Week: ${week:-unknown}"
+```
+
+Capture the project name for the record:
+
+```bash
+PROJECT_NAME="$(bmad_project_name)"
 ```
 
 ---
@@ -240,25 +302,92 @@ done
 
 ---
 
-### 8. Practitioner inputs (only for what couldn't be derived)
+### 8. Practitioner interview — ONE question per turn
 
-Present the auto-collected snapshot, then prompt for fields whose `confidence` is
-`fuzzy` or `missing`. **Skip prompts for any field already at `derived` or `manual`.**
+**SKIP this step entirely if `AUTO=1`.** In auto mode, every manual-only field becomes
+`null` with `confidence: "missing"`, and the practitioner identity comes from the env
+defaults set in Step 0.
 
-Always required:
+After the auto-collection summary (interactive mode only), conduct a
+**sequential, one-question-per-turn** interview. Do **not** dump all questions at once.
+After each answer:
 
-- **Practitioner ID and role** (e.g., `TL-01`, `BA-02`, `SA-03`)
-- **Practitioner name** (matches the dashboard's `name`)
-- **Phase** — `baseline` (no AI) or `assisted` (AI-assisted)
+1. Parse and store the response.
+2. If the user replies `skip` (case-insensitive), record the metric as `null` with
+   `confidence: "missing"` (or use the auto-estimate where one exists, with
+   `confidence: "fuzzy"`) and proceed to the next question.
+3. If the answer is malformed (e.g., non-numeric where a number is expected), echo the
+   captured value back and ask once for confirmation before moving on.
+4. Then ask the next question.
 
-Required only if not derivable:
+**Open the interview with this preamble** (verbatim — practitioners recognize it):
 
-- `timeToArtifact` (hours) — if no handoff timestamp + approval marker exists.
-- `timeToDraft` (hours) — if no handoff-to-agent timestamp exists for this artifact.
-- `firstPassRate` (0..1 or fraction like `3/5`) — if `gh` derivation failed.
-- `rulesRating` (1–5 integer) — always manual; subjective compliance score.
+> Please answer these (or reply **"skip"** to use auto-estimates):
 
-If the practitioner declines a prompt, set the field to `null` and confidence to `missing`.
+Then ask the questions below in order. **Substitute the bracketed contextual placeholders
+with values you already auto-collected** so each prompt is concrete to the practitioner's
+actual project state — e.g., the latest sprint number, the most recently committed
+artifact, the role abbreviation that matches the active wave.
+
+Use the markdown formatting shown (numbered, bold lead-in, em-dash, italicized hint) so
+the questions render identically in every chat surface.
+
+```
+1. **Practitioner ID & name** — e.g., "TL-01 / Dennis" — what should I use?
+
+2. **Phase** — is this session `baseline` (no AI) or `assisted` (AI-assisted)?
+
+3. **Time-to-artifact (hours)** — for **Sprint <N>** specifically: roughly how many
+   hours from "sprint kickoff issued" to "QE verified complete"?
+   *(Substitute <N> with the latest sprint number; if no sprint is active, ask about
+   the most recent approved artifact instead — e.g., "the latest PRD".)*
+
+4. **Time-to-first-draft (hours)** — for the most recent artifact (**<artifact title>**):
+   how long from task start to first draft?
+   *(Substitute <artifact title> with the basename of the newest file in the
+   auto-collected `artifact_drafts` map.)*
+
+5. **First-pass review rate** — for the last 5 sprint reviews, were artifacts approved
+   on first review? (e.g., `4/5` or "all passed first time")
+   *(Skip this question entirely if firstPassRate was successfully derived from `gh`
+   in Step 4 — confidence is already `derived`.)*
+
+6. **Rules compliance rating (1–5)** — how well did agents follow their rules this
+   session? (5 = zero violations observed)
+
+7. **Iteration turnaround (hours)** — average time between a review comment and the
+   next revision?
+   *(Skip if `iterTurnaround` was successfully derived from inter-commit Δ in Step 3 —
+   confidence is already `derived`.)*
+```
+
+**Question routing rules**:
+
+| Q  | Field             | Always ask? | Skip when                                                |
+|----|-------------------|-------------|----------------------------------------------------------|
+| 1  | `practitioner` + `name` | yes   | never                                                    |
+| 2  | `phase`           | yes         | never                                                    |
+| 3  | `timeToArtifact`  | conditional | a sprint kickoff/results pair was found *and* a handoff timestamp exists for the QE approval — then derive and skip |
+| 4  | `timeToDraft`     | conditional | a handoff timestamp exists for the artifact in question — then derive and skip |
+| 5  | `firstPassRate`   | conditional | `gh pr list` derivation succeeded in Step 4              |
+| 6  | `rulesRating`     | yes         | never (always subjective)                                |
+| 7  | `iterTurnaround`  | conditional | mean inter-commit Δ ≥ 2 commits exists for the artifact  |
+
+**Answer-parsing notes**:
+
+- For Q1, accept `<ID> / <Name>`, `<ID>, <Name>`, or two separate replies if the user
+  splits them.
+- For Q3/4/7, accept hours as a number, a range like `8-12` (use the midpoint, set
+  `confidence: "fuzzy"`), or a phrase like `~6 hours`.
+- For Q5, accept `4/5`, `0.8`, `80%`, or "all passed" → `1.0`. Convert to a `0..1` float.
+- For Q6, accept `1`–`5` (clamp out-of-range and warn).
+
+**Confidence assignment based on the answer**:
+
+- A direct numeric answer → `confidence: "manual"`
+- A range or hedged answer (`~6`, `8-12`) → `confidence: "fuzzy"`
+- `skip` with no auto-estimate → `confidence: "missing"`, value `null`
+- `skip` with an auto-estimate available → use the auto value, `confidence: "fuzzy"`
 
 ---
 
@@ -270,10 +399,11 @@ The dashboard reads keys directly off each row (`r.firstPassRate`, `r.timeToArti
 ```json
 {
   "schemaVersion": 2,
+  "project": "<name from PROJECT-CONTEXT.md or repo basename>",
   "practitioner": "<ID>",
   "name": "<Name>",
   "role": "<EA|SA|BA|PO|UX|TL|BE|FE|ME|QE|SEC|DSO>",
-  "week": <N>,
+  "week": <N|null>,
   "phase": "<baseline|assisted>",
 
   "timeToArtifact":    <hours|null>,
@@ -339,65 +469,87 @@ The dashboard reads keys directly off each row (`r.firstPassRate`, `r.timeToArti
     }
   },
 
+  "_trigger":     "manual|post-merge|sprint-results|worktree-cleanup",
+  "_note":        "<free-text note from --note=… (or empty)>",
   "_collectedAt": "<ISO-8601 UTC>"
 }
 ```
 
 **Construction tip** — emit the JSON via Python from inside the command so quoting and
-escaping are correct:
+escaping are correct. Build it as a single-line JSON string for log appending:
 
 ```bash
-python3 - <<PY
+RECORD_JSON=$(python3 - <<PY
 import json, datetime, os
 record = {
   "schemaVersion": 2,
-  "practitioner": "${PRACTITIONER_ID:-unknown}",
-  "name":         "${PRACTITIONER_NAME:-Anonymous}",
-  "role":         "${PRACTITIONER_ROLE:-TL}",
+  "project":      "${PROJECT_NAME}",
+  "practitioner": "${PRACTITIONER_ID}",
+  "name":         "${PRACTITIONER_NAME}",
+  "role":         "${PRACTITIONER_ROLE}",
   "week":         int("${week}") if "${week}".isdigit() else None,
-  "phase":        "${PHASE:-baseline}",
+  "phase":        "${PHASE}",
   # … flat metrics …
+  "_trigger":     "manual" if "${AUTO}" == "0" else (os.environ.get("BMAD_TRIGGER") or "auto"),
+  "_note":        "${NOTE}",
   "_collectedAt": datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
 }
-print(json.dumps(record, indent=2))
+print(json.dumps(record))
 PY
+)
 ```
 
 ---
 
-### 10. Append to local eval log
+### 10. Append to eval logs (per-project + global mirror)
 
-If `.bmad/eval/eval-log.jsonl` exists or the user agrees, append the record as a single
-JSON line:
+Use the shared library helper — it does the dual-write **and** dedupe. The dedupe key
+is `(project, practitioner, role, week)`, so re-runs in the same week overwrite the
+prior snapshot rather than piling up duplicates.
 
 ```bash
-mkdir -p .bmad/eval
-printf '%s\n' "$RECORD_JSON" >> .bmad/eval/eval-log.jsonl
+bmad_append_eval_log "$RECORD_JSON"
+# Writes to:
+#   <project>/.bmad/eval/eval-log.jsonl  (always)
+#   ~/.bmad/eval/global-log.jsonl        (unless BMAD_NO_GLOBAL_MIRROR=1)
 ```
 
-This jsonl can be bulk-imported into `bmad-agent-eval-dashboard.html` later.
+**Auto-mode runs end here** — print nothing else (or just a one-line summary if
+`--verbose` was passed) and exit. Interactive runs continue to Step 11 to advise the
+practitioner on dashboard ingestion.
+
+```bash
+if [ "$AUTO" = "1" ]; then
+  [ "$VERBOSE" = "1" ] && echo "✓ recorded eval for ${PROJECT_NAME} wk${week} (${PRACTITIONER_ID})"
+  exit 0
+fi
+```
 
 ---
 
 ### 11. Suggest dashboard ingestion
 
-> **To ingest this record into the dashboard:**
+> **To view this record in the dashboard:**
 > 1. Open `eval/bmad-agent-eval-dashboard.html` (project) or
 >    `~/.bmad/eval/bmad-agent-eval-dashboard.html` (global).
-> 2. The dashboard auto-detects `schemaVersion: 2` records and merges them into `DATA`.
->    Records with `null` metrics are excluded from those metrics' charts but still
->    contribute where they have values.
+> 2. Click **Import** and pick **`~/.bmad/eval/global-log.jsonl`** to load every
+>    project's history at once — or pick the per-project `.bmad/eval/eval-log.jsonl`
+>    for a single-project view. Drag-and-drop also works.
 > 3. With ≥4 baseline + ≥4 assisted weeks, statistical-significance tests become valid.
 
 ---
 
 ## Output Format
 
-The chat output should include, in order:
+The conversation should proceed in this order:
 
-1. **Auto-collected snapshot** — table of all five dimensions with values + confidence.
+1. **Auto-collected snapshot** (single message) — table of all five dimensions with
+   values + confidence. State up-front which questions you'll skip because they're
+   already `derived`.
 2. **Parallel-wave health** — W4 / W6 / sprints / features / backlog status.
 3. **Compliance highlights** — open vs. added-this-week markers; security sections.
-4. **Practitioner prompts** — only for fields still at `fuzzy`/`missing` confidence.
-5. **Final JSON record** — fenced JSON block, schema v2, copy-paste ready.
+4. **Practitioner interview** — the preamble line, then **one question per turn** as
+   defined in Step 8. Wait for the user's reply before sending the next question.
+5. **Final JSON record** (after all answers collected) — fenced JSON block, schema v2,
+   copy-paste ready.
 6. **Next steps** — append to log, ingest into dashboard, when stats become meaningful.

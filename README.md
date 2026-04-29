@@ -23,7 +23,7 @@ Install the global layer once across all your AI coding tools, then scaffold `.b
 
 - **Roles, not prompts.** PO, BA, EA, UX, SA, InfoSec, DevSecOps, TL, BE, FE, ME, TQE — each agent loads its own `SKILL.md` with scope boundaries, agent rules, and a completion protocol.
 - **Two layers.** A reusable global layer installs once across all your AI tools; a project layer (`.bmad/`) pins context, tech-stack, and conventions per repo.
-- **Governed by design.** Karpathy-derived engineering principles, inline Agent Rules, ADR lock per sprint, A2UI advisory, sentinel-file orchestration, and a productivity dashboard built in.
+- **Governed by design.** Karpathy-derived engineering principles, inline Agent Rules, ADR lock per sprint, A2UI advisory, sentinel-file orchestration, and a productivity dashboard with automatic per-project + machine-wide eval logging on every merge / sprint completion.
 - **Parallel by default.** Tech Lead orchestrates real parallel BE ∥ FE ∥ ME against isolated git worktrees, with first-merge-wins conflict ownership.
 - **One playbook · 11 tools.** Native installers for Claude Code, Cowork, Cursor, Windsurf, Trae IDE, GitHub Copilot, Codex CLI, Gemini CLI, Kiro, OpenCode, Aider — pick the tool the team is already using.
 

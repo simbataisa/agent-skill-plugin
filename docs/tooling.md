@@ -243,9 +243,17 @@ After scaffolding, open your project in Claude Code and use slash commands direc
 /business-analyst   /product-owner      /solution-architect
 /enterprise-architect  /ux-designer     /tech-lead
 /tester-qe          /backend-engineer   /frontend-engineer   /mobile-engineer
-/bmad-status        /new-story          /new-adr
+/bmad:status        /new-story          /new-adr
 /handoff            /new-epic           /sprint-plan
-/bmad-eval
+/bmad:eval          /bmad:eval --auto   (--auto skips the interview; hook-driven)
+```
+
+**Optional — auto-eval on workflow completion.** Install the per-repo hook bundle once
+to record `/bmad:eval --auto` automatically on `git pull`/`git merge`, on sprint-results
+writes, and on Yolo worktree cleanup. See *Productivity Evaluation* in [adoption.md](adoption.md#productivity-evaluation):
+
+```bash
+bash /path/to/bmad-sdlc-agents/hooks/install-project-hooks.sh
 ```
 
 ---
@@ -939,8 +947,10 @@ For each story:
 
 **Step 1 — Close out the sprint:**
 
+If you've installed the per-repo eval hooks (see Productivity Evaluation in [adoption.md](adoption.md#productivity-evaluation)), the sprint-results write already triggered `/bmad:eval --auto` for you. Run the interactive form only if you want to add manual notes:
+
 ```
-/bmad-eval
+/bmad:eval
 ```
 
 **Step 2 — Tech Lead: review + kick off Sprint N+1:**
@@ -1417,7 +1427,7 @@ Read docs/testing/test-strategy.md for quality gates.
 Write and run tests. Flag unmet criteria. Save to docs/testing/sprint-N+1-results.md.
 ```
 
-> 💡 Run `/bmad-eval` first to log Sprint N metrics before starting Prompt C.
+> 💡 If the per-repo eval hooks aren't installed, run `/bmad:eval` first to log Sprint N metrics before starting Prompt C. Otherwise the sprint-results write already triggered an auto-eval — see [Productivity Evaluation](adoption.md#productivity-evaluation).
 
 ---
 

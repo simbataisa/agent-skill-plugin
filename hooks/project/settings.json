@@ -27,6 +27,10 @@
           {
             "type": "command",
             "command": "bash -c '[ -f \".claude/hooks/auto-handoff-log.sh\" ] && bash \".claude/hooks/auto-handoff-log.sh\" \"$CLAUDE_TOOL_INPUT_PATH\" || exit 0'"
+          },
+          {
+            "type": "command",
+            "command": "bash -c '[ -f \".claude/hooks/auto-eval-on-sprint-results.sh\" ] && bash \".claude/hooks/auto-eval-on-sprint-results.sh\" \"$CLAUDE_TOOL_INPUT_PATH\" || exit 0'"
           }
         ]
       }

@@ -390,6 +390,11 @@ bmad-sdlc-agents/
 │   │   └── aider.md                        # /add, /ask, /run, edit-block terminology
 │   ├── references/
 │   │   └── technology-radar.md
+│   ├── scripts/
+│   │   └── bmad-metrics-lib.sh             # Shared metrics library (NEW) — sourced
+│   │                                       # by /bmad:eval, /bmad:status, and the
+│   │                                       # auto-eval hooks. Installed to
+│   │                                       # ~/.bmad/scripts/ on global install.
 │   └── templates/
 │       ├── adr-template.md
 │       ├── story-template.md
@@ -402,14 +407,21 @@ bmad-sdlc-agents/
 ├── hooks/                                  # Session hooks (Claude Code / Kiro)
 │   ├── global/
 │   │   ├── settings.json                   # PreToolUse / PostToolUse / Stop bindings
-│   │   └── scripts/                        # Executable hook scripts
+│   │   └── scripts/
+│   │       └── post-merge-eval.sh          # Git post-merge hook (NEW) — fires
+│   │                                       # /bmad:eval --auto on merge/pull
 │   ├── project/
 │   │   ├── settings.json
 │   │   └── scripts/
-│   └── yolo-harness/                       # Autonomous orchestration harness
-│       ├── settings.json
-│       ├── settings-windows.json
-│       └── hooks/
+│   │       └── auto-eval-on-sprint-results.sh  # PostToolUse on sprint-N-results.md
+│   ├── yolo-harness/                       # Autonomous orchestration harness
+│   │   ├── settings.json
+│   │   ├── settings-windows.json
+│   │   └── hooks/
+│   │       └── post-cleanup-eval.sh        # Records eval after worktree cleanup
+│   └── install-project-hooks.sh            # Per-repo installer (NEW) — wires the
+│                                           # git post-merge hook + copies Claude
+│                                           # PostToolUse hooks into .claude/hooks/
 │
 ├── rules/                                  # Per-tool rules files generated from agents/
 │   ├── README.md
@@ -449,7 +461,11 @@ bmad-sdlc-agents/
 │       └── playwright.json                 # Playwright testing automation
 │
 ├── eval/                                   # Agent-quality eval dashboard
-│   └── bmad-agent-eval-dashboard.html
+│   └── bmad-agent-eval-dashboard.html      # Schema-v2 aware. Import button +
+│                                           # drag-drop accept any .jsonl log
+│                                           # (per-project or ~/.bmad/eval/global-log.jsonl).
+│                                           # Records dedupe by (project, practitioner,
+│                                           # role, week); latest _collectedAt wins.
 │
 ├── templates/                              # Top-level instruction-file templates
 │                                           # (CLAUDE.md / GEMINI.md / AGENTS.md / …)
@@ -480,6 +496,10 @@ bmad-sdlc-agents/
 │   ├── install-global.sh                   # Deploy agents/ + shared/ + karpathy-principles to all detected tools
 │   ├── scaffold-project.sh                 # Create .bmad/ + project wiring files
 │   ├── update.sh                           # Update global install + all projects
+│   ├── bmad-eval-run.sh                    # Standalone --auto eval runner (NEW) —
+│   │                                       # called by hooks. Mirrors the slash
+│   │                                       # command's auto-mode behaviour without
+│   │                                       # an LLM in the loop.
 │   ├── clean-duplicate-hooks.py            # Dedup hooks after upgrades
 │   ├── migrate-handoff-log.py              # Migrate legacy handoff logs
 │   ├── yolo.sh                             # Yolo harness launcher (macOS/Linux)
