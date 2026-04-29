@@ -4,12 +4,12 @@
 
 [![License: PolyForm Noncommercial 1.0.0](https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-blue.svg)](./LICENSE)
 [![Commercial license available](https://img.shields.io/badge/commercial%20license-available-success.svg)](./COMMERCIAL-LICENSE.md)
-[![Latest release](https://img.shields.io/github/v/release/simbataisa/gent-skill-plugin?label=release&color=informational)](https://github.com/simbataisa/gent-skill-plugin/releases)
-[![GitHub stars](https://img.shields.io/github/stars/simbataisa/gent-skill-plugin?style=social)](https://github.com/simbataisa/gent-skill-plugin/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/simbataisa/gent-skill-plugin?style=social)](https://github.com/simbataisa/gent-skill-plugin/network/members)
-[![Open issues](https://img.shields.io/github/issues/simbataisa/gent-skill-plugin.svg)](https://github.com/simbataisa/gent-skill-plugin/issues)
-[![Open pull requests](https://img.shields.io/github/issues-pr/simbataisa/gent-skill-plugin.svg)](https://github.com/simbataisa/gent-skill-plugin/pulls)
-[![Last commit](https://img.shields.io/github/last-commit/simbataisa/gent-skill-plugin.svg)](https://github.com/simbataisa/agent-skill-plugin/commits)
+[![Latest release](https://img.shields.io/github/v/release/simbataisa/agent-skill-plugin?label=release&color=informational)](https://github.com/simbataisa/agent-skill-plugin/releases)
+[![GitHub stars](https://img.shields.io/github/stars/simbataisa/agent-skill-plugin?style=social)](https://github.com/simbataisa/agent-skill-plugin/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/simbataisa/agent-skill-plugin?style=social)](https://github.com/simbataisa/agent-skill-plugin/network/members)
+[![Open issues](https://img.shields.io/github/issues/simbataisa/agent-skill-plugin.svg)](https://github.com/simbataisa/agent-skill-plugin/issues)
+[![Open pull requests](https://img.shields.io/github/issues-pr/simbataisa/agent-skill-plugin.svg)](https://github.com/simbataisa/agent-skill-plugin/pulls)
+[![Last commit](https://img.shields.io/github/last-commit/simbataisa/agent-skill-plugin.svg)](https://github.com/simbataisa/agent-skill-plugin/commits)
 
 ---
 
