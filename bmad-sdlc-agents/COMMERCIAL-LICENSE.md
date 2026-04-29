@@ -30,17 +30,17 @@ You do **not** need a commercial license if you are:
 
 ## What you get with a commercial license
 
-| | Non-commercial | Commercial |
-|---|---|---|
-| Use across the SDLC squad (all 13 agents) | ✅ | ✅ |
-| All AI tool installers (Claude Code, Cursor, Windsurf, Trae, Codex, Gemini, Kiro, Copilot, OpenCode, Aider, Cowork) | ✅ | ✅ |
-| Project scaffolder + Karpathy principles + A2UI reference | ✅ | ✅ |
-| Use inside a for-profit organization | — | ✅ |
-| Bundle / embed / redistribute in a commercial product | — | ✅ Negotiated |
-| Indemnification for IP claims | — | ✅ |
-| Priority bug fixes and security patches | — | ✅ |
-| Private Slack / email support channel | — | ✅ |
-| Quarterly architecture review & roadmap input | — | ✅ Enterprise tier |
+|                                                                                                                     | Non-commercial | Commercial         |
+| ------------------------------------------------------------------------------------------------------------------- | -------------- | ------------------ |
+| Use across the SDLC squad (all 13 agents)                                                                           | ✅             | ✅                 |
+| All AI tool installers (Claude Code, Cursor, Windsurf, Trae, Codex, Gemini, Kiro, Copilot, OpenCode, Aider, Cowork) | ✅             | ✅                 |
+| Project scaffolder + Karpathy principles + A2UI reference                                                           | ✅             | ✅                 |
+| Use inside a for-profit organization                                                                                | —              | ✅                 |
+| Bundle / embed / redistribute in a commercial product                                                               | —              | ✅ Negotiated      |
+| Indemnification for IP claims                                                                                       | —              | ✅                 |
+| Priority bug fixes and security patches                                                                             | —              | ✅                 |
+| Private Slack / email support channel                                                                               | —              | ✅                 |
+| Quarterly architecture review & roadmap input                                                                       | —              | ✅ Enterprise tier |
 
 ---
 
@@ -48,12 +48,12 @@ You do **not** need a commercial license if you are:
 
 Pricing is **per organization, per year**, sized to the number of developers who interact with BMAD-installed agents in any way.
 
-| Tier | Audience | Indicative annual fee |
-|---|---|---|
-| **Startup** | < 25 developers · annual revenue < US $5M | Contact us — discounted |
-| **Team** | 25 – 250 developers | Contact us |
-| **Enterprise** | 250+ developers · or any regulated-industry deployment (FSI / healthcare / public sector primes) | Contact us — includes SSO, audit logs, indemnification, support SLA |
-| **OEM / Embed** | Bundling BMAD inside a product you sell | Contact us — royalty or flat fee |
+| Tier            | Audience                                                                                         | Indicative annual fee                                               |
+| --------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------- |
+| **Startup**     | < 25 developers · annual revenue < US $5M                                                        | Contact us — discounted                                             |
+| **Team**        | 25 – 250 developers                                                                              | Contact us                                                          |
+| **Enterprise**  | 250+ developers · or any regulated-industry deployment (FSI / healthcare / public sector primes) | Contact us — includes SSO, audit logs, indemnification, support SLA |
+| **OEM / Embed** | Bundling BMAD inside a product you sell                                                          | Contact us — royalty or flat fee                                    |
 
 Educational, nonprofit, and open-source organizations are eligible for a free commercial license — apply via the contact form.
 
@@ -61,7 +61,7 @@ Educational, nonprofit, and open-source organizations are eligible for a free co
 
 ## How to obtain a commercial license
 
-1. Email **`licensing@bmad-agents.example`** with:
+1. Email **`licensing@dennisdao.com`** with:
    - Your organization name and primary use case.
    - Approximate developer headcount that will use BMAD-installed agents.
    - Whether you intend to embed, redistribute, or rebrand BMAD.
@@ -91,6 +91,4 @@ Commercial licenses run for 12 months from the date of payment and renew automat
 
 ## Questions
 
-Email **`licensing@bmad-agents.example`** for any questions about scope, pricing, or eligibility. We aim to respond within 2 business days.
-
-> Replace `licensing@bmad-agents.example` with your real licensing contact before publishing.
+Email **`licensing@dennisdao.com`** for any questions about scope, pricing, or eligibility. We aim to respond within 2 business days.

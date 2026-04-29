@@ -113,7 +113,7 @@ BMAD SDLC Agents is **dual-licensed**:
 - **[PolyForm Noncommercial 1.0.0](./LICENSE)** — free for individuals, hobby projects, academic research, charitable organizations, educational institutions, public research organizations, and government bodies.
 - **[Commercial License](./COMMERCIAL-LICENSE.md)** — required for any **for-profit organization**, or any use in support of a commercial product or service. Pricing is per organization, per year, sized to the number of developers using BMAD-installed agents. Educational, nonprofit, and open-source organizations are eligible for a free commercial license.
 
-If you are unsure which license applies, see the eligibility matrix in [`COMMERCIAL-LICENSE.md`](./COMMERCIAL-LICENSE.md) or contact `licensing@bmad-agents.example`.
+If you are unsure which license applies, see the eligibility matrix in [`COMMERCIAL-LICENSE.md`](./COMMERCIAL-LICENSE.md) or contact `licensing@dennisdao.com`.
 
 ---
 
